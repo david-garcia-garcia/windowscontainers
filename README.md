@@ -1,6 +1,6 @@
 # Windows Containers
 
-Several docker images that support hosting Windows based applications in a reliably and production ready way.
+Several docker images that support hosting Windows based applications in a reliable and production ready way.
 
 **Core base image**
 
