@@ -1,0 +1,30 @@
+version: "3.7"
+services:
+  web:
+    stop_grace_period: 40s
+    build: .
+    image: registry-1.docker.io/davidbcn86/servercore2022:1.0-beta19
+    networks:
+      - container_default
+    environment:
+      # Promote to system environment
+      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+      # Timezone
+      - SBS_CONTAINERTIMEZONE=Pacific Standard Time
+      # Services that need enforced started
+      - SBS_SRVENSURE=newrelic-infra
+      # Scheduled tasks that must be run once during startup
+      - SBS_CRONRUNONBOOT=LogRotate
+      # Error behaviour
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      # Call the entrypoint shutdown logic
+      - SBS_AUTOSHUTDOWN=1
+      # Call these proceses during shutdown
+      - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
+      # New relic license KEY
+      - NEW_RELIC_LICENSE_KEY=badlicensekey
+      # Other new relic stuff
+      - NRIA_CUSTOM_ATTRIBUTES="{\"environment\":\"docker\"}"
+networks:
+  container_default:
+    external: true
