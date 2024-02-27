@@ -2,6 +2,8 @@
 
 Several docker images that support hosting Windows based applications in a reliable and production ready way.
 
+These all are **unofficial**, **unsupported** and **in no way connected to Microsoft**.
+
 **Core base image**
 
 Contains the container lifecycle management setup, plus basic tooling such as 7zip and micro.
@@ -15,5 +17,3 @@ Docker hub image: https://hub.docker.com/repository/docker/davidbcn86/servercore
 SQL Server 2022 Analysis Services exposed through HTTP
 
 See details [here](sqlserver2022as/readme.md).
-
-Docker hub image:  https://hub.docker.com/repository/docker/davidbcn86/sqlserver2022as
