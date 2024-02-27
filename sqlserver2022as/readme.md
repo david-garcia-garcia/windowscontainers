@@ -18,5 +18,5 @@ SBS_SRVENSURE=MSSQLServerOLAPService
 
 Once setup, you can connect using Management Studio and Microsoft Entra Password
 
-![image-20240227192314719](readme_assets\image-20240227192314719.png)
+![image-20240227192314719](readme_assets/image-20240227192314719.png)
 
