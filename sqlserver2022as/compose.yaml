@@ -1,0 +1,16 @@
+version: "3.7"
+services:
+  web:
+    stop_grace_period: 40s
+    build: .
+    image: davidbcn86/sqlserver2022as:1.0-beta1
+    networks:
+      - container_default
+    environment:
+      - SSAS_USERS=user1:8r69s6ZGJKNBeGA
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_SRVENSURE=MSSQLServerOLAPService
+      - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
+networks:
+  container_default:
+    external: true
