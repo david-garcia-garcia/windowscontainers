@@ -3,7 +3,7 @@ services:
   web:
     stop_grace_period: 40s
     build: .
-    image: davidbcn86/servercore2022:1.0-beta19
+    image: davidbcn86/servercore2022:1.0-beta20
     networks:
       - container_default
     environment:

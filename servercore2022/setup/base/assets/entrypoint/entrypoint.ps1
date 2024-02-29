@@ -259,12 +259,9 @@ $processNames = $SBS_SHUTDOWNCLOSEPROCESSES -split ',' | ForEach-Object { $_.Tri
 $processes = Get-Process | Where-Object {
     $processName = $_.ProcessName;
     $processNames -icontains $processName;
-} | Where-Object {
-    # Exclude the current PowerShell process
-    $_.Id -ne $PID
 };
 $processes | ForEach-Object { Write-Output "Will close: $($_.ProcessName) (ID: $($_.Id))" };
-$processes | Stop-Process -Force;
+$processes | ForEach-Object { $_.Kill() }
 
 ## Delete the ready probe
 Remove-Item -Path 'C:\ready' -Force;
