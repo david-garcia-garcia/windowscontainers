@@ -1,0 +1,43 @@
+{
+  "LogConfig": {
+    "sources": [
+      {
+        "type": "EventLog",
+        "startAtOldestRecord": false,
+        "eventFormatMultiLine": false,
+        "channels": [
+          {
+            "name": "system",
+            "level": "Information"
+          },
+          {
+            "name": "application",
+            "level": "Information"
+          },
+          {
+            "name": "Microsoft-Windows-DSC/Operational",
+            "level": "Information"
+          }
+        ]
+      },
+      {
+        "type": "File",
+        "directory": "C:\\ProgramData\\New Relic\\newrelic-infra\\",
+        "filter": "*.log",
+        "includeSubdirectories": false
+      },
+      {
+        "type": "File",
+        "directory": "C:\\Program Files\\Microsoft SQL Server\\MSSQL16.MSSQLSERVER\\MSSQL\\Log",
+        "filter": "ERRORLOG*",
+        "includeSubdirectories": false
+      },
+      {
+        "type": "File",
+        "directory": "C:\\Program Files\\Microsoft SQL Server\\MSSQL16.MSSQLSERVER\\MSSQL\\Log",
+        "filter": "SQLAGENT*",
+        "includeSubdirectories": false
+      }
+    ]
+  }
+}

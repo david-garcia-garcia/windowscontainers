@@ -10,8 +10,14 @@ Contains the container lifecycle management setup, plus basic tooling such as 7z
 
 See details [here](servercore2022/readme.md).
 
+**SQL Server 2022 With Full Text Search**
+
+Base image with SQL Server and Full Text Search feature.
+
+See details [here](sqlserver2022base/readme.md).
+
 **SQL Server 2022 Analysis Services**
 
-SQL Server 2022 Analysis Services exposed through HTTP
+SQL Server 2022 Analysis Services exposed through HTTP.
 
 See details [here](sqlserver2022as/readme.md).
