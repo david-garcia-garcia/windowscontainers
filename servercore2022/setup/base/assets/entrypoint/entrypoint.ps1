@@ -1,5 +1,13 @@
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
+#####################################
+# Delete Readyness Probe
+#####################################
+
+if (Test-Path("c:\ready")) {
+    Remove-Item -Path 'C:\ready' -Force;
+}
+
 ##########################################################################
 # Setup shutdown listeners. For docker. In K8S use LifeCycleHooks
 ##########################################################################
@@ -214,14 +222,14 @@ try {
     # Debugging to figure out exactly what signals and in what order we are receiving
     # Confirmed that multiple CTR+C in docker compose up will only trigger CTRL_SHUTDOWN_EVENT once.
     #while($true) {
-        #Write-Host "---------";
-        #$signals = [ConsoleCtrlHandler]::GetSignals()
-        #foreach ($key in $signals.Keys) {
-        #    $value = $signals[$key]
-        #    $formattedDate = $value.ToString("yyyy-MM-dd HH:mm:ss") # Customize the date format as needed
-        #    Write-Host "$key : $formattedDate"
-        #}
-        #Start-Sleep -Seconds 1 # Add a small delay to make the output more readable
+    #Write-Host "---------";
+    #$signals = [ConsoleCtrlHandler]::GetSignals()
+    #foreach ($key in $signals.Keys) {
+    #    $value = $signals[$key]
+    #    $formattedDate = $value.ToString("yyyy-MM-dd HH:mm:ss") # Customize the date format as needed
+    #    Write-Host "$key : $formattedDate"
+    #}
+    #Start-Sleep -Seconds 1 # Add a small delay to make the output more readable
     #}
 
     if ($Env:SBS_AUTOSHUTDOWN -ne '0') {
@@ -239,6 +247,14 @@ finally {
     [ConsoleCtrlHandler]::SetShutdownAllowed($true);
 }
 
+#####################################
+# Delete Readyness Probe
+#####################################
+
+if (Test-Path("c:\ready")) {
+    Remove-Item -Path 'C:\ready' -Force;
+}
+
 ##########################################
 # Close processes. This piece here is SUPER important. Because we have
 # increased the timeout for container runtime spun up processes
@@ -249,19 +265,55 @@ finally {
 $SBS_SHUTDOWNCLOSEPROCESSES = $Env:SBS_SHUTDOWNCLOSEPROCESSES;
 
 if ($null -eq $SBS_SHUTDOWNCLOSEPROCESSES) {
-    # Default to cmd and powershell, which are the most common shells.
+    # Default to common shells
     $SBS_SHUTDOWNCLOSEPROCESSES = 'cmd,powershell,pwsh';
 }
 
-# Check if the environment variable is empty
 Write-Output "Closing processes: $SBS_SHUTDOWNCLOSEPROCESSES";
 $processNames = $SBS_SHUTDOWNCLOSEPROCESSES -split ',' | ForEach-Object { $_.Trim() }
 $processes = Get-Process | Where-Object {
     $processName = $_.ProcessName;
     $processNames -icontains $processName;
 };
+
 $processes | ForEach-Object { Write-Output "Will close: $($_.ProcessName) (ID: $($_.Id))" };
 $processes | ForEach-Object { $_.Kill() }
 
-## Delete the ready probe
-Remove-Item -Path 'C:\ready' -Force;
+#####################################
+# Close processes II
+#
+# Keeping this for the records, when using 
+# log monitor as an entrypoint if you
+# keep a shell from docker open, there seems
+# to be no way to kill it from here. You need
+# to manually exit it for the container to be released.
+#####################################
+
+#public class WinApi {
+#    [DllImport("kernel32.dll", SetLastError = true)]
+#    public static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
+#
+#   [DllImport("kernel32.dll", SetLastError = true)]
+#    [return: MarshalAs(UnmanagedType.Bool)]
+#    public static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
+#
+#    [DllImport("kernel32.dll", SetLastError = true)]
+#    [return: MarshalAs(UnmanagedType.Bool)]
+#    public static extern bool CloseHandle(IntPtr hObject);
+#}
+#'@
+#
+#$processes | ForEach-Object { 
+#    Write-Output "Will close: $($_.ProcessName) (ID: $($_.Id))"
+#    $processId = $_.Id;
+#    $PROCESS_ALL_ACCESS = 0x001F0FFF;
+#    $processHandle = [WinApi]::OpenProcess($PROCESS_ALL_ACCESS, $false, $processId);
+#    if ($processHandle -ne [IntPtr]::Zero) {
+#        [WinApi]::TerminateProcess($processHandle, 1) | Out-Null;
+#        [WinApi]::CloseHandle($processHandle) | Out-Null;
+#        Write-Output "Process terminated.";
+#    }
+#    else {
+#        Write-Error "Failed to open process.";
+#    }
+#}

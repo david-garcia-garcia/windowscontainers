@@ -28,6 +28,8 @@ If you don't want to use LogMonitor as the entrypoint just add this in your imag
 CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
+**WARNING**: Log monitor is an excellent tool for debugging while setting up your containers, but a terrible companion for production loads. The lack of configuration options, plus several bugs that interfere with the container shutdown when timeouts have been expanded make it a dangerous choice for production workloads. Find another way of moving your logging information out of the container.
+
 ## Log rotation
 
 A unix style logrotation utility is installed https://github.com/theohbrothers/Log-Rotate and runs every day at 3AM.
