@@ -30,6 +30,50 @@ CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 
 **WARNING**: Log monitor is an excellent tool for debugging while setting up your containers, but a terrible companion for production loads. The lack of configuration options, plus several bugs that interfere with the container shutdown when timeouts have been expanded make it a dangerous choice for production workloads. Find another way of moving your logging information out of the container.
 
+## Environment variable promotion
+
+By default, all the environment variables you setup for a container will be process injected to the entrypoint or the shell. They are not (and should not) all be system wide environment variables. If you need some of these environment variables promoted to system, so they can be seen by any process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment configuration
+
+```powershell
+SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+```
+
+All the environment variables that have a name that matches the Regular Expression in SBS_PROMOTE_ENV_REGEX will be promoted to System.
+
+Get your timings and services startup right. I.E. if you have an application pool in IIS that is in autostart mode, there is chance that it will be started before the entrypoint script promotes the environment variables. The solution here is that you should design your container to have everything stopped by default, and do a controlled bootstrap using entrypoint script extensions (placing your startup logic in entrypoint/init)
+
+If you have sensible information in your environment variables that you don't want to be seen at the system level, the entrypoint script has automated logic to encrypt using DPAPI any environment variable that you define by prepending "_PROTECT".
+
+In example:
+
+```powershell
+MYSENSIBLEPWD_PROTECT="verysafepassword?"
+```
+
+This will be renamed in-process to 
+
+```powershell
+MYSENSIBLEPWD="ENCODEDPASSWORDWITHDPAPI"
+```
+
+Then you can promote that to system level
+
+```powershell
+SBS_PROMOTE_ENV_REGEX=^MYSENSIBLEPWD$
+```
+
+You can the retrieve it and decode it in your application
+
+```powershell
+$password = [System.Environment]::GetEnvironmentVariable("MYSENSIBLEPWD");
+$password = [Convert]::FromBase64String($password);
+$password = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect($password, $null, 'LocalMachine'));
+```
+
+This uses Machine Level DPAPI encryption, and this is just designed to avoid leakage of sensible information in environment variables. Let's say you have an APM for IIS that sends all ENV data to the APM, because this sensible information is DPAPI encrypted it will be safe.
+
+This does NOT protect the information from being decoded by any other process running inside the container. That is totally possible.
+
 ## Log rotation
 
 A unix style logrotation utility is installed https://github.com/theohbrothers/Log-Rotate and runs every day at 3AM.

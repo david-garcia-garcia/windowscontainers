@@ -3,7 +3,7 @@ services:
   web:
     stop_grace_period: 40s
     build: .
-    image: davidbcn86/sqlserver2022base:1.0-beta1
+    image: ${CONTAINERREGISTRY}/sqlserver2022base:1.0-beta2
     volumes:
       - "f:/databases/example/data:d:"
     networks:

@@ -3,7 +3,7 @@ services:
   web:
     stop_grace_period: 40s
     build: .
-    image: davidbcn86/sqlserver2022as:1.0-beta1
+    image: ${sqlserver2022as}
     networks:
       - container_default
     environment:

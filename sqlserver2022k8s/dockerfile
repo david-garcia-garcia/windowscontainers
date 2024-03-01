@@ -1,7 +1,7 @@
 # escape=`
 
-ARG IMG_SERVERCORE2022
-FROM ${IMG_SERVERCORE2022}
+ARG IMG_SQLSERVERBASE
+FROM ${IMG_SQLSERVERBASE}
 
 # https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#ProperUse
 
@@ -11,10 +11,8 @@ FROM ${IMG_SERVERCORE2022}
 # para que entre en un layer
 # RUN curl -o C:\SQLServer2022-x64-ENU-Dev.iso https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso;
 
-COPY "setup\\install" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN c:\setup\setup.ps1
-
 COPY "setup\\base" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
+
+CMD [ "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]

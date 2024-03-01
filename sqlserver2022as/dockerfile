@@ -1,5 +1,7 @@
 # escape=`
-FROM davidbcn86/servercore2022:1.0-beta19
+
+ARG IMG_SERVERCORE2022
+FROM ${IMG_SERVERCORE2022}0
 
 # https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#ProperUse
 
@@ -21,4 +23,5 @@ COPY "setup\\server" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
 
-CMD ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+#CMD ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]

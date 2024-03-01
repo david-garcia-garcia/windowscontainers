@@ -1,0 +1,3 @@
+# Microsoft SQL Server 2022 base image - For Kubernetes
+
+Work in progress...
