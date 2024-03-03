@@ -18,3 +18,5 @@ RUN c:\setup\setup.ps1
 COPY "setup\\base" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
+
+CMD ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
