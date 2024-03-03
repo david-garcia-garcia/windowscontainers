@@ -1,7 +1,6 @@
 version: "3.7"
 services:
-  mssql:
-    stop_grace_period: 40s
+  web:
     build:
       context: .
       args:
@@ -9,16 +8,19 @@ services:
         IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
-        IMG_SQLSERVER2022IIS: ${IMG_SQLSERVER2022IIS}
-        IMG_SQLSERVER2022IISNET48: ${IMG_SQLSERVER2022IISNET48}
-    image: ${IMG_SQLSERVER2022AS}
+        IMG_SERVERCORE2022IIS: ${IMG_SERVERCORE2022IIS}
+        IMG_SERVERCORE2022IISNET48: ${IMG_SERVERCORE2022IISNET48}
+    image: ${IMG_SERVERCORE2022IIS}
     networks:
       - container_default
     environment:
-      - SSAS_USERS=user1:8r69s6ZGJKNBeGA
+      # Promocionar variables de entorno a variables de sistema
+      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+      - SBS_CONTAINERTIMEZONE=Pacific Standard Time
+      - SBS_SRVENSURE=newrelic-infra
       - SBS_ENTRYPOINTERRORACTION=Stop
-      - SBS_SRVENSURE=MSSQLServerOLAPService
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
+      - NEW_RELIC_LICENSE_KEY=badkey
 networks:
   container_default:
     external: true

@@ -1,0 +1,15 @@
+#
+# New Relic Infrastructure Perfmon Integration
+#
+name: com.newrelic.perfmon
+description: Perfmon On-Host Integration
+protocol_version: 1
+os: windows
+commands:
+  metrics:
+    command:
+      - .\nri-perfmon\nri-perfmon.exe
+      - -c
+      - C:\Program Files\New Relic\newrelic-infra\custom-integrations\nri-perfrmon-definition_basicciis_config.json
+    prefix: integration/nri-perfmon
+    interval: 10
