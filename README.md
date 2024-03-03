@@ -27,11 +27,17 @@ Make sure to replace the URL to your private repository in the script, and that 
 
 ## Image List
 
-**Core base image**
+**Core Windows Server 2022**
 
 Contains the container lifecycle management setup, plus basic tooling such as 7zip and micro.
 
 See details [here](servercore2022/readme.md).
+
+**IIS Internet Information Services Base Image**
+
+Image with the basics for IIS hosting (including CGI and .NET 45/7/8), with support for SSL termination using CCS - Central Certificate Store.
+
+See details [here](servercore2022iis/readme.md).
 
 **SQL Server 2022 With Full Text Search**
 
