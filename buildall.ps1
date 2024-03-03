@@ -6,6 +6,8 @@ param (
     [bool]$push = $false
 )
 
+$global:ErrorActionPreference = 'Stop';
+
 # Core Server
 Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
@@ -20,6 +22,14 @@ docker compose -f servercore2022iis/compose.yaml build
 
 if ($push) { 
     docker push "$($Env:IMG_SERVERCORE2022IIS)" 
+}
+
+# IIS NET 48
+Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
+docker compose -f servercore2022iisnet48/compose.yaml build
+
+if ($push) { 
+    docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
 }
 
 # SQL Server Base

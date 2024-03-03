@@ -1,0 +1,55 @@
+version: "3.7"
+services:
+  web:
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        IMG_SERVERCORE2022IIS: ${IMG_SERVERCORE2022IIS}
+        IMG_SERVERCORE2022IISNET48: ${IMG_SERVERCORE2022IISNET48}
+    image: ${IMG_SERVERCORE2022IISNET48}
+    networks:
+      - container_default
+    environment:
+      # Promocionar variables de entorno a variables de sistema, para que estén accesibles
+      # desde las tareas programadas y cualquier sitio
+      - SBS_PROMOTE_ENV_REGEX=^SBS_AUTOSSL|^NEW_RELIC|^AZURE_
+      # Zona horaria del contenedor
+      - SBS_CONTAINERTIMEZONE=Pacific Standard Time
+      # Servicios de windows que quiero arrancar (que no lo estén por defecto), este de ejemplo es para debug
+      - SBS_SRVENSURE=WMSVC;newrelic-infra
+      # Acción cuando hay un fallo en el entrypoint, por defecto es Stop
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      # Aprovisonamiento automático de certifciados con Chef, los coloca en el CCS
+      - SBS_AUTOSSLHOSTNAMES=mywebsiste.com;testthesite.com;www.mysiste.net
+      # Variables de entorno que quiero propagar al IIS, en formato pool:regex#pool2:regex
+      - SBS_IISENV=.*:^AZURE_|^SBS_|^NEW_RELIC_
+      # Contraseña para los certificados en el CCS
+      - SBS_AUTOSSLPASSWORD_PROTECT=pfxpassword
+      # Reemplazar bindings de un website, usar ! para quitar un binding
+      - SBS_IISBINDINGS=Default Web Site:http/80/testthesite.com,!http/80/
+      # Proveedor de certificados de Chef (SeflSigned, AcmeProd, AcmeStaging)
+      - SBS_AUTOSSLPROVIDER=SelfSigned
+      # Ruta a los certificados del CCS, en producción asegurarse de que es una ruta compartida
+      - SBS_AUTOSSLCSSPATH=c:\certificates
+      # Correo para el Let's Encrypt
+      - SBS_AUTOSSLACCOUNTEMAIL=foo@foo.com
+      # En caso de tener certificados con Chef, umbral de renovación
+      - SBS_AUTOSSLTHRESHOLD=20
+      # Si está configurado el CCS, sitio web que debe sincronizar los bindings para que
+      # use todos los certificados que haya en la carpeta. Alternativamente se pueden
+      # designar bindings manualmente en SBS_IISBINDINGS
+      - SBS_AUTOSSLSITESYNC=Default Web Site
+      # Tarea cron que debe ejecutarse durante el arranque, de lo contrario la primera ejecución
+      # conicide con el lapso de programación
+      - SBS_CRONRUNONBOOT=RenewCertificates
+      # Añadir los pools a grupos de seguridad
+      - SBS_ADDPOOLSTOGROUPS=S-1-5-32-558;S-1-5-32-559;Performance Monitor Users
+      # Licencia de New Relic
+      - NEW_RELIC_LICENSE_KEY=badkey
+networks:
+  container_default:
+    external: true

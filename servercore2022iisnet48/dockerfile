@@ -1,0 +1,14 @@
+# escape=`
+
+ARG IMG_SERVERCORE2022IIS
+FROM ${IMG_SERVERCORE2022IIS}
+
+# APM
+COPY "setup\\apm" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+RUN c:\setup\setup.ps1;
+
+# Limpiar todos los scripts de setup
+RUN Remove-Item -Recurse -Force "c:\setup\";
+
+
