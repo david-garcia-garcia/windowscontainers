@@ -1,9 +1,15 @@
 version: "3.7"
 services:
-  web:
+  mssql:
     stop_grace_period: 40s
-    build: .
-    image: ${CONTAINERREGISTRY}/sqlserver2022base:1.0-beta2
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+    image: ${IMG_SQLSERVER2022BASE}
     volumes:
       - "f:/databases/example/data:d:"
     networks:

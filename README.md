@@ -17,7 +17,12 @@ There is a script to build and push all of the images to a private repository in
 Make sure to replace the URL to your private repository in the script, and that you are authenticated to push images:
 
 ```powershell
-$containerregistry = "myazureregistry.azurecr.io/core"
+
+# Set the image names in ENV using the imagenames script
+.\imagenames.ps1 "myregistry.azurecr.io/core/"
+
+# Example usage with pushing the images (must end in slash)
+.\buildall.ps1 -push $true
 ```
 
 ## Image List

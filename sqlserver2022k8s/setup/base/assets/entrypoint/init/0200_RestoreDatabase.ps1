@@ -35,8 +35,6 @@ if ($null -eq $tempDir) {
     $tempDir = "c:\windows\temp";
 }
 
-# In attach lifecyle mode, we expect the database files
-# to exist and paths to match from a previous pod
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 
     Write-Host "Lifecycle attach mode starting up..."

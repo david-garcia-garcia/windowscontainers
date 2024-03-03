@@ -1,7 +1,7 @@
 # escape=`
 
-ARG IMG_SQLSERVERBASE
-FROM ${IMG_SQLSERVERBASE}
+ARG IMG_SQLSERVER2022BASE
+FROM ${IMG_SQLSERVER2022BASE}
 
 # https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#ProperUse
 

@@ -36,6 +36,15 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     Write-Host "Current Master Data Path: $($currentMasterPath)";
     Write-Host "Current Master Log Path: $($currentLogPath)";
 
+    # Check that current master exists. During DEV i found it common to clear the
+    # volume contents, but because docker insists in keeping container internal state
+    # it will be pointing to a non existing master database
+    if (-not (Test-Path $currentMasterPath) -or -not (Test-Path $currentLogPath)) {
+        Write-Host "Master data not found: $currentMasterPath";
+        Write-Host "Master log not found: $currentLogPath";
+        Write-Error "Currently configured MASTER database for the engine does not exist. If you deleted them reset the container state to reset to internal defaults.";
+    }
+
     # Update the registry to point to the new locations
     Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
     Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf"

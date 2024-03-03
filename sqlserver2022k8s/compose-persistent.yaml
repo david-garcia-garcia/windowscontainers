@@ -20,23 +20,20 @@ services:
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
       - "f:/databases/example/data:d:"
-      - "f:/databases/example/backup:e:"
-      - "f:/databases/example/control:c:/SQLControl"
-      - "c:/windows/temp:f:"
     networks:
       - container_default
     environment:
       - MSSQL_ADMIN_USERNAME=sa
       - MSSQL_ADMIN_PWD=sapwd
-      - MSSQL_DATABASE=mydatabase
-      - MSSQL_LIFECYCLE=ATTACH
+      - MSSQL_LIFECYCLE=PERSISTENT
       - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
       - MSSQL_SPCONFIGURERESTART=0
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
-      - MSSQL_PATH_BACKUP=e:\backup
-      - MSSQL_PATH_CONTROL=c:\SQLControl
-      - SBS_TEMPORARY=f:\
+      - MSSQL_PATH_BACKUP=d:\backup
+      - MSSQL_PATH_CONTROL=d:\control
+      - MSSQL_PATH_SYSTEM=d:\system
+      - SBS_TEMPORARY=d:\temp
       - SBS_ENTRYPOINTERRORACTION=Stop
 networks:
   container_default:
