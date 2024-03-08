@@ -193,12 +193,23 @@ if (Test-Path -Path $initScriptDirectory) {
             Write-Host "Executing init script asynchronously START: $($script.FullName)";
             # Start the script as a job
             $job = Start-Job -FilePath $script.FullName -Name $script.Name;
-            Wait-JobOrThrow -JobId $job.Id -Timeout 180;
+            Wait-JobOrThrow -JobId $job.Id -Timeout (SbsGetEnvInt 'SBS_ENTRYPOINTRYNASYNCTIMEOUT' 180);
             Write-Host "Executing init script asynchronously END: $($script.FullName)";
         }
         else {
             Write-Host "Executing init script synchronously START: $($script.FullName)";
-            & $script.FullName;
+            try {
+                & $script.FullName;
+            }
+            catch {
+                if ($global:ErrorActionPreference -match 'Continue') {
+                    Write-Host "An error was found";
+                    Write-Host $_;
+                }
+                else {
+                    throw $_;
+                }
+            }
             Write-Host "Executing init script synchronously END: $($script.FullName)";
         }
     }

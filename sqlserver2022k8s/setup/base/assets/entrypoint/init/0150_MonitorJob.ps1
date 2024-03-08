@@ -54,8 +54,7 @@ Start-Job -ScriptBlock {
                 # Join all the column-value pairs with a semicolon and a space
                 $message = $messageParts -join "; "
                 # Write the message to the Event Log
-                Write-EventLog -LogName 'Application' -Source 'MSSQL_MANAGEMENT' -EntryType Information -EventId 1 `
-                -Message $message;
+                Write-EventLog -LogName 'Application' -Source 'MSSQL_MANAGEMENT' -EntryType Information -EventId 1 -Message $message;
             }
         }
         Start-Sleep -Seconds 8;

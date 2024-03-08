@@ -223,3 +223,12 @@ Some services are disabled by default in the image. To start them up with the co
 SBS_SRVENSURE=newrelic-infra,service2,service3
 ```
 
+## Powershell Functions
+
+For convenience, if you place a Powershell function inside a script at:
+
+```powershell
+c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\MyExampleFunction.ps1
+```
+
+This will be available for you entry point scripts and inside the container. The function needs to be names exactly as the powershell file so that it can be automatically detected.

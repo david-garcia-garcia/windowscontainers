@@ -59,10 +59,11 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
     }
 }
 
-if ($false -eq $restored) {
+if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
     $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
-        throw "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them.";
+        Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them.";
+        return;
     }
 }
 
@@ -112,19 +113,20 @@ if (Test-Path $startupFile) {
                 'restore_full' {
                     Write-host "Initiating full backup restore";
                     # Download and import the backup certificate
-                    if ($null -ne $step.cert) {
+                    $certUrl = $step.cert;
+                    $backupUrl = $step.url;
+                    if ($null -ne $certUrl) {
                         $certPath = "C:\windows\temp\tempCert.zip";
-                        Invoke-WebRequest -Uri $step.cert -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
-                        c:\dbscripts\restoreCertificateFromZip 'localhost' $certPath;
+                        Invoke-WebRequest -Uri $certUrl -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
+                        SbsRestoreCertificateFromZip 'localhost' $certPath;
                         Write-Host "Certificate restored";
                     }
                     Write-Host "Initiating restore...";
                     # Rename and download
-                    $url = $step.url;
-                    $fileName = [System.IO.Path]::GetFileName($url -replace '\?.*$');
+                    $fileName = [System.IO.Path]::GetFileName($backupUrl -replace '\?.*$');
                     $localFilePath = Join-Path -Path $tempDir -ChildPath $fileName;
                     if (Test-Path $localFilePath) { Remove-Item $localFilePath }
-                    c:\dbscripts\downloadFile $url $localFilePath $localFilePath;
+                    c:\dbscripts\downloadFile $backupUrl $localFilePath $localFilePath;
                     # Grant permissions
                     icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
                     # Restore
@@ -132,7 +134,7 @@ if (Test-Path $startupFile) {
                     # Clean
                     Remove-Item -Path $localFilePath -Force;
                     $restored = $true;
-                    [System.Diagnostics.EventLog]::WriteEntry('MSSQL_MANAGEMENT', "Restored database from $url.", [System.Diagnostics.EventLogEntryType]::Information);
+                    [System.Diagnostics.EventLog]::WriteEntry('MSSQL_MANAGEMENT', "Restored database from $backupUrl.", [System.Diagnostics.EventLogEntryType]::Information);
                 }
                 default {
                     Write-Host "$($step.type) not supported.";
@@ -141,8 +143,7 @@ if (Test-Path $startupFile) {
         }
     }
 
-    c:\dbscripts\archiveFile $startupFile;
-
+    SbsArchiveFile $startupFile;
 }
 else {
     Write-Host "Startup file not found at path $startupFile, resuming regular lifecycle startup."

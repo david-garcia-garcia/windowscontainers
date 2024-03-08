@@ -79,3 +79,13 @@ steps:
     name: 'MyDatabase' # leavy empty to use ENV MSSQL_DATABASE
 ```
 
+## Benchmarks
+
+Some benchmarks on Azure for database restore from backup (backup stored in Azure Blob)
+
+| VM Type         | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments                      |
+| --------------- | --------------------------------------- | ---------------- | ------------ | -------- | ------- | ----------------------------- |
+| Standard_DS2_v2 | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   | Expected download time ~2min, |
+|                 |                                         |                  |              |          |         |                               |
+|                 |                                         |                  |              |          |         |                               |
+

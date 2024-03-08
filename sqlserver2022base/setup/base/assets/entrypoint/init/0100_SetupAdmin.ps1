@@ -33,8 +33,8 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     $currentMasterPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg0 -replace '-d', ''
     $currentLogPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg2 -replace '-l', ''
 
-    Write-Host "Current Master Data Path: $($currentMasterPath)";
-    Write-Host "Current Master Log Path: $($currentLogPath)";
+    Write-Host "Image default master Data Path: $($currentMasterPath)";
+    Write-Host "Image default master Log Path: $($currentLogPath)";
 
     # Check that current master exists. During DEV i found it common to clear the
     # volume contents, but because docker insists in keeping container internal state
@@ -57,7 +57,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
         Copy-Item -Path $currentLogPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf";
     }
     else {
-        Write-Host "System databases already found at override path, doing nothing.";
+        Write-Host "System databases already found at destionation path, skipping system database initialization.";
     }
 }
 

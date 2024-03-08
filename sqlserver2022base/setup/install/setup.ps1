@@ -51,4 +51,4 @@ Remove-Item -Path C:\SQLServerISO -Recurse -Force;
 
 # Install DBA tools
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-Install-Module dbatools;
+choco install dbatools -y;
