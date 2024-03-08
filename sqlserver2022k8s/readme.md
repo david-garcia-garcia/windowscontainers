@@ -83,9 +83,22 @@ steps:
 
 Some benchmarks on Azure for database restore from backup (backup stored in Azure Blob)
 
-| VM Type         | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments                      |
-| --------------- | --------------------------------------- | ---------------- | ------------ | -------- | ------- | ----------------------------- |
-| Standard_DS2_v2 | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   | Expected download time ~2min, |
-|                 |                                         |                  |              |          |         |                               |
-|                 |                                         |                  |              |          |         |                               |
+| VM Type         | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments                                                     |
+| --------------- | --------------------------------------- | ---------------- | ------------ | -------- | ------- | ------------------------------------------------------------ |
+| Standard_DS2_v2 | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   | Expected download time ~2min, cannot explain this poor speed except for disk IO. |
+| Standard_D4s_v3 | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 20min   | Expected download time ~2min, cannot explain this poor speed except for disk IO. |
+|                 |                                         |                  |              |          |         |                                                              |
+
+Speed test in container
+
+```powershell
+      Server: KEYYO - Paris (id: 27961)
+         ISP: Microsoft Azure
+Idle Latency:     1.92 ms   (jitter: 0.05ms, low: 1.85ms, high: 1.95ms)
+    Download:  3261.05 Mbps (data used: 5.7 GB)
+                  3.48 ms   (jitter: 1.38ms, low: 1.98ms, high: 12.42ms)
+      Upload:  1592.78 Mbps (data used: 1.4 GB)
+                 39.19 ms   (jitter: 21.54ms, low: 1.29ms, high: 63.08ms)
+ Packet Loss:     0.0%
+```
 

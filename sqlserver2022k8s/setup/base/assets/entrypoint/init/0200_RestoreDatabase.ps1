@@ -126,7 +126,7 @@ if (Test-Path $startupFile) {
                     $fileName = [System.IO.Path]::GetFileName($backupUrl -replace '\?.*$');
                     $localFilePath = Join-Path -Path $tempDir -ChildPath $fileName;
                     if (Test-Path $localFilePath) { Remove-Item $localFilePath }
-                    c:\dbscripts\downloadFile $backupUrl $localFilePath $localFilePath;
+                    SbsDownloadFile $backupUrl $localFilePath $localFilePath;
                     # Grant permissions
                     icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
                     # Restore
