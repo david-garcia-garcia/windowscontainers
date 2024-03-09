@@ -83,11 +83,11 @@ steps:
 
 Some benchmarks on Azure for database restore from backup (backup stored in Azure Blob)
 
-| VM Type         | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments                                                     |
-| --------------- | --------------------------------------- | ---------------- | ------------ | -------- | ------- | ------------------------------------------------------------ |
-| Standard_DS2_v2 | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   | Expected download time ~2min, cannot explain this poor speed except for disk IO. |
-| Standard_D4s_v3 | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 20min   | Expected download time ~2min, cannot explain this poor speed except for disk IO. |
-|                 |                                         |                  |              |          |         |                                                              |
+| VM Type                                    | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments |
+| ------------------------------------------ | --------------------------------------- | ---------------- | ------------ | -------- | ------- | -------- |
+| Standard_DS2_v2 (96Mib/s)                  | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   |          |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 21min   |          |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Disk P10 (100Mib/s)               | 11.27            | 70           | x        | 16min   |          |
 
 Speed test in container
 
