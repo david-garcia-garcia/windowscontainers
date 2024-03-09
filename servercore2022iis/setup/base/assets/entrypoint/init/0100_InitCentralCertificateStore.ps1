@@ -12,7 +12,7 @@ if (![string]::IsNullOrWhiteSpace($certStorePath)) {
     $password = [Convert]::FromBase64String($password);
     $password = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect($password, $null, 'LocalMachine'));
 
-    Write-Host "Initializing Central Certificate Store in Image";
+    SbsWriteHost "Initializing Central Certificate Store in Image";
     Invoke-IISChefSetupCcs -CertStoreLocation $certStorePath -PrivateKeyPassword $password;
 }
 

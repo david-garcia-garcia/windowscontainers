@@ -32,7 +32,7 @@ Set-Service UsoSvc -StartupType Disabled;
 
 # Instalar choco
 $testchoco = Get-Command -Name choco.exe -ErrorAction SilentlyContinue;
-if(-not($testchoco)){
+if (-not($testchoco)) {
   Write-Host "`n---------------------------------------"
   Write-Host " Installing choco"
   Write-Host "-----------------------------------------`n"
@@ -76,8 +76,8 @@ Write-Host "`n---------------------------------------"
 Write-Host " Creating log source: ContainerLifecycle"
 Write-Host "-----------------------------------------`n"
 
-New-EventLog -LogName Application -Source "ContainerLifecycle" -ErrorAction SilentlyContinue;
-Write-EventLog -LogName "Application" -Source "ContainerLifecycle" -EventID 9900 -EntryType Information -Message "Setup script executed.";
+New-EventLog -LogName Application -Source "SbsContainer" -ErrorAction SilentlyContinue;
+Write-EventLog -LogName "Application" -Source "SbsContainer" -EventID 9900 -EntryType Information -Message "Setup script executed.";
 
 Write-Host "`n---------------------------------------"
 Write-Host " Enable long path support"
@@ -108,7 +108,7 @@ auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
 ################################################
 
 $password = Add-Type -AssemblyName System.Web;
-$password = -join ((33..126) * 2 | Get-Random -Count 12 | % {[char]$_});
+$password = -join ((33..126) * 2 | Get-Random -Count 12 | % { [char]$_ });
 $securePassword = ConvertTo-SecureString $password -AsPlainText -Force;
 New-LocalUser -Name "localadmin" -Password $securePassword -PasswordNeverExpires;
 Add-LocalGroupMember -Group "Administrators" -Member "localadmin";

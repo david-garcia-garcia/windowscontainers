@@ -1,4 +1,4 @@
-function SbsWriteHost {
+function SbsWriteWarning {
     param (
         [Parameter(Mandatory = $true)]
         [string]$Message,
@@ -6,6 +6,6 @@ function SbsWriteHost {
         [string]$LogName = "Application"
     )
 
-    Write-Host $message;
-    Write-EventLog -LogName $LogName -Source $Source -EntryType Information -EventId 1 -Message $message;
+    Write-Warning $message;
+    Write-EventLog -LogName $LogName -Source $Source -EntryType Warning -EventId 1 -Message $message;
 }

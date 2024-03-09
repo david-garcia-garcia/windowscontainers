@@ -7,5 +7,5 @@ function SbsWriteError {
     )
 
     Write-Error $message;
-    Write-EventLog -LogName $LogName, -Source $Source -EntryType Error -EventId 1 -Message $message;
+    Write-EventLog -LogName $LogName -Source $Source -EntryType Error -EventId 1 -Message $message;
 }

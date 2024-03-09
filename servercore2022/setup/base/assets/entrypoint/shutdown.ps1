@@ -1,4 +1,4 @@
-Write-Host "Starting teardown.";
+SbsWriteHost "Starting teardown.";
 $shutdownScriptDirectory = "C:\entrypoint\shutdown";
 
 if (Test-Path -Path $shutdownScriptDirectory) {
@@ -6,22 +6,22 @@ if (Test-Path -Path $shutdownScriptDirectory) {
     $scripts = Get-ChildItem -Path $shutdownScriptDirectory -Filter *.ps1 | Sort-Object Name;
     # Iterate through each script and execute it
     foreach ($script in $scripts) {
-        Write-Host "Executing shutdown script: $($script.FullName)";
+        SbsWriteHost "Executing shutdown script: $($script.FullName)";
         try {
             & $script.FullName;
         }
         catch {
             $errorMessage = "Error executing script $($script.FullName): $($_.Exception.Message)";
-            Write-Host $errorMessage;
+            SbsWriteHost $errorMessage;
         }
     }
 }
 else {
-    Write-Host "Init directory does not exist: $shutdownScriptDirectory";
+    SbsWriteHost "Init directory does not exist: $shutdownScriptDirectory";
 }
 
-Write-Host "Closing side proceses...";
+SbsWriteHost "Closing side proceses...";
 
 # Al apagar un contenedor el entrypoint recibe un SIGTERM y entramos por aquí,
 # es es un contenedor de IIS así que el shutdown
-Write-Host "Entry point SHUTDOWN END";
+SbsWriteHost "Entry point SHUTDOWN END";

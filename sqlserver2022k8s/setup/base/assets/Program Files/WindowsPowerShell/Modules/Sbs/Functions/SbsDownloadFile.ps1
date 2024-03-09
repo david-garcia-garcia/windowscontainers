@@ -65,7 +65,7 @@ function SbsDownloadFile {
 
         if ($FileDownload.IsFaulted) {
             Write-Verbose "An error occurred. Generating error."
-            Write-Error $FileDownload.GetAwaiter().GetResult()
+            SbsWriteError $FileDownload.GetAwaiter().GetResult()
             break
         }
 
@@ -73,8 +73,8 @@ function SbsDownloadFile {
         while (!($FileDownload.IsCompleted)) {
 
             if ($FileDownload.IsFaulted) {
-                Write-Verbose "An error occurred. Generating error.";
-                Write-Error $FileDownload.GetAwaiter().GetResult();
+                SbsWriteHost "An error occurred. Generating error.";
+                SbsWriteError $FileDownload.GetAwaiter().GetResult();
                 break;
             }
 
@@ -85,8 +85,7 @@ function SbsDownloadFile {
             $TotalPercent = $EventData | Select-Object -ExpandProperty "ProgressPercentage"
 
             $message = "Downloading File ($($TotalPercent)%) Downloaded $(convertFileSize -bytes $ReceivedData) / $(convertFileSize -bytes $TotalToReceive)";
-            Write-Host $message;
-            Write-EventLog -LogName 'Application' -Source 'MSSQL_MANAGEMENT' -EntryType Information -EventId 1 -Message $message;
+            SbsWriteHost $message;
             Start-Sleep -Seconds 5;
         }
     }

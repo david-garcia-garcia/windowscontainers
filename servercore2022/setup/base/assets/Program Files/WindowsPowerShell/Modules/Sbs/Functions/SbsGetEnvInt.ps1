@@ -10,7 +10,7 @@ function SbsGetEnvInt {
     } elseif ([int]::TryParse($envValue, [ref]$result)) {
         return $result
     } else {
-        Write-Host "The environment variable value for '$name' is not a valid number. Using default value: $defaultValue"
+        SbsWriteHost "The environment variable value for '$name' is not a valid number. Using default value: $defaultValue"
         return $defaultValue
     }
 }

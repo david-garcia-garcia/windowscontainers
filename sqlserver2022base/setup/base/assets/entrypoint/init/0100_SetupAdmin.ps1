@@ -24,7 +24,7 @@ if ($null -ne $Env:MSSQL_PATH_BACKUP) {
 
 if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
-    Write-Host "System Path Override: $($Env:MSSQL_PATH_SYSTEM)";
+    SbsWriteHost "System Path Override: $($Env:MSSQL_PATH_SYSTEM)";
 
     # Create the directories if they don't exist
     New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM;
@@ -33,16 +33,16 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     $currentMasterPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg0 -replace '-d', ''
     $currentLogPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg2 -replace '-l', ''
 
-    Write-Host "Image default master Data Path: $($currentMasterPath)";
-    Write-Host "Image default master Log Path: $($currentLogPath)";
+    SbsWriteHost "Image default master Data Path: $($currentMasterPath)";
+    SbsWriteHost "Image default master Log Path: $($currentLogPath)";
 
     # Check that current master exists. During DEV i found it common to clear the
     # volume contents, but because docker insists in keeping container internal state
     # it will be pointing to a non existing master database
     if (-not (Test-Path $currentMasterPath) -or -not (Test-Path $currentLogPath)) {
-        Write-Host "Master data not found: $currentMasterPath";
-        Write-Host "Master log not found: $currentLogPath";
-        Write-Error "Currently configured MASTER database for the engine does not exist. If you deleted them reset the container state to reset to internal defaults.";
+        SbsWriteHost "Master data not found: $currentMasterPath";
+        SbsWriteHost "Master log not found: $currentLogPath";
+        SbsWriteError "Currently configured MASTER database for the engine does not exist. If you deleted them reset the container state to reset to internal defaults.";
     }
 
     # Update the registry to point to the new locations
@@ -51,20 +51,20 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
     # Check if the master database files exist in the new location
     if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf")) {
-        Write-Host "Moving existing system databases to new system path";
+        SbsWriteHost "Moving existing system databases to new system path";
         # Move the master database files to the new location if this is the first setup
         Copy-Item -Path $currentMasterPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\master.mdf";
         Copy-Item -Path $currentLogPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf";
     }
     else {
-        Write-Host "System databases already found at destionation path, skipping system database initialization.";
+        SbsWriteHost "System databases already found at destionation path, skipping system database initialization.";
     }
 }
 
 ###############################
 # START THE SERVER
 ###############################
-Write-Host "Starting MSSQLSERVER Service";
+SbsWriteHost "Starting MSSQLSERVER Service";
 Start-Service 'MSSQLSERVER';
 $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
@@ -85,7 +85,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
             continue;
         }
  
-        Write-Host "Processing system database $($db.Name)";
+        SbsWriteHost "Processing system database $($db.Name)";
 
         $newDataPath = "$($Env:MSSQL_PATH_SYSTEM)\$($db.Name)";
         $newLogPath = "$($Env:MSSQL_PATH_SYSTEM)\$($db.Name)";
@@ -116,7 +116,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
         Stop-Service 'MSSQLSERVER';
         foreach ($sourcePath in $filesToMove.Keys) {
             $destinationPath = $filesToMove[$sourcePath];
-            Write-Host "Moving $($sourcePath) to $($destinationPath)";
+            SbsWriteHost "Moving $($sourcePath) to $($destinationPath)";
             Move-Item -Path $sourcePath -Destination $destinationPath
         }
         Start-Service 'MSSQLSERVER';
@@ -134,9 +134,9 @@ if (-not (Test-Path $backupPath)) { New-Item -ItemType Directory -Path $backupPa
 if (-not (Test-Path $dataPath)) { New-Item -ItemType Directory -Path $dataPath; }
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath; }
 
-Write-Host "SQL Backup Path: $backupPath";
-Write-Host "SQL Data Path: $dataPath";
-Write-Host "SQL Log Path: $logPath";
+SbsWriteHost "SQL Backup Path: $backupPath";
+SbsWriteHost "SQL Data Path: $dataPath";
+SbsWriteHost "SQL Log Path: $logPath";
 
 ########################################
 # Set MAX DOP, default to 1

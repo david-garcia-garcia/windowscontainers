@@ -5,11 +5,6 @@
 
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
-# Check if the event source exists, if not, create it
-if (-not [System.Diagnostics.EventLog]::SourceExists('MSSQL_MANAGEMENT')) {
-    [System.Diagnostics.EventLog]::CreateEventSource('MSSQL_MANAGEMENT', 'Application');
-}
-
 $needsRestart = $false;
 
 Start-Service 'MSSQLSERVER';
@@ -47,7 +42,7 @@ foreach ($key in $finalSettings.Keys) {
     $newValue = $finalSettings[$key];
     if ($newValue -ne $currentValue) {
         Set-DbaSpConfigure -SqlInstance $sqlInstance -Name $key -Value $newValue;
-        Write-Host "SPCONFIGURE SET '$key' to '$newValue' from '$currentValue' with isDymamic '$isDynamic'";
+        SbsWriteHost "SPCONFIGURE SET '$key' to '$newValue' from '$currentValue' with isDymamic '$isDynamic'";
         if ($true -eq $isDynamic) {
             $needsRestart = $true;
         }
@@ -55,6 +50,6 @@ foreach ($key in $finalSettings.Keys) {
 }
 
 if (($true -eq $needsRestart) -or ($Env:MSSQL_SPCONFIGURERESTART -eq '1')) {
-    Write-Host "Server post config restart.";
+    SbsWriteHost "Server post config restart.";
     Restart-DbaService -ComputerName "localhost";
 }

@@ -21,7 +21,7 @@ function SbsRestoreCertificateFromZip {
         $fileName = [System.IO.Path]::GetFileName($urlWithoutQuery);
         $downloadedZipPath = Join-Path -Path $env:TEMP -ChildPath $fileName;
         Invoke-WebRequest -Uri $zipPath -OutFile $downloadedZipPath;
-        Write-Host "Downloaded certificate zip file to $downloadedZipPath";
+        SbsWriteHost "Downloaded certificate zip file to $downloadedZipPath";
         $zipPath = $downloadedZipPath;
     }
 
@@ -57,11 +57,11 @@ function SbsRestoreCertificateFromZip {
 
     $plainPwd = Get-Content $pwdPath | ConvertTo-SecureString -Key (Get-Content $pwdKeyPath);
 
-    Write-Host "plainPwd: $plainPwd";
-    Write-Host "sqlInstance: $sqlInstance";
-    Write-Host "certFile: $certFile";
-    Write-Host "keyFile: $keyFile";
-    Write-Host "zipFileName: $zipFileName";
+    SbsWriteHost "plainPwd: $plainPwd";
+    SbsWriteHost "sqlInstance: $sqlInstance";
+    SbsWriteHost "certFile: $certFile";
+    SbsWriteHost "keyFile: $keyFile";
+    SbsWriteHost "zipFileName: $zipFileName";
 
     Restore-DbaDbCertificate -SqlInstance $sqlInstance -Path $certFile -KeyFilePath $keyFile -DecryptionPassword $plainPwd -Name $zipFileName -Confirm:$false;
 

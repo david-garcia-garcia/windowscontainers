@@ -1,10 +1,13 @@
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
+Import-Module Sbs;
+
 #####################################
 # Delete Readyness Probe
 #####################################
 
 if (Test-Path("c:\ready")) {
+    SbsWriteHost "Deleting readyness probe.";
     Remove-Item -Path 'C:\ready' -Force;
 }
 
@@ -221,12 +224,16 @@ else {
 SbsWriteHost "Initialization Ready";
 New-Item -Path 'C:\\ready' -ItemType 'File' -Force;
 
+$lastCheck = (Get-Date).AddSeconds(-1);
+
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
-        Start-Sleep -Seconds 1;
+        SbsFilteredEventLog -After $lastCheck -LogNames $Env:SBS_MONITORLOGNAMES -Source $Env:SBS_MONITORSOURCE;
+        $lastCheck = Get-Date 
+        Start-Sleep -Seconds 2;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving

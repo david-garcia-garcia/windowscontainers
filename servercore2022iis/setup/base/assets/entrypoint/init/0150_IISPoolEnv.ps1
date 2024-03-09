@@ -9,7 +9,7 @@ $systemEnvVars = [System.Environment]::GetEnvironmentVariables("Machine");
 
 # Check if the environment variable is empty or null
 if ([string]::IsNullOrWhiteSpace($SBS_IISENV)) {
-    Write-Host "SBS_IISENV is empty or null. No action taken."
+    SbsWriteHost "SBS_IISENV is empty or null. No action taken."
 } else {
     # Parse the environment variable
     $pools = $SBS_IISENV -split "#"  # Split by '#' to get each pool definition
@@ -41,9 +41,9 @@ if ([string]::IsNullOrWhiteSpace($SBS_IISENV)) {
             if ($propagatedEnv -gt 0) {
                 # Invoke the cmdlet with the hashtable if there are any variables to propagate
                 Invoke-IISChefPoolEnvUpsert -Pool $matchingPool.Name -Env $envVars
-                Write-Host "Propagated $($envVars) environment variable(s) to pool $($matchingPool.Name)."
+                SbsWriteHost "Propagated $($envVars) environment variable(s) to pool $($matchingPool.Name)."
             } else {
-                Write-Host "No environment variables were propagated to pool $($matchingPool.Name)."
+                SbsWriteHost "No environment variables were propagated to pool $($matchingPool.Name)."
             }
         }
     }

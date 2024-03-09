@@ -18,11 +18,11 @@ Get-IISAppPool | Where-Object { $_.State -eq 'Stopped' } | ForEach-Object {
     $pool.startMode = 'AlwaysRunning';
     $pool | Set-Item;
     Start-WebAppPool -Name $poolName;
-    Write-Host "Started Application Pool $poolName";
+    SbsWriteHost "Started Application Pool $poolName";
 }
 
 # Start all IIS sites
 Get-Website | Start-Website;
 
 # Output a message indicating that sites and pools have been started
-Write-Host "All IIS sites and application pools have been started.";
+SbsWriteHost "All IIS sites and application pools have been started.";

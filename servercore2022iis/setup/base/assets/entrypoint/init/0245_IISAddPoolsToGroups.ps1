@@ -17,7 +17,7 @@ if (-not [string]::IsNullOrEmpty($SBS_ADDPOOLSTOGROUPS)) {
             if ($Group -match $sidPattern) {
                 $sid = New-Object System.Security.Principal.SecurityIdentifier $Group;
                 $groupName = $sid.Translate([System.Security.Principal.NTAccount]).Value;
-                Write-Host "SID $sid translated to $groupName";
+                SbsWriteHost "SID $sid translated to $groupName";
             } else {
                 # The group string does not match SID pattern, so assume it's already a group name
                 $groupName = $Group;
@@ -30,7 +30,7 @@ if (-not [string]::IsNullOrEmpty($SBS_ADDPOOLSTOGROUPS)) {
                 # If the group exists, add its name to the resolved groups array
                 $ResolvedGroups += $localGroup.Name
             } else {
-                Write-Host "Group or SID '$Group' with resolved name '$groupName' does not correspond to an existing group."
+                SbsWriteHost "Group or SID '$Group' with resolved name '$groupName' does not correspond to an existing group."
             }
     }
     
@@ -51,7 +51,7 @@ if (-not [string]::IsNullOrEmpty($SBS_ADDPOOLSTOGROUPS)) {
             # Built-in account, using the application pool's name in the format used by virtual accounts
             $accountToAdd = "IIS AppPool\$($AppPool.Name)";
         } else {
-            Write-Host "Skipping $($AppPool.Name): No custom user or built-in account to add.";
+            SbsWriteHost "Skipping $($AppPool.Name): No custom user or built-in account to add.";
             continue;
         }
 
@@ -62,12 +62,12 @@ if (-not [string]::IsNullOrEmpty($SBS_ADDPOOLSTOGROUPS)) {
             if (-not $isMember) {
                 try {
                     Add-LocalGroupMember -Group $group -Member $accountToAdd -ErrorAction Stop;
-                    Write-Host "Added $accountToAdd to group $group";
+                    SbsWriteHost "Added $accountToAdd to group $group";
                 } catch {
-                    Write-Host "Failed to add $accountToAdd to group $group. Error: $_";
+                    SbsWriteHost "Failed to add $accountToAdd to group $group. Error: $_";
                 }
             } else {
-                Write-Host "$accountToAdd is already a member of group $group";
+                SbsWriteHost "$accountToAdd is already a member of group $group";
             }
         }
     }

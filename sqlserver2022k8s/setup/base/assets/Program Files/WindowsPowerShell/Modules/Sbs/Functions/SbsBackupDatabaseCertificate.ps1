@@ -11,11 +11,11 @@ function SbsBackupDatabaseCertificate {
 	$certificateObj = Get-DbaDbCertificate -SqlInstance $instance -Certificate $certificate
 
 	if ($certificateObj -eq $null) {
-		Write-Host "No se ha encontrado el certificado $certificate en la instancia SQL."
+		SbsWriteHost "No se ha encontrado el certificado $certificate en la instancia SQL."
 		return
 	}
 
-	Write-Host "Respaldando certificado: $certificate"
+	SbsWriteHost "Respaldando certificado: $certificate"
 	$dte = Get-Date
 	$certBackupLocation = "${certificateDirectory}\${certificate}\"
 
