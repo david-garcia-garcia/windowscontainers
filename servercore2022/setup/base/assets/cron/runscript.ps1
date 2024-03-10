@@ -12,18 +12,15 @@ function Write-ErrorLog {
 		[System.Exception]$exception
 	)
 
-	$eventId = 23003
-	$entryType = [System.Diagnostics.EventLogEntryType]::Error
-
 	if ($exception -is [System.AggregateException]) {
 		$exception.Flatten().InnerExceptions | ForEach-Object {
-			$message = "Error running cron " + $baseName + ": " + $_.Message
-			Write-EventLog -LogName "Application" -Source "ContainerLifecycle" -EventID $eventId -EntryType $entryType -Message $message
+			$message = "Error running cron " + $baseName + ": " + $_.Message;
+			SbsWriteError $message;
 		}
 	}
- else {
-		$message = "Error running cron " + $baseName + ": " + $exception.Message
-		Write-EventLog -LogName "Application" -Source "ContainerLifecycle" -EventID $eventId -EntryType $entryType -Message $message
+	else {
+		$message = "Error running cron " + $baseName + ": " + $exception.Message;
+		SbsWriteError $message;
 	}
 }
 
@@ -39,12 +36,12 @@ Foreach-Object {
 		if ($LASTEXITCODE -ne 0) {
 			if ($Error.Count -gt 0) {
 				for ($x = 0; $x -lt $Error.Count; $x = $x + 1) {
-					Write-ErrorLog -baseName $baseName -exception $Error[$x].Exception
+					Write-ErrorLog -baseName $baseName -exception $Error[$x].Exception;
 				}
 			}
 			else {
-				$customException = New-Object System.Exception "An error ocurred with LASTEXITCODE=$($LASTEXITCODE), but the details could not be obtained."
-				Write-ErrorLog -baseName $baseName -exception $customException
+				$customException = New-Object System.Exception "An error ocurred with LASTEXITCODE=$($LASTEXITCODE), but the details could not be obtained.";
+				Write-ErrorLog -baseName $baseName -exception $customException;
 			}
 		}
 	}

@@ -7,8 +7,8 @@ $timezone = [Environment]::GetEnvironmentVariable("SBS_CONTAINERTIMEZONE")
 if (-not [string]::IsNullOrWhiteSpace($timezone)) {
     # Set the timezone
     Set-TimeZone -Id $timezone;
-    Write-Host "Timezone set to $timezone from SBS_CONTAINERTIMEZONE";
+    SbsWriteHost "Timezone set to $timezone from SBS_CONTAINERTIMEZONE";
 } else {
     $timeZone = Get-TimeZone;
-    Write-Host "System Timezone: ${$timeZone.Id}";
+    SbsWriteHost "System Timezone: ${$timeZone.Id}";
 }

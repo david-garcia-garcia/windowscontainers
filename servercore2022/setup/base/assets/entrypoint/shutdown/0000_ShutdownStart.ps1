@@ -1,1 +1,1 @@
-Write-Host "Shutdown start probe.";
+SbsWriteHost "Shutdown start probe.";

@@ -8,12 +8,19 @@ param (
 
 $global:ErrorActionPreference = 'Stop';
 
+function ThrowIfError() {
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Error.";
+    }
+}
+
 # Core Server
 Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
 
 if ($push) {
     docker push "$($Env:IMG_SERVERCORE2022)"
+    ThrowIfError
 }
 
 # IIS Base
@@ -22,6 +29,7 @@ docker compose -f servercore2022iis/compose.yaml build
 
 if ($push) { 
     docker push "$($Env:IMG_SERVERCORE2022IIS)" 
+    ThrowIfError
 }
 
 # IIS NET 48
@@ -30,6 +38,7 @@ docker compose -f servercore2022iisnet48/compose.yaml build
 
 if ($push) { 
     docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
+    ThrowIfError
 }
 
 # SQL Server Base
@@ -37,7 +46,8 @@ Write-Host "Building $($Env:IMG_SQLSERVER2022BASE)"
 docker compose -f sqlserver2022base/compose.yaml build
 
 if ($push) { 
-    docker push "$($Env:IMG_SQLSERVER2022BASE)" 
+    docker push "$($Env:IMG_SQLSERVER2022BASE)"
+    ThrowIfError
 }
 
 # SQL Server Analysis Services
@@ -46,6 +56,7 @@ docker compose -f sqlserver2022as/compose.yaml build
 
 if ($push) {
     docker push "$($Env:IMG_SQLSERVER2022AS)"
+    ThrowIfError
 }
 
 # SQL Server K8S
@@ -54,4 +65,5 @@ docker compose -f sqlserver2022k8s/compose.yaml build
 
 if ($push) {
     docker push "$($Env:IMG_SQLSERVER2022K8S)"
+    ThrowIfError
 }

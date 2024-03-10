@@ -35,7 +35,7 @@ $masterKeyExists = Get-DbaDbMasterKey -SqlInstance $sqlInstance -Database master
 if (-not $masterKeyExists) {
     $sqlScript = "CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$escapedPassword';";
     Invoke-DbaQuery -SqlInstance $sqlInstance -Database master -Query $sqlScript;
-    Write-Output "Created master key";
+    SbsWriteHost "Created master key";
 } else {
-    Write-Output "A master key already exists in the 'master' database.";
+    SbsWriteHost "A master key already exists in the 'master' database.";
 }

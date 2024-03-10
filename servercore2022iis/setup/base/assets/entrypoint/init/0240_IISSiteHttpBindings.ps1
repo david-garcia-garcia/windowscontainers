@@ -11,7 +11,7 @@ if (![string]::IsNullOrEmpty($SBS_IISBINDINGS)) {
         $siteName = $parts[0];
         
         if ($parts.Count -lt 2 -or [string]::IsNullOrEmpty($parts[1])) {
-            Write-Host "No bindings defined for site `"$siteName`". Skipping..."
+            SbsWriteHost "No bindings defined for site `"$siteName`". Skipping..."
             continue
         }
 
@@ -25,7 +25,7 @@ if (![string]::IsNullOrEmpty($SBS_IISBINDINGS)) {
             # Split the clean binding into protocol, port, and hostname
             $bindingParts = $binding -split '[:/]+';
             if ($bindingParts.Count -lt 3) {
-                Write-Host "Invalid binding format for `"$binding`" in site `"$siteName`". Expected format: protocol/port/hostname. Skipping..."
+                SbsWriteHost "Invalid binding format for `"$binding`" in site `"$siteName`". Expected format: protocol/port/hostname. Skipping..."
                 continue;
             }
 
@@ -34,7 +34,7 @@ if (![string]::IsNullOrEmpty($SBS_IISBINDINGS)) {
             $hostname = $bindingParts[2];
 
             $bindingInfo = "*:$($port):$hostname";
-            Write-Host "Binding info $bindingInfo"
+            SbsWriteHost "Binding info $bindingInfo"
             # Attempt to retrieve existing bindings that match the specified criteria
             $existingBindings = Get-WebBinding -Name $siteName | Where-Object {
                 $_.bindingInformation -eq $bindingInfo;
@@ -44,18 +44,18 @@ if (![string]::IsNullOrEmpty($SBS_IISBINDINGS)) {
             $bindingExists = $existingBindings.Count -gt 0;
 
             if ($removeBinding -and $bindingExists) {
-                Write-Host "Removing $protocol binding for '$hostname' on port $port from site '$siteName'"
+                SbsWriteHost "Removing $protocol binding for '$hostname' on port $port from site '$siteName'"
                 Remove-WebBinding -Name $siteName -Protocol $protocol -IPAddress "*" -Port $port -HostHeader $hostname
             }
             elseif ($removeBinding) {
-                Write-Host "Binding to remove `"$binding`" does not exist in site `"$siteName`"."
+                SbsWriteHost "Binding to remove `"$binding`" does not exist in site `"$siteName`"."
             }
             elseif (-not $removeBinding -and -not $bindingExists) {
-                Write-Host "Creating new $protocol binding for '$hostname' on port $port for site '$siteName'"
+                SbsWriteHost "Creating new $protocol binding for '$hostname' on port $port for site '$siteName'"
                 New-WebBinding -Name $siteName -Protocol $protocol -IPAddress "*" -Port $port -HostHeader $hostname
             }
             elseif (-not $removeBinding) {
-                Write-Host "$protocol binding for '$hostname' on port $port already exists on site '$siteName'"
+                SbsWriteHost "$protocol binding for '$hostname' on port $port already exists on site '$siteName'"
             }
         }
     }

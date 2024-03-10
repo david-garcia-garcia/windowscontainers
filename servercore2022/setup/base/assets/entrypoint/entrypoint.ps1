@@ -1,10 +1,13 @@
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
+Import-Module Sbs;
+
 #####################################
 # Delete Readyness Probe
 #####################################
 
 if (Test-Path("c:\ready")) {
+    SbsWriteHost "Deleting readyness probe.";
     Remove-Item -Path 'C:\ready' -Force;
 }
 
@@ -79,8 +82,7 @@ $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandl
 # Protect environment variables using DPAPI
 ##########################################################################
 $processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
-Add-Type -AssemblyName System.Security;
-Write-Host "Initiating ENV protection";
+SbsWriteHost "Initiating ENV protection";
 foreach ($key in $processEnvironmentVariables.Keys) {
     $variableName = $key.ToString()
     if ($variableName -match "^(.*)_PROTECT$") {
@@ -89,7 +91,7 @@ foreach ($key in $processEnvironmentVariables.Keys) {
         $protectedValue = [System.Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($originalValue), $null, 'LocalMachine'));
         [System.Environment]::SetEnvironmentVariable($originalVariableName, $protectedValue, [System.EnvironmentVariableTarget]::Process);
         Remove-Item -Path "Env:\$variableName";
-        Write-Host "Protected environment variable '$variableName' with DPAPI at the machine level and renamed to '$originalVariableName'";
+        SbsWriteHost "Protected environment variable '$variableName' with DPAPI at the machine level and renamed to '$originalVariableName'";
     }
 }
 
@@ -103,14 +105,14 @@ foreach ($key in $processEnvironmentVariables.Keys) {
 ##########################################################################
 $SBS_PROMOTE_ENV_REGEX = [System.Environment]::GetEnvironmentVariable("SBS_PROMOTE_ENV_REGEX");
 if (-not [string]::IsNullOrWhiteSpace($SBS_PROMOTE_ENV_REGEX)) {
-    Write-Host "Initiating ENV system promotion for variables that match '$SBS_PROMOTE_ENV_REGEX'";
+    SbsWriteHost "Initiating ENV system promotion for variables that match '$SBS_PROMOTE_ENV_REGEX'";
     $processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
     foreach ($key in $processEnvironmentVariables.Keys) {
         $variableName = $key.ToString();
         if ($variableName -match $SBS_PROMOTE_ENV_REGEX) {
             $variableValue = [System.Environment]::GetEnvironmentVariable($variableName, [System.EnvironmentVariableTarget]::Process);
             [System.Environment]::SetEnvironmentVariable($variableName, $variableValue, [System.EnvironmentVariableTarget]::Machine);
-            Write-Host "Promoted environment variable: $variableName";
+            SbsWriteHost "Promoted environment variable: $variableName";
         }
     }
 }
@@ -139,7 +141,7 @@ function Wait-JobOrThrow {
     $formattedElapsed = "{0:hh\:mm\:ss}" -f [timespan]::FromSeconds($elapsed.TotalSeconds);
 
     if ($job.State -eq "Running") {
-        Write-Host "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed with error in $formattedElapsed";
+        SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed with error in $formattedElapsed";
         $host.SetShouldExit(1);
         throw "Task $jobName did not complete within the specified timeout of $Timeout seconds!";
     }
@@ -149,13 +151,13 @@ function Wait-JobOrThrow {
 
     # Check if the state is 'Failed' or if there are error records in the results
     if ($job.State -eq 'Failed') {
-        Write-Host "[$(Get-Date -format 'HH:mm:ss')] Task $jobName encountered an error during execution in $formattedElapsed";
+        SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName encountered an error during execution in $formattedElapsed";
         # Throw the first error or adjust as needed
         $host.SetShouldExit(1);
         throw "Task $jobName failed";
     }
 
-    Write-Host "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed in state $endState with success in $formattedElapsed";
+    SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed in state $endState with success in $formattedElapsed";
 }
 
 ##########################################################################
@@ -168,9 +170,9 @@ if ([string]::IsNullOrWhiteSpace($SBS_ENTRYPOINTERRORACTION)) {
     $SBS_ENTRYPOINTERRORACTION = 'Stop';
 }
 $global:ErrorActionPreference = $SBS_ENTRYPOINTERRORACTION;
-Write-Host "Start Entry Point with error action preference $global:ErrorActionPreference";
+SbsWriteHost "Start Entry Point with error action preference $global:ErrorActionPreference";
 if ($global:ErrorActionPreference -ne 'Stop') {
-    Write-Warning "Entry point PS Error Action Preference is not set to STOP. This will effectively allow errors to go through. Use only for debugging purposes.";
+    SbsWriteHost "Entry point PS Error Action Preference is not set to STOP. This will effectively allow errors to go through. Use only for debugging purposes.";
 }
 
 ##########################################################################
@@ -190,60 +192,75 @@ if (Test-Path -Path $initScriptDirectory) {
             # quedaría eternamente bloqueado en el contenedor porque el entypoint lo bloquea).
             # En princpio esto no es malo, pero si para depurar o diagnosticar hay que actualizar
             # un módulo PS que está bloqueado, no podremos sin matar el contenedor.
-            Write-Host "Executing init script asynchronously START: $($script.FullName)";
+            SbsWriteHost "Executing init script asynchronously START: $($script.FullName)";
             # Start the script as a job
             $job = Start-Job -FilePath $script.FullName -Name $script.Name;
-            Wait-JobOrThrow -JobId $job.Id -Timeout 180;
-            Write-Host "Executing init script asynchronously END: $($script.FullName)";
+            Wait-JobOrThrow -JobId $job.Id -Timeout (SbsGetEnvInt 'SBS_ENTRYPOINTRYNASYNCTIMEOUT' 180);
+            SbsWriteHost "Executing init script asynchronously END: $($script.FullName)";
         }
         else {
-            Write-Host "Executing init script synchronously START: $($script.FullName)";
-            & $script.FullName;
-            Write-Host "Executing init script synchronously END: $($script.FullName)";
+            SbsWriteHost "Executing init script synchronously START: $($script.FullName)";
+            try {
+                & $script.FullName;
+            }
+            catch {
+                if ($global:ErrorActionPreference -match 'Continue') {
+                    SbsWriteHost "An error was found";
+                    SbsWriteHost $_;
+                }
+                else {
+                    throw $_;
+                }
+            }
+            SbsWriteHost "Executing init script synchronously END: $($script.FullName)";
         }
     }
 }
 else {
-    Write-Host "Init directory does not exist: $initScriptDirectory"
+    SbsWriteHost "Init directory does not exist: $initScriptDirectory"
 }
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
-Write-Host "Initialization Ready";
+SbsWriteHost "Initialization Ready";
 New-Item -Path 'C:\\ready' -ItemType 'File' -Force;
+
+$lastCheck = (Get-Date).AddSeconds(-1);
 
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
-        Start-Sleep -Seconds 1;
+        SbsFilteredEventLog -After $lastCheck -LogNames $Env:SBS_MONITORLOGNAMES -Source $Env:SBS_MONITORSOURCE;
+        $lastCheck = Get-Date 
+        Start-Sleep -Seconds 2;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving
     # Confirmed that multiple CTR+C in docker compose up will only trigger CTRL_SHUTDOWN_EVENT once.
     #while($true) {
-    #Write-Host "---------";
+    #SbsWriteHost "---------";
     #$signals = [ConsoleCtrlHandler]::GetSignals()
     #foreach ($key in $signals.Keys) {
     #    $value = $signals[$key]
     #    $formattedDate = $value.ToString("yyyy-MM-dd HH:mm:ss") # Customize the date format as needed
-    #    Write-Host "$key : $formattedDate"
+    #    SbsWriteHost "$key : $formattedDate"
     #}
     #Start-Sleep -Seconds 1 # Add a small delay to make the output more readable
     #}
 
     if ($Env:SBS_AUTOSHUTDOWN -ne '0') {
-        Write-Host "Shutdown start";
+        SbsWriteHost "Shutdown start";
         & c:\entrypoint\shutdown.ps1;
-        Write-Host "Shutdown end";
+        SbsWriteHost "Shutdown end";
     }
     else {
-        Write-Host "Integrated shutdown skipped.";
+        SbsWriteHost "Integrated shutdown skipped.";
     }
 }
 finally {
     # Allow the shutdown to proceed
-    Write-Host "Shutdown allowed set to true.";
+    SbsWriteHost "Shutdown allowed set to true.";
     [ConsoleCtrlHandler]::SetShutdownAllowed($true);
 }
 
@@ -269,14 +286,14 @@ if ($null -eq $SBS_SHUTDOWNCLOSEPROCESSES) {
     $SBS_SHUTDOWNCLOSEPROCESSES = 'cmd,powershell,pwsh';
 }
 
-Write-Output "Closing processes: $SBS_SHUTDOWNCLOSEPROCESSES";
+SbsWriteHost "Closing processes: $SBS_SHUTDOWNCLOSEPROCESSES";
 $processNames = $SBS_SHUTDOWNCLOSEPROCESSES -split ',' | ForEach-Object { $_.Trim() }
 $processes = Get-Process | Where-Object {
     $processName = $_.ProcessName;
     $processNames -icontains $processName;
 };
 
-$processes | ForEach-Object { Write-Output "Will close: $($_.ProcessName) (ID: $($_.Id))" };
+$processes | ForEach-Object { SbsWriteHost "Will close: $($_.ProcessName) (ID: $($_.Id))" };
 $processes | ForEach-Object { $_.Kill() }
 
 #####################################

@@ -18,9 +18,9 @@ if (![string]::IsNullOrEmpty($ssasUsers)) {
         # Attempt to create the user
         try {
             New-LocalUser -Name $username -Password $securePassword -AccountNeverExpires -PasswordNeverExpires
-            Write-Host "Successfully created user: $username"
+            SbsWriteHost "Successfully created user: $username"
         } catch {
-            Write-Host "Failed to create user: $username. Error: $_"
+            SbsWriteHost "Failed to create user: $username. Error: $_"
         }
     }
 }

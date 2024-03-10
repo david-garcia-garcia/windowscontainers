@@ -23,21 +23,21 @@ if (-not (Test-Path $dataPath)) { New-Item -ItemType Directory -Path $dataPath; 
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath; }
 if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir; }
 
-Write-Host "SQL Backup Path: $backupPath";
-Write-Host "SQL Data Path: $dataPath";
-Write-Host "SQL Log Path: $logPath";
+SbsWriteHost "SQL Backup Path: $backupPath";
+SbsWriteHost "SQL Data Path: $dataPath";
+SbsWriteHost "SQL Log Path: $logPath";
 
 $controlPath = $Env:MSSQL_PATH_CONTROL;
 $databaseName = $Env:MSSQL_DATABASE;
 
 if ($null -eq $tempDir) {
-    Write-Warning "No temporary directory set in ENV SBS_TEMPORARY, using default c:\windows\temp. Note that this will consume storage inside the container mount (MAX 20GB) and can become an issue with very large databases.";
+    SbsWriteWarning "No temporary directory set in ENV SBS_TEMPORARY, using default c:\windows\temp. Note that this will consume storage inside the container mount (MAX 20GB) and can become an issue with very large databases.";
     $tempDir = "c:\windows\temp";
 }
 
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 
-    Write-Host "Lifecycle attach mode starting up..."
+    SbsWriteHost "Lifecycle attach mode starting up..."
     $structurePath = Join-Path -Path $dataPath -ChildPath "structure.json";
 
     if (Test-Path $structurePath) {
@@ -48,21 +48,21 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
             $databaseName = $db.DatabaseName;
             $dataFiles = $db.Files | ForEach-Object { $_.PhysicalName };
             Mount-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName -File $dataFiles;
-            Write-EventLog -LogName 'Application' -Source 'MSSQL_MANAGEMENT' -EntryType Information -EventId 1 `
-                -Message "Successfully attached database '$databaseName'";
+            SbsWriteHost "Successfully attached database '$databaseName'";
         }
         
         $restored = $true
     }
     else {
-        Write-Host "Lifecycle attach mode did not find any databases to attach. Probably running a fresh installation."
+        SbsWriteHost "Lifecycle attach mode did not find any databases to attach. Probably running a fresh installation."
     }
 }
 
-if ($false -eq $restored) {
+if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
     $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
-        throw "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them.";
+        Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them.";
+        return;
     }
 }
 
@@ -77,7 +77,7 @@ $startupFile = Join-Path -Path $controlPath -ChildPath "startup.yaml";
 # Check if the startup file exists
 if (Test-Path $startupFile) {
 
-    Write-host "Initiating startup instructions...";
+    SbsWriteHost "Initiating startup instructions...";
 
     # Load the steps from the startup file
     $steps = (Get-Content $startupFile -Raw | ConvertFrom-Yaml).steps
@@ -110,21 +110,22 @@ if (Test-Path $startupFile) {
                     $restored = $true;
                 }
                 'restore_full' {
-                    Write-host "Initiating full backup restore";
+                    SbsWriteHost "Initiating full backup restore";
                     # Download and import the backup certificate
-                    if ($null -ne $step.cert) {
+                    $certUrl = $step.cert;
+                    $backupUrl = $step.url;
+                    if ($null -ne $certUrl) {
                         $certPath = "C:\windows\temp\tempCert.zip";
-                        Invoke-WebRequest -Uri $step.cert -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
-                        c:\dbscripts\restoreCertificateFromZip 'localhost' $certPath;
-                        Write-Host "Certificate restored";
+                        Invoke-WebRequest -Uri $certUrl -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
+                        SbsRestoreCertificateFromZip 'localhost' $certPath;
+                        SbsWriteHost "Certificate restored";
                     }
-                    Write-Host "Initiating restore...";
+                    SbsWriteHost "Initiating restore...";
                     # Rename and download
-                    $url = $step.url;
-                    $fileName = [System.IO.Path]::GetFileName($url -replace '\?.*$');
+                    $fileName = [System.IO.Path]::GetFileName($backupUrl -replace '\?.*$');
                     $localFilePath = Join-Path -Path $tempDir -ChildPath $fileName;
                     if (Test-Path $localFilePath) { Remove-Item $localFilePath }
-                    c:\dbscripts\downloadFile $url $localFilePath $localFilePath;
+                    SbsDownloadFile $backupUrl $localFilePath $localFilePath;
                     # Grant permissions
                     icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
                     # Restore
@@ -132,25 +133,24 @@ if (Test-Path $startupFile) {
                     # Clean
                     Remove-Item -Path $localFilePath -Force;
                     $restored = $true;
-                    [System.Diagnostics.EventLog]::WriteEntry('MSSQL_MANAGEMENT', "Restored database from $url.", [System.Diagnostics.EventLogEntryType]::Information);
+                    SbsWriteHost "Restored database from $backupUrl.";
                 }
                 default {
-                    Write-Host "$($step.type) not supported.";
+                    SbsWriteHost "$($step.type) not supported.";
                 }
             }
         }
     }
 
-    c:\dbscripts\archiveFile $startupFile;
-
+    SbsArchiveFile $startupFile;
 }
 else {
-    Write-Host "Startup file not found at path $startupFile, resuming regular lifecycle startup."
+    SbsWriteHost "Startup file not found at path $startupFile, resuming regular lifecycle startup."
 }
 
 # If nothing was restored try from a backup
 if ($restored -eq $false) {
-    Write-Host "Starting database restore...";
+    SbsWriteHost "Starting database restore...";
     $restoreResult = Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -Path $backupPath -WithReplace -UseDestinationDefaultDirectories -Verbose;
 
     # Output the restored database names

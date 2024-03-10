@@ -19,6 +19,9 @@ services:
       - SBS_CONTAINERTIMEZONE=Pacific Standard Time
       # Services that need enforced started
       - SBS_SRVENSURE=newrelic-infra
+      # Do not run in ASYNC boot mode
+      - SBS_ENTRYPOINTRYNASYNC=false
+      - SBS_ENTRYPOINTRYNASYNCTIMEOUT=180
       # Scheduled tasks that must be run once during startup
       - SBS_CRONRUNONBOOT=LogRotate
       # Error behaviour
@@ -27,6 +30,8 @@ services:
       - SBS_AUTOSHUTDOWN=1
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
+      - SBS_MONITORLOGNAMES=Application,System
+      - SBS_MONITORSOURCE=*
       # New relic license KEY
       - NEW_RELIC_LICENSE_KEY=badlicensekey
       # Other new relic stuff

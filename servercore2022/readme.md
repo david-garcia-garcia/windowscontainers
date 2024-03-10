@@ -30,6 +30,13 @@ CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 
 **WARNING**: Log monitor is an excellent tool for debugging while setting up your containers, but a terrible companion for production loads. The lack of configuration options, plus several bugs that interfere with the container shutdown when timeouts have been expanded make it a dangerous choice for production workloads. Find another way of moving your logging information out of the container.
 
+If you are not using LogMonitor and want to output Event Viewer data through the container entry point use
+
+```yaml
+SBS_MONITORLOGNAMES=Application,System # What logs to monitor
+SBS_MONITORSOURCE=* #Filter the source, empty for all sourceds
+```
+
 ## Environment variable promotion
 
 By default, all the environment variables you setup for a container will be process injected to the entrypoint or the shell. They are not (and should not) all be system wide environment variables. If you need some of these environment variables promoted to system, so they can be seen by any process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment configuration
@@ -223,3 +230,12 @@ Some services are disabled by default in the image. To start them up with the co
 SBS_SRVENSURE=newrelic-infra,service2,service3
 ```
 
+## Powershell Functions
+
+For convenience, if you place a Powershell function inside a script at:
+
+```powershell
+c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\MyExampleFunction.ps1
+```
+
+This will be available for you entry point scripts and inside the container. The function needs to be names exactly as the powershell file so that it can be automatically detected.

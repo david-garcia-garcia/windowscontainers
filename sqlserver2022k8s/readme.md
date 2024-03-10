@@ -13,6 +13,12 @@ Use MSSQL_SPCONFIGURE to run SPCONFIGURE on boot, if any of the changes requires
 MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
 ```
 
+## Backup and Maintenance
+
+The image comes with a well known backup solution already installed:
+
+[SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html)
+
 ## Master key
 
 A master key with a random password is automatically deployed on start. If this is a persistent setup and a master key already exists, none will be deployed.
@@ -77,5 +83,28 @@ steps:
   - type: 'restore_bacpac'
     url: 'https://urltomyfullbackup.bacpac'
     name: 'MyDatabase' # leavy empty to use ENV MSSQL_DATABASE
+```
+
+## Benchmarks
+
+Some benchmarks on Azure for database restore from backup (backup stored in Azure Blob)
+
+| VM Type                                    | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments |
+| ------------------------------------------ | --------------------------------------- | ---------------- | ------------ | -------- | ------- | -------- |
+| Standard_DS2_v2 (96Mib/s)                  | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   |          |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 21min   |          |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Disk P10 (100Mib/s)               | 11.27            | 70           | x        | 16min   |          |
+
+Speed test in container
+
+```powershell
+      Server: KEYYO - Paris (id: 27961)
+         ISP: Microsoft Azure
+Idle Latency:     1.92 ms   (jitter: 0.05ms, low: 1.85ms, high: 1.95ms)
+    Download:  3261.05 Mbps (data used: 5.7 GB)
+                  3.48 ms   (jitter: 1.38ms, low: 1.98ms, high: 12.42ms)
+      Upload:  1592.78 Mbps (data used: 1.4 GB)
+                 39.19 ms   (jitter: 21.54ms, low: 1.29ms, high: 63.08ms)
+ Packet Loss:     0.0%
 ```
 

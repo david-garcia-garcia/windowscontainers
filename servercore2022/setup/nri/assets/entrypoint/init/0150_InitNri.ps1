@@ -7,7 +7,7 @@ if (-not [string]::IsNullOrEmpty($NEW_RELIC_LICENSE_KEY)) {
     $yamlContent.license_key = $NEW_RELIC_LICENSE_KEY;
     $updatedYaml = $yamlContent | ConvertTo-Yaml;
     $updatedYaml | Set-Content -Path $yamlFilePath;
-    Write-Host "NEW_RELIC_LICENSE_KEY used to configure the new relic infrastructure service. The service is disabled by default. Use SBS_SRVENSURE to enable this service."
+    SbsWriteHost "NEW_RELIC_LICENSE_KEY used to configure the new relic infrastructure service. The service is disabled by default. Use SBS_SRVENSURE to enable this service."
 } else {
-    Write-Host "NEW_RELIC_LICENSE_KEY environment variable is not set or empty, infrastructrure agent not configured.";
+    SbsWriteHost "NEW_RELIC_LICENSE_KEY environment variable is not set or empty, infrastructrure agent not configured.";
 }
