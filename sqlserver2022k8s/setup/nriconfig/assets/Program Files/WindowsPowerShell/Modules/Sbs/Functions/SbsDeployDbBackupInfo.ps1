@@ -4,11 +4,6 @@ function SbsDeployDbBackupInfo {
         [string]$sqlInstance
     )
 
-    #########################################
-    # Configure a DatabaseBackupInfoTable that we
-    # can use from within NRI
-    #########################################
-
     $sqlDropProcedure = @"
 IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetDatabaseBackupInfo]') AND type in (N'P', N'PC'))
 DROP PROCEDURE dbo.GetDatabaseBackupInfo
