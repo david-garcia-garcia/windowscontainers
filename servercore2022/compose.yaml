@@ -31,7 +31,8 @@ services:
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
       - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORSOURCE=*
+      - SBS_MONITORLOGSOURCE=*
+      - SBS_MONITORLOGMINLEVEL=Warning
       # New relic license KEY
       - NEW_RELIC_LICENSE_KEY=badlicensekey
       # Other new relic stuff

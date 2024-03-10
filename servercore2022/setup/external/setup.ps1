@@ -106,10 +106,7 @@ auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
 ################################################
 # Create local admin
 ################################################
-
-$password = Add-Type -AssemblyName System.Web;
-$password = -join ((33..126) * 2 | Get-Random -Count 12 | % { [char]$_ });
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force;
+$securePassword = ConvertTo-SecureString (SbsRandomPassword 20) -AsPlainText -Force;
 New-LocalUser -Name "localadmin" -Password $securePassword -PasswordNeverExpires;
 Add-LocalGroupMember -Group "Administrators" -Member "localadmin";
 
