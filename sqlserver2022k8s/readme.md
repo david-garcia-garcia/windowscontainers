@@ -13,6 +13,12 @@ Use MSSQL_SPCONFIGURE to run SPCONFIGURE on boot, if any of the changes requires
 MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
 ```
 
+## Backup and Maintenance
+
+The image comes with a well known backup solution already installed:
+
+[SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html)
+
 ## Master key
 
 A master key with a random password is automatically deployed on start. If this is a persistent setup and a master key already exists, none will be deployed.
