@@ -1,0 +1,74 @@
+queries:
+  - query: >-
+      WITH CTE_useByDb AS (
+        SELECT
+          b.[Database] as db_Database,
+          CONVERT(varchar(5), CAST(b.CPUTime AS decimal(5, 1))) AS useByDb_CPUTime,
+          CONVERT(varchar(5), CAST(b.LapsedTimeAsMs AS decimal(5, 1))) AS useByDb_LapsedTimeAsMs,
+          CONVERT(varchar(5), CAST(b.Reads AS decimal(5, 1))) AS useByDb_Reads
+        FROM (
+          SELECT  
+            [Database] 
+            ,(([CPUTimeAsMS] * 1.0) / ((SUM(CPUTimeAsMS) OVER()) + 1) * 100.0) AS CPUTime
+            ,(LapsedTimeAsMs * 1.0 / ((SUM(LapsedTimeAsMs) OVER()) + 1) * 100.0) AS LapsedTimeAsMs
+            ,(Reads * 1.0 / ((SUM(Reads) OVER()) + 1) * 100.0) AS Reads
+          FROM
+          (SELECT 
+            dmpa.DatabaseID
+            , DB_Name(dmpa.DatabaseID) AS [Database]
+            , SUM(dmqs.total_worker_time) AS CPUTimeAsMS
+            , SUM(dmqs.total_elapsed_time) AS LapsedTimeAsMs
+            , SUM(dmqs.total_physical_reads) AS Reads
+          FROM sys.dm_exec_query_stats dmqs WITH (NOLOCK)
+          CROSS APPLY 
+          (SELECT 
+            CONVERT(INT, value) AS [DatabaseID] 
+          FROM sys.dm_exec_plan_attributes(dmqs.plan_handle)
+          WHERE attribute = N'dbid') dmpa
+          where dmqs.last_execution_time > DATEADD(SECOND, -30, GETDATE())
+          GROUP BY dmpa.DatabaseID) AS a) AS b
+        WHERE b.[Database] is not null AND  (b.CPUTime > 0.1 or b.LapsedTimeAsMs > 0.1 or b.Reads > 0.1)
+      ),
+      CTE_sizeByDb AS (
+        SELECT 
+          [db_Database] = DB_NAME(database_id)
+        , sizeByDb_log_size_mb = CAST(CAST(SUM(CASE WHEN type_desc = 'LOG' THEN size END) * 8. / 1024 AS DECIMAL(8,0)) AS NVARCHAR)
+        , sizeByDb_row_size_mb = CAST(CAST(SUM(CASE WHEN type_desc = 'ROWS' THEN size END) * 8. / 1024 AS DECIMAL(8,0)) AS NVARCHAR)
+        , sizeByDb_total_size_mb = CAST(CAST(SUM(size) * 8. / 1024 AS DECIMAL(8,0)) AS NVARCHAR)
+        FROM sys.master_files WITH(NOWAIT)
+        GROUP BY database_id
+      ),
+      CTE_dbConnections AS (
+        SELECT 
+          ISNULL(DB_NAME(dbid), dbid) as db_Database, 
+          COUNT(dbid) as dbConnections_connections
+        FROM
+          sys.sysprocesses
+        WHERE 
+          dbid > 0
+        GROUP BY 
+          dbid
+      ),
+      CTE_RecoveryModel AS (
+        SELECT 
+         [name] AS db_Database,
+        recovery_model_desc AS RecoveryModel
+        FROM sys.databases
+      )
+      SELECT
+        u.db_Database,
+        u.useByDb_CPUTime,
+        u.useByDb_LapsedTimeAsMs,
+        u.useByDb_Reads,
+        s.sizeByDb_log_size_mb,
+        s.sizeByDb_row_size_mb,
+        s.sizeByDb_total_size_mb,
+        c.dbConnections_connections,
+        r.RecoveryModel
+      FROM CTE_useByDb u
+      LEFT JOIN CTE_sizeByDb s ON u.db_Database = s.db_Database
+      LEFT JOIN CTE_dbConnections c ON u.db_Database = c.db_Database
+      LEFT JOIN CTE_RecoveryModel r ON u.db_Database = r.db_Database
+      ORDER BY u.useByDb_CPUTime DESC;
+  - query: >-
+      SELECT * FROM [master].[dbo].[SbsDatabaseBackupInfo]

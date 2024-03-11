@@ -407,7 +407,7 @@ enable_process_metrics: false
 #            to disable it. Minimum value is 10.
 # Default  : 10
 #
-metrics_network_sample_rate: 20
+metrics_network_sample_rate: -1
 #
 
 #
@@ -427,7 +427,7 @@ metrics_network_sample_rate: 20
 #            to disable it. Minimum value is 5.
 # Default  : 20
 #
-metrics_storage_sample_rate: 40
+metrics_storage_sample_rate: -1
 #
 
 #
@@ -437,7 +437,7 @@ metrics_storage_sample_rate: 40
 #            to disable it. Minimum value is 5.
 # Default  : 5
 #
-metrics_system_sample_rate: 15
+metrics_system_sample_rate: -1
 #
 
 #

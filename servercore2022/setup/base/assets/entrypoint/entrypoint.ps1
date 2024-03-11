@@ -231,7 +231,7 @@ try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
-        SbsFilteredEventLog -After $lastCheck -LogNames $Env:SBS_MONITORLOGNAMES -Source $Env:SBS_MONITORSOURCE;
+        SbsFilteredEventLog -After $lastCheck -LogNames $Env:SBS_MONITORLOGNAMES -Source $Env:SBS_MONITORLOGSOURCE -MinLevel $Env:SBS_MONITORLOGMINLEVEL;
         $lastCheck = Get-Date 
         Start-Sleep -Seconds 2;
     }

@@ -103,18 +103,6 @@ Write-Host "-----------------------------------------`n"
 $LogonSubcategoryGUID = "{0CCE9226-69AE-11D9-BED3-505054503030}"
 auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
 
-################################################
-# Create local admin
-################################################
-
-$password = Add-Type -AssemblyName System.Web;
-$password = -join ((33..126) * 2 | Get-Random -Count 12 | % { [char]$_ });
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force;
-New-LocalUser -Name "localadmin" -Password $securePassword -PasswordNeverExpires;
-Add-LocalGroupMember -Group "Administrators" -Member "localadmin";
-
-Write-Host "Created localadmin user";
-
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;
