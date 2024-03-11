@@ -112,17 +112,18 @@ CREATE TABLE SbsDatabaseBackupInfo
 USE msdb;
 GO
 
-IF EXISTS (SELECT * FROM sysjobs WHERE name = 'RefreshSbsDatabaseBackupInfo')
-EXEC dbo.sp_delete_job @job_name=N'RefreshSbsDatabaseBackupInfo';
+IF EXISTS (SELECT * FROM msdb.dbo.sysjobs WHERE name = 'RefreshSbsDatabaseBackupInfo')
+EXEC msdb.dbo.sp_delete_job @job_name=N'RefreshSbsDatabaseBackupInfo';
 GO
 
-EXEC dbo.sp_add_job
+EXEC msdb.dbo.sp_add_job
     @job_name=N'RefreshSbsDatabaseBackupInfo',
     @enabled=1,
-    @description=N'Refresh the contents of the SbsDatabaseBackupInfo table every 5 minute';
+    @description=N'Refresh the contents of the SbsDatabaseBackupInfo table every 5 minute',
+    @owner_login_name=N'sa';
 GO
 
-EXEC dbo.sp_add_jobstep
+EXEC msdb.dbo.sp_add_jobstep
     @job_name=N'RefreshSbsDatabaseBackupInfo',
     @step_name=N'RefreshTableContents',
     @subsystem=N'TSQL',
@@ -135,7 +136,7 @@ GO
 
 IF NOT EXISTS (SELECT 1 FROM msdb.dbo.sysschedules WHERE name = N'RefreshEvery5Minute')
 BEGIN
-    EXEC dbo.sp_add_schedule
+    EXEC msdb.dbo.sp_add_schedule
         @schedule_name=N'RefreshEvery5Minute',
         @freq_type=4,
         @freq_interval=1,
@@ -146,12 +147,12 @@ BEGIN
 END
 GO
 
-EXEC dbo.sp_attach_schedule
+EXEC msdb.dbo.sp_attach_schedule
     @job_name=N'RefreshSbsDatabaseBackupInfo',
     @schedule_name=N'RefreshEvery5Minute';
 GO
 
-EXEC dbo.sp_add_jobserver
+EXEC msdb.dbo.sp_add_jobserver
     @job_name=N'RefreshSbsDatabaseBackupInfo',
     @server_name = N'(local)';
 GO
@@ -169,11 +170,15 @@ GO
             if ([string]::IsNullOrWhiteSpace($sqlBatch)) { continue }
             # Use Invoke-DbaQuery to execute each SQL batch. This cmdlet manages the connection for you.
             try {
-                Invoke-DbaQuery -SqlInstance $sqlServerInstance -Database $databaseName -Query $sqlBatch -ErrorAction Stop
+                # Write-Warning "Running query $sqlCommand"
+                # Write-Host "---------------------------------------------------"
+                # Write-Host "---------------------------------------------------"
+                # Write-Host "---------------------------------------------------"
+                Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query $sqlBatch -ErrorAction Stop
             }
             catch {
-                Write-Host "Error executing SQL command: $sqlBatch"
-                Write-Host $_.Exception.Message
+                Write-Error "Error executing SQL command: $sqlBatch"
+                Write-Error $_.Exception.Message
             }
         }
     }

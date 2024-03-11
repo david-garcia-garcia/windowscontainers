@@ -71,4 +71,4 @@ queries:
       LEFT JOIN CTE_RecoveryModel r ON u.db_Database = r.db_Database
       ORDER BY u.useByDb_CPUTime DESC;
   - query: >-
-      SELECT * FROM [master].[dbo].[SabentisDatabaseBackupInfo]
+      SELECT * FROM [master].[dbo].[SbsDatabaseBackupInfo]

@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  mssql:
+  mssql2:
     stop_grace_period: 60s
     deploy:
       resources:
@@ -36,8 +36,13 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
+      - SBS_SRVENSURE=SQLSERVERAGENT;newrelic-infra
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_MONITORLOGSOURCE=*
+      - SBS_MONITORLOGMINLEVEL=Warning
+      - SBS_CRONRUNONBOOT=DeployMssqlNri
+      - NEW_RELIC_LICENSE_KEY=
 networks:
   container_default:
     external: true
