@@ -20,6 +20,7 @@ BEGIN
         db_Database NVARCHAR(128),
         backupByDb_sinceFull NVARCHAR(50),
         backupByDb_sinceDiff NVARCHAR(50),
+        backupByDb_sinceLog NVARCHAR(50),
         backupByDb_modPages NVARCHAR(50),
         backupByDb_modified NVARCHAR(50),
         hours_since_last_backup NVARCHAR(50),
@@ -33,6 +34,7 @@ BEGIN
             @DynamicSQL NVARCHAR(MAX),
             @sinceFull NVARCHAR(50),
             @sinceDiff NVARCHAR(50),
+            @sinceLog NVARCHAR(50),
             @modPages NVARCHAR(50),
             @modified NVARCHAR(50),
             @hours_since_last_backup NVARCHAR(50),
@@ -63,6 +65,7 @@ BEGIN
 SELECT 
     @sinceFull = CAST(DATEDIFF(minute, MAX(CASE WHEN [type] = ''D'' THEN backup_finish_date END), GETDATE()) / 60 AS INT),
     @sinceDiff = CAST(DATEDIFF(minute, MAX(CASE WHEN [type] = ''I'' THEN backup_finish_date END), GETDATE()) / 60 AS INT),
+    @sinceLog = CAST(DATEDIFF(minute, MAX(CASE WHEN [type] = ''L'' THEN backup_finish_date END), GETDATE()) / 60 AS INT),
     @modPages = CAST(@modified_extent_page_count AS NVARCHAR),
     @modified = FORMAT(100.0 * @modified_extent_page_count / @allocated_extent_page_count, ''N2''),
     @hours_since_last_backup = CAST(DATEDIFF(hour, MAX(backup_finish_date), GETDATE()) AS INT),
@@ -74,10 +77,10 @@ FROM msdb.dbo.backupset
 WHERE database_name = ' + QUOTENAME(@DatabaseName, N'''') + N';
         ';
 
-        EXEC sp_executesql @DynamicSQL, N'@sinceFull NVARCHAR(50) OUTPUT, @sinceDiff NVARCHAR(50) OUTPUT, @modPages NVARCHAR(50) OUTPUT, @modified NVARCHAR(50) OUTPUT, @hours_since_last_backup NVARCHAR(50) OUTPUT, @recovery_model NVARCHAR(50) OUTPUT, @last_full_backup_size_MB NVARCHAR(50) OUTPUT, @last_diff_backup_size_MB NVARCHAR(50) OUTPUT, @total_db_size_MB NVARCHAR(50) OUTPUT', @sinceFull OUTPUT, @sinceDiff OUTPUT, @modPages OUTPUT, @modified OUTPUT, @hours_since_last_backup OUTPUT, @recovery_model OUTPUT, @last_full_backup_size_MB OUTPUT, @last_diff_backup_size_MB OUTPUT, @total_db_size_MB OUTPUT;
+        EXEC sp_executesql @DynamicSQL, N'@sinceFull NVARCHAR(50) OUTPUT, @sinceDiff NVARCHAR(50) OUTPUT, @sinceLog NVARCHAR(50) OUTPUT, @modPages NVARCHAR(50) OUTPUT, @modified NVARCHAR(50) OUTPUT, @hours_since_last_backup NVARCHAR(50) OUTPUT, @recovery_model NVARCHAR(50) OUTPUT, @last_full_backup_size_MB NVARCHAR(50) OUTPUT, @last_diff_backup_size_MB NVARCHAR(50) OUTPUT, @total_db_size_MB NVARCHAR(50) OUTPUT', @sinceFull OUTPUT, @sinceDiff OUTPUT, @modPages OUTPUT, @modified OUTPUT, @hours_since_last_backup OUTPUT, @recovery_model OUTPUT, @last_full_backup_size_MB OUTPUT, @last_diff_backup_size_MB OUTPUT, @total_db_size_MB OUTPUT;
 
-        INSERT INTO @DatabaseInfo (db_Database, backupByDb_sinceFull, backupByDb_sinceDiff, backupByDb_modPages, backupByDb_modified, hours_since_last_backup, recovery_model, last_full_backup_size_MB, last_diff_backup_size_MB, total_db_size_MB)
-        VALUES (@DatabaseName, @sinceFull, @sinceDiff, @modPages, @modified, @hours_since_last_backup, @recovery_model, @last_full_backup_size_MB, @last_diff_backup_size_MB, @total_db_size_MB);
+        INSERT INTO @DatabaseInfo (db_Database, backupByDb_sinceFull, backupByDb_sinceDiff, backupByDb_sinceLog, backupByDb_modPages, backupByDb_modified, hours_since_last_backup, recovery_model, last_full_backup_size_MB, last_diff_backup_size_MB, total_db_size_MB)
+        VALUES (@DatabaseName, @sinceFull, @sinceDiff, @sinceLog, @modPages, @modified, @hours_since_last_backup, @recovery_model, @last_full_backup_size_MB, @last_diff_backup_size_MB, @total_db_size_MB);
 
         FETCH NEXT FROM DatabaseCursor INTO @DatabaseName;
     END
@@ -98,6 +101,7 @@ CREATE TABLE SbsDatabaseBackupInfo
         db_Database NVARCHAR(128),
         backupByDb_sinceFull NVARCHAR(50),
         backupByDb_sinceDiff NVARCHAR(50),
+        backupByDb_sinceLog NVARCHAR(50),
         backupByDb_modPages NVARCHAR(50),
         backupByDb_modified NVARCHAR(50),
         hours_since_last_backup NVARCHAR(50),
@@ -170,10 +174,6 @@ GO
             if ([string]::IsNullOrWhiteSpace($sqlBatch)) { continue }
             # Use Invoke-DbaQuery to execute each SQL batch. This cmdlet manages the connection for you.
             try {
-                # Write-Warning "Running query $sqlCommand"
-                # Write-Host "---------------------------------------------------"
-                # Write-Host "---------------------------------------------------"
-                # Write-Host "---------------------------------------------------"
                 Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query $sqlBatch -ErrorAction Stop
             }
             catch {
