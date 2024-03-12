@@ -12,7 +12,7 @@ $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
 # Define default settings
 $defaultSettings = @{
-    "max degree of parallelism"  = 2
+    "max degree of parallelism"  = 1
     "backup compression default" = 1
 }
 

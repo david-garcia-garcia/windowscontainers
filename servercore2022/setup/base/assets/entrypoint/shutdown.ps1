@@ -20,8 +20,6 @@ else {
     SbsWriteHost "Init directory does not exist: $shutdownScriptDirectory";
 }
 
-SbsWriteHost "Closing side proceses...";
-
 # Al apagar un contenedor el entrypoint recibe un SIGTERM y entramos por aquí,
 # es es un contenedor de IIS así que el shutdown
 SbsWriteHost "Entry point SHUTDOWN END";

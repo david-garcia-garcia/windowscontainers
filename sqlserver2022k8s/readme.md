@@ -27,7 +27,56 @@ A master key with a random password is automatically deployed on start. If this 
 
 There is nothing more frustrating when automating database lifecycles than having zero visibility on the state of restores and backups.
 
-To deal with that, a background job is deployed on startup that logs to the Event Viewer (LogName=Application and Source=MSSQL_MANAGEMENT) every 8 seconds the current state of any backup or restore operation, including information about completed percentage.
+To deal with that, a background job is deployed on startup that logs to the Event Viewer every 8 seconds the current state of any backup or restore operation, including information about completed percentage.
+
+![image-20240312091447783](readme_assets/image-20240312091447783.png)
+
+## Monitoring 
+
+### Setup
+
+Monitoring configuration is setup and periodically refreshed through a scheduled task "DeployMssqlNri".
+
+This task:
+
+* Deploys the backup summary table and populating job using SbsDeployDbBackupInfo
+
+* Setups the newrelic identity in the SQL engine using SbsAddNriMonitor
+* Configure the newrelic authentication (mssql-config.yml)
+
+To run this immediately after booting use the env configuration:
+
+```yaml
+SBS_CRONRUNONBOOT=DeployMssqlNri
+```
+
+### Backup State for databases
+
+The image has a Job "RefreshSbsDatabaseBackupInfo" and a table in Master "SbsDatabaseBackupInfo". This job populates the table with summarized backup information for all databases in the SQL engine that you can use to monitor database backup status.
+
+![image-20240312090653947](readme_assets/image-20240312090653947.png)
+
+The new relic MSSQL integration in the image is already configured to push this information to New Relic (see mssql-custom-query.yml) so you can build integrated monitoring panels for MSSQL in New Relic
+
+![image-20240312091029724](readme_assets/image-20240312091029724.png)
+
+Special mention to the backupByDb_modified column, that shows the amount of pages modified since last full backup. This is important if you are using differential to full promotion during backups according to % percentage.
+
+You can now use this information to create a faceted new relic alert that warns you when backups are not working, i.e.
+
+```sql
+SELECT max(backupByDb_sinceFull) as 'H since Full' FROM MssqlCustomQuerySample where backupByDb_sinceFull is not null FACET db_Database as Database
+```
+
+## SQL Server Agent
+
+The SQL Server Agent is installed and configured, but **disabled** by default.
+
+To enable the agent add the service name to the list of start on boot services in ENV:
+
+```yaml
+SBS_SRVENSURE=SQLSERVERAGENT
+```
 
 ## Lifecycle
 
@@ -89,11 +138,20 @@ steps:
 
 Some benchmarks on Azure for database restore from backup (backup stored in Azure Blob)
 
-| VM Type                                    | Storage Type                            | Backup Size (GB) | DB Size (GB) | Download | Restore | Comments |
-| ------------------------------------------ | --------------------------------------- | ---------------- | ------------ | -------- | ------- | -------- |
-| Standard_DS2_v2 (96Mib/s)                  | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 24min   |          |
-| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min    | 21min   |          |
-| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Disk P10 (100Mib/s)               | 11.27            | 70           | x        | 16min   |          |
+**Backup restore**
+
+| VM Type                                    | Mounted Storage Type                    | Backup Size (GB) | DB Size (GB) | Download                   | Restore        |
+| ------------------------------------------ | --------------------------------------- | ---------------- | ------------ | -------------------------- | -------------- |
+| Standard_DS2_v2 (96Mib/s)                  | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min                      | 24min (48Mb/s) |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Premium Files (100Gib - 110Mib/s) | 11.27            | 70           | 50min                      | 21min (55Mb/s) |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Disk P10 (100Mib/s)               | 11.27            | 70           | x                          | 16min (73Mb/s) |
+| Standard_D2s_v3 (48Mib/s)                  | Azure Disk P10 (100Mib/s)               | 11.27            | 70           | Restore directly from Blob | 24min (48Mb/s) |
+
+**Backup generate**
+
+| VM Type                   | Mounted Storage Type      | Backup Size (GB) | DB Size (GB) | Backup to mapped storage | Backup To URL |
+| ------------------------- | ------------------------- | ---------------- | ------------ | ------------------------ | ------------- |
+| Standard_D2s_v3 (48Mib/s) | Azure Disk P10 (100Mib/s) | 11.27            | 70           | 16 min                   | 14 min        |
 
 Speed test in container
 

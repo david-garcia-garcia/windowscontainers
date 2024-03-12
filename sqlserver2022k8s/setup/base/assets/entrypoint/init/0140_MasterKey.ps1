@@ -19,3 +19,9 @@ if (-not $masterKeyExists) {
 } else {
     SbsWriteHost "A master key already exists in the 'master' database.";
 }
+
+# Wether the master key exists or not, we need to force regenerate the key service
+# so the windows registry gets updated
+# https://stackoverflow.com/questions/26637592/an-error-occurred-during-service-master-key-decryption-when-trying-to-create-s
+# The master key was never here as part of the image preparation process (which makes sense)
+Invoke-DbaQuery -SqlInstance $sqlInstance -Database master -Query "ALTER SERVICE MASTER KEY FORCE REGENERATE";
