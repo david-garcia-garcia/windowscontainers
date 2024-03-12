@@ -149,9 +149,10 @@ Some benchmarks on Azure for database restore from backup (backup stored in Azur
 
 **Backup generate**
 
-| VM Type                   | Mounted Storage Type      | Backup Size (GB) | DB Size (GB) | Backup to mapped storage | Backup To URL |
-| ------------------------- | ------------------------- | ---------------- | ------------ | ------------------------ | ------------- |
-| Standard_D2s_v3 (48Mib/s) | Azure Disk P10 (100Mib/s) | 11.27            | 70           | 16 min                   | 14 min        |
+| VM Type                                    | Mounted Storage Type      | Backup Size (GB) | DB Size (GB) | Backup to mapped storage | Backup To URL |
+| ------------------------------------------ | ------------------------- | ---------------- | ------------ | ------------------------ | ------------- |
+| Standard_D2s_v3 (48Mib/s)                  | Azure Disk P10 (100Mib/s) | 11.27            | 70           | 16 min                   | 14min         |
+| Standard_D4s_v3 (96Mib/s with 30min burst) | Azure Disk P10 (100Mib/s) | 11.27            | 70           | 11 min                   | 10min         |
 
 Speed test in container
 

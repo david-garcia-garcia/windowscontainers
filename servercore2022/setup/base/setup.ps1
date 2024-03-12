@@ -1,3 +1,7 @@
+$global:ErrorActionPreference = 'Stop'
+
+Import-Module Sbs;
+
 ################################################
 # Create local admin
 ################################################

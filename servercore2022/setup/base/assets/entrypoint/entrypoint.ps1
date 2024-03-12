@@ -86,6 +86,7 @@ SbsWriteHost "Initiating ENV protection";
 foreach ($key in $processEnvironmentVariables.Keys) {
     $variableName = $key.ToString()
     if ($variableName -match "^(.*)_PROTECT$") {
+        Add-Type -AssemblyName System.Security;
         $originalVariableName = $matches[1];
         $originalValue = $processEnvironmentVariables[$key];
         $protectedValue = [System.Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($originalValue), $null, 'LocalMachine'));
