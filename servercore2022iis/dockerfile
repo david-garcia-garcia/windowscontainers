@@ -8,6 +8,11 @@ COPY "setup\\install" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1;
 
+# Perfmon
+COPY "setup\\perfmon" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+RUN c:\setup\setup.ps1;
+
 # CHEF
 COPY "setup\\chef" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
@@ -15,11 +20,6 @@ RUN c:\setup\setup.ps1;
 
 # Basic setup
 COPY "setup\\base" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN c:\setup\setup.ps1;
-
-# Perfmon
-COPY "setup\\perfmon" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1;
 
