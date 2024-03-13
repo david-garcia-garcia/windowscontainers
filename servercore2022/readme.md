@@ -222,12 +222,20 @@ To set the container time zone during startup:
 SBS_CONTAINERTIMEZONE=Pacific Standard Time
 ```
 
-## Automatically start services
+## Start and Stop services as part of the container lifecycle
 
-Some services are disabled by default in the image. To start them up with the container:
+To start services with the container - even if they are disabled at the image level - use:
+
+```yaml
+SBS_SRVENSURE=newrelic-infra;service2;service3
+```
+
+Their startup type will be set to automatic, and they will be started.
+
+If you have services that you want to gracefully stop when the container stops use:
 
 ```
-SBS_SRVENSURE=newrelic-infra,service2,service3
+SBS_SRVSTOP=was;w3svc;iisadmin;MSSQLSERVER
 ```
 
 ## Powershell Functions

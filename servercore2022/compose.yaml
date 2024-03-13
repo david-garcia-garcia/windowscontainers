@@ -19,6 +19,8 @@ services:
       - SBS_CONTAINERTIMEZONE=Pacific Standard Time
       # Services that need enforced started
       - SBS_SRVENSURE=newrelic-infra
+      # Services that need to be stopped on shutdown
+      - SBS_SRVSTOP=newrelic-infra
       # Do not run in ASYNC boot mode
       - SBS_ENTRYPOINTRYNASYNC=false
       - SBS_ENTRYPOINTRYNASYNCTIMEOUT=180
