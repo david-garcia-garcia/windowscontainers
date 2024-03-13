@@ -71,6 +71,20 @@ Redirect the IIS Remote admin port
 kubectl port-forward {pod} 8172:8172 --address 192.168.68.4
 ```
 
+The image has old SSL protocols disabled, you will have to force your client to use the newer protocols:
+
+[How to fix error "The underlying connection was closed: An unexpected error occurred on a send." when using IIS remote manager (smarterasp.net)](https://www.smarterasp.net/support/kb/a1968/how-to-fix-error-underlying-connection-was-closed-an-unexpected-error-occurred-on.aspx)
+
+You need to default to strong crypto in the host where the IIS Admin Client is running
+
+```
+Windows Registry Editor Version 5.00
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319]
+"SchUseStrongCrypto"=dword:00000001
+[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319]
+"SchUseStrongCrypto"=dword:00000001
+```
+
 **Important**: you will not be able to connect to IIS from within the same machine where the port is bound. IIS remote manager detects that the destination IP is also bound to the local computer and will skip remote management completely. There is no way to workaround this (not changing ports, not using HOSTS to fake a different hostname). The only way to make is to connect from somewhere where the IP does not match the one used for port forwarding. You can spin up a VM inside HyperV and from there, access the forwarded port in your host.
 
 ![image-20240117144908714](readme_assets/img-remoteiis-hyperv)
