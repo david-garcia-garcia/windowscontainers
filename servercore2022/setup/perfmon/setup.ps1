@@ -29,8 +29,6 @@ Write-Host "-----------------------------------------`n"
 
 $tempExtracted = 'c:\windows\temp\nri-perfmon';
 
-# Hay un BUG en NRI https://github.com/newrelic/nri-perfmon/pull/46 hasta que esté resuelto
-# tiramos de una compilación custom del NRI-PERFMON
 [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
 (New-Object Net.WebClient).DownloadFile('https://github.com/newrelic/nri-perfmon/releases/download/0.6.2/nri-perfmon-release-x64.zip','c:\windows\temp\nri-perfmon-release-x64.zip');
 7z x "c:\windows\temp\nri-perfmon-release-x64.zip" -o"$tempExtracted" -aoa

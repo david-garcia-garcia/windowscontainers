@@ -6,6 +6,6 @@ function SbsWriteError {
         [string]$LogName = "Application"
     )
 
-    Write-Error $message;
+    Write-Error "[$(Get-Date -Format 'HH:mm:ss.fff')] $($message)"
     Write-EventLog -LogName $LogName -Source $Source -EntryType Error -EventId 1 -Message $message;
 }

@@ -1,0 +1,27 @@
+version: 2.1
+
+orbs:
+  win: circleci/windows@5.0
+
+jobs:
+  build:
+    executor:
+      name: win/server-2022
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "SHA256:MWTM5Rby1BQ0EaBqiDPstXyPtvro7DZoAlnoKwz7I/k"
+      - checkout
+      - run:
+          name: Install Docker
+          command: choco install docker-desktop -y
+      - run:
+          name: Build Docker Images
+          command: |
+            .\imagenames.ps1 "myrepo/"
+            .\buildall.ps1
+workflows:
+  version: 2
+  build-and-push:
+    jobs:
+      - build

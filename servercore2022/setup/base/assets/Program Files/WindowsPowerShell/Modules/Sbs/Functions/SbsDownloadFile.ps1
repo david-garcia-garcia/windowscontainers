@@ -45,7 +45,7 @@ function SbsDownloadFile {
 
     #Creating a temporary file.
     if ([string]::IsNullOrWhiteSpace($TmpFile)) {
-        $TmpFile = New-TemporaryFile;
+        $TmpFile = $Path;
     }
 
     Write-Verbose "TmpFile set to ""$($TmpFile)""."
