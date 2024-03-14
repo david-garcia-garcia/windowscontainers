@@ -1,5 +1,7 @@
 $global:ErrorActionPreference = 'Stop'
 
+Import-Module Sbs;
+
 # Download SQL Server ISO
 SbsDownloadFile -Url "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso" -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
 
