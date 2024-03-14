@@ -1,12 +1,12 @@
 version: 2.1
 
 orbs:
-  win: circleci/windows@2.4.0 # Use the Windows orb for PowerShell support
+  win: circleci/windows@5.0
 
 jobs:
   build:
     executor:
-      name: win/default # Specify the Windows executor
+      name: win/server-2022
     steps:
       - add_ssh_keys:
           fingerprints:
