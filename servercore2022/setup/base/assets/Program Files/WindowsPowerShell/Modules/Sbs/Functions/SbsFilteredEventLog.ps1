@@ -3,11 +3,15 @@ function SbsFilteredEventLog {
         [DateTime]$After,
         [string]$LogNames,
         [string]$Source = "*",
-        [System.Diagnostics.EventLogEntryType]$MinLevel = "Information"
+        [Nullable[System.Diagnostics.EventLogEntryType]]$MinLevel = "Information"
     )
     
     if ([string]::IsNullOrWhiteSpace($Source)) {
         $Source = "*";
+    }
+
+    if ($null -eq $MinLevel) {
+        $MinLevel = "Information";
     }
 
     # Split the LogNames string into an array based on comma separation
@@ -24,7 +28,7 @@ function SbsFilteredEventLog {
             }
 
             foreach ($event in $events) {
-                $event | Select-Object @{Name='LogName'; Expression={$LogName}}, Source, TimeGenerated, EntryType, Message
+                $event | Select-Object @{Name = 'LogName'; Expression = { $LogName } }, Source, TimeGenerated, EntryType, Message
             }
         }
     }

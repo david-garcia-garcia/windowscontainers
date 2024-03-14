@@ -14,13 +14,14 @@ FROM ${IMG_SQLSERVER2022BASE}
 COPY "setup\\nri" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
+RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 COPY "setup\\base" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
+RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 COPY "setup\\nriconfig" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
-
-CMD [ "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+RUN Remove-Item -Path c:\setup -Recurse -Force;

@@ -5,49 +5,54 @@ $global:ErrorActionPreference = 'Stop'
 ################################################
 Stop-Service DiagHost;
 Set-Service DiagHost -StartupType Disabled;
+Write-Host "Disabled service DiagHost"
 
 Stop-Service DiagTrack;
 Set-Service DiagTrack -StartupType Disabled;
+Write-Host "Disabled service DiagTrack"
 
 # Snapshots, sin sentido en kubernetes
 Stop-Service Vss -Force;
 Set-Service Vss -StartupType Disabled;
+Write-Host "Disabled service Vss"
 
 Stop-Service SWPRV -Force;
 Set-Service SWPRV -StartupType Disabled;
+Write-Host "Disabled service SWPRV"
 
 # Transacciones distribuidas, a evitar.
 Stop-Service MSDTC -Force;
 Set-Service MSDTC -StartupType Disabled;
+Write-Host "Disabled service MSDTC"
 
 # Este servicio NO funciona en contenedores
 Stop-Service LanManServer -Force;
 Set-Service LanManServer -StartupType Disabled;
+Write-Host "Disabled service LanManServer"
 
 # Updates de windows sin sentido en contenedor
 Stop-Service UsoSvc -Force;
 Set-Service UsoSvc -StartupType Disabled;
+Write-Host "Disabled service UsoSvc"
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
 
 # Instalar choco
-$testchoco = Get-Command -Name choco.exe -ErrorAction SilentlyContinue;
-if (-not($testchoco)) {
-  Write-Host "`n---------------------------------------"
-  Write-Host " Installing choco"
-  Write-Host "-----------------------------------------`n"
-  Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-}
-else {
-  choco upgrade chocolatey -y --no-progress;
-}
+Write-Host "`n---------------------------------------"
+Write-Host " Installing choco"
+Write-Host "-----------------------------------------`n"
+Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 Write-Host "`n---------------------------------------"
-Write-Host " Installing basic CHOCO packages"
+Write-Host " Installing 7zip"
 Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
 choco upgrade 7zip.install -y --version=23.1 --ignore-checksums --no-progress;
+
+Write-Host "`n---------------------------------------"
+Write-Host " Installing Micro"
+Write-Host "-----------------------------------------`n"
 
 # Command line editor
 choco upgrade micro -y --version=2.0.11 --ignore-checksums --no-progress;
@@ -86,15 +91,14 @@ Write-Host "-----------------------------------------`n"
 # Habilitar long paths (cuidado porque las aplicaciones también deben soportarlo) https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
 
-Write-Host "`n---------------------------------------"
-Write-Host " Disable IE Enhanced Security"
-Write-Host "-----------------------------------------`n"
-
+# Write-Host "`n---------------------------------------"
+# Write-Host " Disable IE Enhanced Security"
+# Write-Host "-----------------------------------------`n"
 # Desactivamos esto porque el motor de IE ya no se usa (usamos otros navegadores en chrome)
 # y hay procesoso o scripting secundario que tiran de este motor (wget, Invoke-WebRequest)
 # que se ven afectados por las restricciones de IE
-#Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}" -Name "IsInstalled" -Value 0 -Type DWord
-#Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}" -Name "IsInstalled" -Value 0 -Type DWord
+# Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A7-37EF-4b3f-8CFC-4F3A74704073}" -Name "IsInstalled" -Value 0 -Type DWord
+# Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components\{A509B1A8-37EF-4b3f-8CFC-4F3A74704073}" -Name "IsInstalled" -Value 0 -Type DWord
 
 Write-Host "`n---------------------------------------"
 Write-Host " Enabling login/logout audit in windows"
