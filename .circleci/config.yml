@@ -8,6 +8,9 @@ jobs:
     executor:
       name: win/default # Specify the Windows executor
     steps:
+      - add_ssh_keys
+          fingerprints:
+            - "SHA256:MWTM5Rby1BQ0EaBqiDPstXyPtvro7DZoAlnoKwz7I/k"
       - checkout
       - run:
           name: Install Docker
