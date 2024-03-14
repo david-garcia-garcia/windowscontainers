@@ -1,3 +1,5 @@
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/FTP17q9GoCxp3a3xg3Vspr/VGK8Tj7T1QCqXF1jj6EbV5/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/FTP17q9GoCxp3a3xg3Vspr/VGK8Tj7T1QCqXF1jj6EbV5/tree/main)
+
 # Windows Containers
 
 Several docker images that support hosting Windows based applications in a reliable and production ready way.
