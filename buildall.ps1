@@ -3,8 +3,32 @@
 # due to MSSQL EULA you will have to use your own repo
 
 param (
-    [bool]$push = $false
+    [bool]$Push = $false,
+    [bool]$Test = $false
 )
+
+function WaitForLog {
+    param (
+        [string]$containerName,
+        [string]$logContains,
+        [int]$timeoutSeconds = 10
+    )
+
+    $timeout = New-TimeSpan -Seconds $timeoutSeconds
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+
+    while ($sw.Elapsed -lt $timeout) {
+        Start-Sleep -Seconds 1
+        $logs = docker logs $containerName 2>&1
+        if ($logs -match $logContains) {
+            return;
+        }
+    }
+
+    if ($sw.Elapsed -ge $timeout) {
+        Write-Error "Timeout reached without detecting '$($logContains)' in logs. $($logs)"
+    }
+}
 
 $global:ErrorActionPreference = 'Stop';
 
@@ -18,6 +42,12 @@ function ThrowIfError() {
 Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
 ThrowIfError
+
+if ($test) {
+    docker compose -f servercore2022/compose-basic.yaml up -d;
+    WaitForLog "servercore2022-servercore-1" "Initialization Ready"
+    docker compose -f servercore2022/compose-basic.yaml down;
+}
 
 if ($push) {
     docker push "$($Env:IMG_SERVERCORE2022)"
