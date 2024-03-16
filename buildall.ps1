@@ -38,6 +38,23 @@ function ThrowIfError() {
     }
 }
 
+# TODO: Write some tests with PESTER
+if ($test) {
+    # Check if the 'container_default' network exists
+    $networkName = "container_default"
+    $existingNetwork = docker network ls --format "{{.Name}}" | Where-Object { $_ -eq $networkName }
+
+    if (-not $existingNetwork) {
+        Write-Host "Network '$networkName' does not exist. Creating..."
+        docker network create $networkName
+        Write-Host "Network '$networkName' created."
+    }
+    else {
+        Write-Host "Network '$networkName' already exists."
+    }
+}
+
+
 # Core Server
 Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
