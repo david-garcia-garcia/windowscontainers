@@ -46,7 +46,7 @@ if ($test) {
 
     if (-not $existingNetwork) {
         Write-Host "Network '$networkName' does not exist. Creating..."
-        docker network create $networkName
+        docker network create $networkName --driver nat --subnet=172.18.8.0/24;
         Write-Host "Network '$networkName' created."
     }
     else {
