@@ -19,7 +19,7 @@ jobs:
           name: Build Docker Images
           command: |
             .\imagenames.ps1 "myrepo/"
-            .\buildall.ps1
+            .\buildall.ps1 -Test $true
 workflows:
   version: 2
   build-and-push:

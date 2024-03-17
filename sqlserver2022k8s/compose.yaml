@@ -24,7 +24,8 @@ services:
       - "f:/databases/example/control:c:/SQLControl"
       - "c:/windows/temp:f:"
     networks:
-      - container_default
+      container_default:
+        ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
       - MSSQL_ADMIN_PWD=sapwd
