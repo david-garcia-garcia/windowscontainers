@@ -14,6 +14,7 @@ $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 $defaultSettings = @{
     "max degree of parallelism"  = 1
     "backup compression default" = 1
+    "max server memory" = 2048 # Default to 2GB of max server memory
 }
 
 # Read the environment variable

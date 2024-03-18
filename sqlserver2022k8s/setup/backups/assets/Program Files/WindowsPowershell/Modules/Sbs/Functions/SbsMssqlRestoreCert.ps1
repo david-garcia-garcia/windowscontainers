@@ -1,37 +1,47 @@
-function SbsImportCert {
+function SbsRestoreCert {
 
     param(
-        # Regular expression for matchin file names containing desired certificates
+        # Regular expression for matching file names containing desired certificates
         [Parameter(Mandatory = $true)]
         [string]$Name,
         # Backup location can be a path, or a SAS url.
+        [Parameter(Mandatory = $true)]
         [string]$BackupLocation,
-        # If the certificates
+        # Optional password for the certificates
         [string]$CertificatePassword
     )
 
-    # Create a temporary directory
-    $tempDir = New-Item -ItemType Directory -Force -Path ".\TempCertDir"
+    # Create a temp dir to store all certificates we could bring in
+    $baseTempPath = [System.IO.Path]::GetTempPath();
+    $uniqueTempDirPath = Join-Path -Path $baseTempPath -ChildPath (New-Guid);
+    $tempDir = New-Item -ItemType Directory -Force -Path $uniqueTempDirPath;
 
     # Determine source type and populate temp directory
-    if ($BackupLocation -like 'https://*') {
-        # Azure SAS URL
-        $azcopyCommand = "azcopy copy `"$BackupLocation`" `"$($tempDir.FullName)`" --recursive --include-pattern `"$Name*.7z`""
-        Invoke-Expression $azcopyCommand
+    if ($BackupLocation -match '^https://') {
+        
+        # With AZCOPY we need to issue several commands
+        $azcopyCommand = "azcopy copy `"$BackupLocation`" `"$($tempDir.FullName)`" --recursive --include-pattern `"$Name.7z`"";
+        Invoke-Expression $azcopyCommand;
+        $azcopyCommand = "azcopy copy `"$BackupLocation`" `"$($tempDir.FullName)`" --recursive --include-pattern `"$Name.zip`"";
+        Invoke-Expression $azcopyCommand;
+
         if (!$?) {
-            Write-Host "Failed to download files from Azure Storage."
-            Remove-Item -Path $tempDir.FullName -Recurse -Force
-            return
+            Write-Host "Failed to download files from Azure Storage.";
+            Remove-Item -Path $tempDir.FullName -Recurse -Force;
+            return;
         }
-    } else {
+    }
+    else {
         # Local path
         if (Test-Path -Path $BackupLocation -PathType Container) {
             # It's a directory
             Copy-Item -Path "$BackupLocation\$Name*.7z" -Destination $tempDir.FullName
-        } elseif (Test-Path -Path $BackupLocation) {
+        }
+        elseif (Test-Path -Path $BackupLocation) {
             # It's a file
             Copy-Item -Path $BackupLocation -Destination $tempDir.FullName
-        } else {
+        }
+        else {
             Write-Host "Backup location does not exist."
             Remove-Item -Path $tempDir.FullName -Recurse -Force
             return
@@ -55,7 +65,8 @@ function SbsImportCert {
                 Write-Host "Would restore certificate from $($cert.FullName) to localhost SQL Server instance."
                 # Example: Restore-DbaDatabase -SqlInstance 'localhost' -Path $cert.FullName -WithReplace
             }
-        } else {
+        }
+        else {
             Write-Host "Failed to extract certificates from $file"
         }
         Remove-Item -Path $decompressPath -Recurse -Force

@@ -107,6 +107,18 @@ Focusing on the minimum ENV setup needed for this:
 
 All SQL  paths (MSSQL_PATH_*) have been moved to persistent volume store. This ensures that master, model and everything you setup in this MSSQL instance is retained and stored in persistent storage. The pod can move between nodes in K8S and will recover it's previous state with a minimum downtime. For a zero downtime pod we need to rely on replication/mirroring (pending).
 
+## Memory usage
+
+**PENDING**
+
+MSSQL will use as much memory as possible. This is huge problem if not controlled in a K8S cluster. The same if you have multiple instances of MSSQL on the same server, they will compete for memory resources.
+
+This can even become more problematic if K8S decides to memory evict your Statefulset pod.
+
+Currrently, memory eviction does not work in windows nodes:
+
+[Windows Nodes Don't Currently Support Out of Memory Eviction (OOMKILL) · Issue #2820 · Azure/AKS (github.com)](https://github.com/Azure/AKS/issues/2820)
+
 ## Control Operations
 
 You can place a "startup.yaml" file in the SSQL_PATH_CONTROL path, the contents of this path will be processed once on container startup, and once done, the file renamed for archiving so it will not be processed again.

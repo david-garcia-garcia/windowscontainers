@@ -68,7 +68,7 @@ function SbsRunBackups {
 					if (($isSystemDb -eq $false)) {
 						$certificate = "$($db.Name)_$((Get-Date).year)";
 						if (($null -eq (Get-DbaDbCertificate -SqlInstance $instance -Certificate $certificate))) {
-							SbsEnsureCert -Name $certificate -Server "DEFAULT" -Instance "localhost" -BackupLocation $certificateBackupDirectory;
+							SbsEnsureCert -Name $certificate -BackupLocation $certificateBackupDirectory;
 						}
 					}
 			
