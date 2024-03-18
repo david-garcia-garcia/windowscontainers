@@ -1,2 +1,2 @@
 Import-Module Sbs;
-SbsRunBackups -backupType "FULL";
+SbsRunBackups -backupType "SYSTEM";
