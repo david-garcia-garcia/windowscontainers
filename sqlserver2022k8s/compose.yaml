@@ -37,6 +37,7 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
+      - MSSQL_INSTANCENAME=myinstance
       - SBS_SRVENSURE=SQLSERVERAGENT;newrelic-infra
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
