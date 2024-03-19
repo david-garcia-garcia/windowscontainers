@@ -1,4 +1,4 @@
-function SbsRestoreCert {
+function SbsMssqlRestoreCert {
 
     param(
         # Regular expression for matching file names containing desired certificates

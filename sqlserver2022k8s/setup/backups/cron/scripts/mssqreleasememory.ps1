@@ -1,0 +1,2 @@
+Import-Module Sbs;
+SbsMssqlResetMemory;

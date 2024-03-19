@@ -1,2 +1,2 @@
 Import-Module Sbs;
-SbsRunBackups -backupType "FULL";
+SbsMssqlRunBackups -backupType "FULL";

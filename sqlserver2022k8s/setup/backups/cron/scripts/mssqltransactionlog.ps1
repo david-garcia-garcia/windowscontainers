@@ -1,2 +1,2 @@
 Import-Module Sbs;
-SbsRunBackups -backupType "LOG";
+SbsMssqlRunBackups -backupType "LOG";

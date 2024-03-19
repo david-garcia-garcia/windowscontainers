@@ -1,4 +1,4 @@
-function SbsResetMemory {
+function SbsMssqlResetMemory {
 
     Import-Module dbatools;
 

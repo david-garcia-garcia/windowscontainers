@@ -1,5 +1,5 @@
 # Exports a certificate as a 7Z file, optionally protected by a password.
-function SbsExportCert {
+function SbsMssqlExportCert {
 
     [OutputType([String])]
     param(

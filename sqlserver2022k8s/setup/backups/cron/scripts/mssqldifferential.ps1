@@ -1,2 +1,2 @@
 Import-Module Sbs;
-SbsRunBackups -backupType "DIFF";
+SbsMssqlRunBackups -backupType "DIFF";

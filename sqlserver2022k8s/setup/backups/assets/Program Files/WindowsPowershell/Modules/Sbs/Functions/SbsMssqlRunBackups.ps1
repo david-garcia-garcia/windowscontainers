@@ -1,4 +1,4 @@
-function SbsRunBackups {
+function SbsMssqlRunBackups {
 
 	param(
 		[Parameter(Mandatory = $true)]

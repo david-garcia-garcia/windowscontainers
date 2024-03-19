@@ -1,5 +1,5 @@
 # Restore a certificate from a ZIP file
-function SbsRestoreCert {
+function SbsMssqlImportCert {
 
     param(
         [Parameter(Mandatory = $true)]
