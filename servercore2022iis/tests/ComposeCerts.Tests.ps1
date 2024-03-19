@@ -1,16 +1,16 @@
 BeforeAll {
-    docker compose -f servercore2022iis/compose.yaml up -d;
+    docker compose -f servercore2022iis/compose-certs.yaml up -d;
     WaitForLog "servercore2022iis-web-1" "Initialization Completed"
 }
     
 Describe 'compose.yaml' {
-
     It 'HTTP Response OK with a hostname from SBS_IISBINDINGS' {
         (Invoke-WebRequest -Uri "http://172.18.8.8" -Headers @{"Host"="anothername.com"}).RawContent | Should -Match "iisstart\.png";
     }
 
     It 'HTTP Response 404 with a hostname not explicitly registered' {
-        (Invoke-WebRequest -Uri "http://172.18.8.8" -Headers @{"Host"="nohostname.com"}).StatusCode | Should -Be "404";
+        Start-Sleep -Seconds 3;
+        (Invoke-WebRequest -Uri "http://172.18.8.8" -Headers @{"Host"="nohostname.com"} -SkipHttpErrorCheck).StatusCode | Should -Be "404";
     }
 
     It 'HTTPS SSL Certificate/s was provisioned OK and automatically bound to the site.' {
@@ -20,5 +20,5 @@ Describe 'compose.yaml' {
 }
 
 AfterAll {
-    docker compose -f servercore2022iis/compose.yaml down;
+    docker compose -f servercore2022iis/compose-certs.yaml down;
 }
