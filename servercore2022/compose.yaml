@@ -27,7 +27,7 @@ services:
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
       # Scheduled tasks that must be run once during startup
-      - 'SBS_CRON_LogRotate={"Daily":true,"At":"2023-01-01T04:00:00","DaysInterval":1}'
+      - 'SBS_CRON_LogRotate={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
       # Error behaviour
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Call the entrypoint shutdown logic

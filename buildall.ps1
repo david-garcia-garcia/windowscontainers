@@ -64,7 +64,8 @@ docker compose -f servercore2022/compose.yaml build
 ThrowIfError
 
 if ($test) {
-    Invoke-Pester -Output Detailed servercore2022\General.Tests.ps1
+    Invoke-Pester -Output Detailed servercore2022\ComposeBasic.Tests.ps1
+    Invoke-Pester -Output Detailed servercore2022\Compose.Tests.ps1
 }
 
 return;
