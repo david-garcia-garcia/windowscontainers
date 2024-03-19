@@ -40,6 +40,9 @@ function ThrowIfError() {
 
 # TODO: Write some tests with PESTER
 if ($test) {
+
+    Import-Module Pester -PassThru;
+
     # Check if the 'container_default' network exists
     $networkName = "container_default"
     $existingNetwork = docker network ls --format "{{.Name}}" | Where-Object { $_ -eq $networkName }
@@ -61,10 +64,10 @@ docker compose -f servercore2022/compose.yaml build
 ThrowIfError
 
 if ($test) {
-    docker compose -f servercore2022/compose-basic.yaml up -d;
-    WaitForLog "servercore2022-servercore-1" "Initialization Ready"
-    docker compose -f servercore2022/compose-basic.yaml down;
+    Invoke-Pester -Output Detailed servercore2022\General.Tests.ps1
 }
+
+return;
 
 if ($push) {
     docker push "$($Env:IMG_SERVERCORE2022)"

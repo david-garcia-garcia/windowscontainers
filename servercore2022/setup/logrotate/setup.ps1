@@ -11,5 +11,11 @@ if(-not($testCommand)){
   Install-Module -Name Log-Rotate -Force -Repository PSGallery -Scope AllUsers;
 }
 
+Write-Host "`n---------------------------------------"
+Write-Host " Registering log rotate scheduled task"
+Write-Host "-----------------------------------------`n"
+
+Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\LogRotate.xml" -Raw) -TaskName "LogRotate";
+
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;

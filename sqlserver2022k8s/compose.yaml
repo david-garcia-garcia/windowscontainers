@@ -38,9 +38,14 @@ services:
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
       - MSSQL_INSTANCENAME=myinstance
+      # For debugging timeout at 40s
+      - SBS_SHUTDOWNTIMEOUT=40
+      # Start services
       - SBS_SRVENSURE=SQLSERVERAGENT;newrelic-infra
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
+      # Monitor from event viewer
+      - SBS_MONITORLOGNAMES=Application,System
       - SBS_MONITORLOGSOURCE=*
       - SBS_MONITORLOGMINLEVEL=Warning
       - SBS_CRONRUNONBOOT=DeployMssqlNri

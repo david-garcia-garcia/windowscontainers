@@ -24,8 +24,10 @@ services:
       # Do not run in ASYNC boot mode
       - SBS_ENTRYPOINTRYNASYNC=false
       - SBS_ENTRYPOINTRYNASYNCTIMEOUT=180
+      # Shutdown timeout
+      - SBS_SHUTDOWNTIMEOUT=60
       # Scheduled tasks that must be run once during startup
-      - SBS_CRONRUNONBOOT=LogRotate
+      - 'SBS_CRON_LogRotate={"Daily":true,"At":"2023-01-01T04:00:00","DaysInterval":1}'
       # Error behaviour
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Call the entrypoint shutdown logic
@@ -40,7 +42,7 @@ services:
       # Secret key
       - SBS_TESTPROTECT_PROTECT=supersecretekey
       # Other new relic stuff
-      - NRIA_CUSTOM_ATTRIBUTES="{\"environment\":\"docker\"}"
+      - NRIA_CUSTOM_ATTRIBUTES='{"environment":"docker"}'
 networks:
   container_default:
     external: true

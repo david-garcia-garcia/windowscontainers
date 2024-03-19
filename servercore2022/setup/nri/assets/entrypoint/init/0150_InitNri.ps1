@@ -1,3 +1,5 @@
+$global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
+
 $NEW_RELIC_LICENSE_KEY = [System.Environment]::GetEnvironmentVariable("NEW_RELIC_LICENSE_KEY");
 
 if (-not [string]::IsNullOrEmpty($NEW_RELIC_LICENSE_KEY)) {

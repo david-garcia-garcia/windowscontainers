@@ -5,9 +5,7 @@ function SbsMssqlExportCert {
     param(
         # Name of the certificate
         [Parameter(Mandatory = $true)]
-        [string]$Name,
-        # If the certificates
-        [string]$Password
+        [string]$Name
     )
 
     # Create a director for the certificate files
@@ -29,14 +27,8 @@ function SbsMssqlExportCert {
 
     # Delete if exists
     Remove-Item -Path $tempCert -Force;
-
-    if ([String]::IsNullOrWhiteSpace($CertificatePassword)) {
-        7z a "$($tempCert)" "$($tempDir)\*";
-    }
-    else {
-        7z a "$($tempCert)" "$($tempDir)\*" "-p$($Password)";
-    }
-
+    
+    7z a "$($tempCert)" "$($tempDir)\*";
     Remove-Item -Path $tempDir -Recurse -Force;
 
     return $tempCert;
