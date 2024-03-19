@@ -66,8 +66,8 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        Invoke-Pester -Output Detailed servercore2022\ComposeBasic.Tests.ps1
-        Invoke-Pester -Output Detailed servercore2022\Compose.Tests.ps1
+        Invoke-Pester servercore2022\ComposeBasic.Tests.ps1
+        Invoke-Pester servercore2022\Compose.Tests.ps1
     }
 
     if ($push) {
@@ -83,8 +83,8 @@ ThrowIfError
 
 if ("servercore2022iis" -match $Images) {
     if ($test) {
-        Invoke-Pester -Output Detailed servercore2022iis\Compose.Tests.ps1
-        Invoke-Pester -Output Detailed servercore2022iis\ComposeCerts.Tests.ps1
+        Invoke-Pester servercore2022iis\Compose.Tests.ps1
+        Invoke-Pester servercore2022iis\ComposeCerts.Tests.ps1
     }
 
     if ($push) { 
@@ -134,7 +134,7 @@ ThrowIfError
 
 if ("sqlserver2022k8s" -match $Images) {
     if ($test) {
-        Invoke-Pester -Output Detailed sqlserver2022k8s\Compose.Tests.ps1
+        Invoke-Pester sqlserver2022k8s\Compose.Tests.ps1
     }
 
     if ($push) {

@@ -10,6 +10,7 @@ Set-DbaNetworkConfiguration -SqlInstance $sqlInstance -EnableProtocol TcpIp -Con
 # Server defaults
 Set-DbaSpConfigure -SqlInstance localhost -Name 'backup compression default' -Value 1;
 Set-DbaMaxDop -SqlInstance $sqlInstance -MaxDop 1;
+Set-DbaMaxMemory -SqlInstance $sqlInstance -Max 2048;
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

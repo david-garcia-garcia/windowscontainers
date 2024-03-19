@@ -11,7 +11,7 @@ Describe 'compose.yaml' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
     It 'Max Server Memory is what configured' {
-        (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "2048";
+        (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "2050";
     }
 }
 

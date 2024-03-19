@@ -31,13 +31,14 @@ services:
       - MSSQL_ADMIN_PWD=sapwd
       - MSSQL_DATABASE=mydatabase
       - MSSQL_LIFECYCLE=ATTACH
-      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;max server memory:2050
+      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;
       - MSSQL_SPCONFIGURERESTART=0
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
       - MSSQL_INSTANCENAME=myinstance
+      - MSSQL_MAXMEMORY=2050
       # For debugging timeout at 40s
       - SBS_SHUTDOWNTIMEOUT=40
       # Start services
