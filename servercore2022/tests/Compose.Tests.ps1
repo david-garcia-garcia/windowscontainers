@@ -1,9 +1,9 @@
-BeforeAll {
-    docker compose -f servercore2022/compose.yaml up -d;
-    WaitForLog "servercore2022-servercore-1" "Initialization Completed"
-}
-    
 Describe 'compose.yaml' {
+    BeforeAll {
+        docker compose -f servercore2022/compose.yaml up -d;
+        WaitForLog "servercore2022-servercore-1" "Initialization Completed"
+    }
+
     It 'LogRotate runs at 5AM Daily' {
         docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].DaysInterval" | Should -Be "1";
         docker exec servercore2022-servercore-1 powershell "[DateTime]::Parse((Get-ScheduledTask LogRotate).Triggers[0].StartBoundary).ToLocalTime().ToString('s')" | Should -Be "2023-01-01T05:00:00";
@@ -27,8 +27,9 @@ Describe 'compose.yaml' {
     It 'new-relic service has automatic startup' {
         docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Automatic"
     }
+
+    AfterAll {
+        docker compose -f servercore2022/compose.yaml down;
+    }
 }
 
-AfterAll {
-    docker compose -f servercore2022/compose.yaml down;
-}
