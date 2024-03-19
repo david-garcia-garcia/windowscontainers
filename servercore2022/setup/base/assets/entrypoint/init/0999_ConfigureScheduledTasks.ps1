@@ -3,13 +3,20 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 # Gather all environment variables that match the pattern SBS_CRON_TRIGGER_
 $triggerEnvVars = Get-ChildItem env: | Where-Object { $_.Name -match '^SBS_CRON_(.*)$' }
 
+# Get the environment variable value. If it's not null or empty, split it into an array; otherwise, create an empty array.
+$SBS_CRONRUNONBOOT_Array = @();
+if (-not [string]::IsNullOrWhiteSpace([System.Environment]::GetEnvironmentVariable("SBS_CRONRUNONBOOT"))) {
+    $SBS_CRONRUNONBOOT_Array = [System.Environment]::GetEnvironmentVariable("SBS_CRONRUNONBOOT").Split(',');
+}
+
 # Loop through each found environment variable
 foreach ($var in $triggerEnvVars) {
 
     # Use regex to extract the task name from the environment variable name
     if ($var.Name -match '^SBS_CRON_(.*)$') {
         $taskName = $matches[1]
-    } else {
+    }
+    else {
         # If for some reason the regex doesn't match (shouldn't happen due to the where filter), skip this iteration
         continue;
     }
@@ -24,4 +31,10 @@ foreach ($var in $triggerEnvVars) {
 
     # Output for confirmation or debugging
     SbsWriteHost "Applied trigger to task: $taskName with config: $jsonTrigger";
+
+    # If the task name is in the $SBS_CRONRUNONBOOT_Array, start it immediately
+    if ($taskName -in $SBS_CRONRUNONBOOT_Array) {
+        SbsWriteHost "Starting task immediately as per SBS_CRONRUNONBOOT configuration: $($taskName)";
+        Start-ScheduledTask -TaskName $taskName;
+    }
 }

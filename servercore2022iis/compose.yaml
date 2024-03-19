@@ -22,6 +22,10 @@ services:
       - SBS_ENTRYPOINTERRORACTION=Stop
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
       - NEW_RELIC_LICENSE_KEY=badkey
+      # Output in the entrypoint loop
+      - SBS_MONITORLOGNAMES=Application,System
+      - SBS_MONITORLOGSOURCE=*
+      - SBS_MONITORLOGMINLEVEL=Warning
 networks:
   container_default:
     external: true

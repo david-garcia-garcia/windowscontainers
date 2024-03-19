@@ -19,6 +19,7 @@ services:
       - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
       # Scheduled task needed to handle SSL renewal and SYNC of certs in CCS
       - 'SBS_CRON_RenewCertificates={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      - SBS_CRONRUNONBOOT=RenewCertificates
       # Password for certs in CCS
       - SBS_AUTOSSLPASSWORD_PROTECT=pfxpassword
       # Add explicit bindings with hostnames, and remove generic binding on port 80
@@ -37,6 +38,10 @@ services:
       # use todos los certificados que haya en la carpeta. Alternativamente se pueden
       # designar bindings manualmente en SBS_IISBINDINGS
       - SBS_AUTOSSLSITESYNC=Default Web Site
+      # Output in the entrypoint loop
+      - SBS_MONITORLOGNAMES=Application,System
+      - SBS_MONITORLOGSOURCE=*
+      - SBS_MONITORLOGMINLEVEL=Warning
 networks:
   container_default:
     external: true

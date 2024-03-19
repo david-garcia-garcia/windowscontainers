@@ -34,7 +34,7 @@ $AppPool | Set-Item;
 ################################################
 
 Write-Host "`n---------------------------------------"
-Write-Host " Deplying IIS remote management"
+Write-Host " Deploying IIS remote management"
 Write-Host "-----------------------------------------`n"
 
 # https://mcpmag.com/articles/2014/10/21/enabling-iis-remote-management.aspx

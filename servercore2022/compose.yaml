@@ -28,12 +28,15 @@ services:
       - SBS_SHUTDOWNTIMEOUT=60
       # Scheduled tasks that must be run once during startup
       - 'SBS_CRON_LogRotate={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      # Run this immediately during boot (async)
+      - SBS_CRONRUNONBOOT=LogRotate
       # Error behaviour
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Call the entrypoint shutdown logic
       - SBS_AUTOSHUTDOWN=1
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
+      # Output in the entrypoint loop
       - SBS_MONITORLOGNAMES=Application,System
       - SBS_MONITORLOGSOURCE=*
       - SBS_MONITORLOGMINLEVEL=Warning
