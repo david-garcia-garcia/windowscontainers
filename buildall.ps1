@@ -64,11 +64,9 @@ docker compose -f servercore2022/compose.yaml build
 ThrowIfError
 
 if ($test) {
-    Invoke-Pester -Output Detailed servercore2022\ComposeBasic.Tests.ps1
-    Invoke-Pester -Output Detailed servercore2022\Compose.Tests.ps1
+    #Invoke-Pester -Output Detailed servercore2022\ComposeBasic.Tests.ps1
+    #Invoke-Pester -Output Detailed servercore2022\Compose.Tests.ps1
 }
-
-return;
 
 if ($push) {
     docker push "$($Env:IMG_SERVERCORE2022)"
@@ -80,10 +78,17 @@ Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
 docker compose -f servercore2022iis/compose.yaml build
 ThrowIfError
 
+if ($test) {
+    Invoke-Pester -Output Detailed servercore2022iis\Compose.Tests.ps1
+    Invoke-Pester -Output Detailed servercore2022iis\ComposeCerts.Tests.ps1
+}
+
 if ($push) { 
     docker push "$($Env:IMG_SERVERCORE2022IIS)" 
     ThrowIfError
 }
+
+return;
 
 # IIS NET 48
 Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"

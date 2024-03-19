@@ -1,0 +1,42 @@
+version: "3.7"
+services:
+  web:
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        IMG_SERVERCORE2022IIS: ${IMG_SERVERCORE2022IIS}
+        IMG_SERVERCORE2022IISNET48: ${IMG_SERVERCORE2022IISNET48}
+    image: ${IMG_SERVERCORE2022IIS}
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.8
+    environment:
+      # Promote env variables to system, needed for AUTOSSL visibility in scheduled task
+      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+      # Scheduled task needed to handle SSL renewal and SYNC of certs in CCS
+      - 'SBS_CRON_RenewCertificates={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      # Password for certs in CCS
+      - SBS_AUTOSSLPASSWORD_PROTECT=pfxpassword
+      # Add explicit bindings with hostnames, and remove generic binding on port 80
+      - SBS_IISBINDINGS=Default Web Site:http/80/testthesite.com,!http/80/,http/80/anothername.com
+      # Cert provider (SeflSigned, AcmeProd, AcmeStaging)
+      - SBS_AUTOSSLPROVIDER=SelfSigned
+      # Central certificate store path
+      - SBS_AUTOSSLCSSPATH=c:\certificates
+      # Automatic SSL certificate
+      - SBS_AUTOSSLHOSTNAMES=mywebsiste.com;testthesite.com;www.mysiste.net
+      # ACME registration e-mail
+      - SBS_AUTOSSLACCOUNTEMAIL=foo@foo.com
+      # Renewal theshold in days for certificate
+      - SBS_AUTOSSLTHRESHOLD=20
+      # Si está configurado el CCS, sitio web que debe sincronizar los bindings para que
+      # use todos los certificados que haya en la carpeta. Alternativamente se pueden
+      # designar bindings manualmente en SBS_IISBINDINGS
+      - SBS_AUTOSSLSITESYNC=Default Web Site
+networks:
+  container_default:
+    external: true

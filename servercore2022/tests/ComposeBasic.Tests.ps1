@@ -3,7 +3,7 @@ BeforeAll {
     WaitForLog "servercore2022-servercore-1" "Initialization Completed"
 }
     
-Describe 'Compose Basic' {
+Describe 'compose-basic.yaml' {
 
     It 'LogRotate is enabled by default' {
         docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
