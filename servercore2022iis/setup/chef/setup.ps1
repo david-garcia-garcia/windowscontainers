@@ -1,5 +1,9 @@
 $global:ErrorActionPreference = 'Stop';
 
+Write-Host "`n---------------------------------------"
+Write-Host " Downloading and installing IISChef"
+Write-Host "-----------------------------------------`n"
+
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; 
 
 $download = [System.IO.Path]::GetTempFileName();
@@ -13,3 +17,9 @@ Remove-Item $download -Force;
 Import-Module "$($Env:ProgramFiles)\WindowsPowerShell\Modules\iischef\iischef.dll";
 
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
+
+Write-Host "`n---------------------------------------"
+Write-Host " Deploying certificate renewal Shceduled Task"
+Write-Host "-----------------------------------------`n"
+
+Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\RenewCertificates.xml" -Raw) -TaskName "RenewCertificates";

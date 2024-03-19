@@ -12,7 +12,8 @@ services:
         IMG_SERVERCORE2022IISNET48: ${IMG_SERVERCORE2022IISNET48}
     image: ${IMG_SERVERCORE2022IIS}
     networks:
-      - container_default
+      container_default:
+        ipv4_address: 172.18.8.8
     environment:
       # Promocionar variables de entorno a variables de sistema
       - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
