@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  mssql2:
+  mssql:
     stop_grace_period: 60s
     deploy:
       resources:
@@ -31,19 +31,28 @@ services:
       - MSSQL_ADMIN_PWD=sapwd
       - MSSQL_DATABASE=mydatabase
       - MSSQL_LIFECYCLE=ATTACH
-      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
+      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;
       - MSSQL_SPCONFIGURERESTART=0
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
+      - MSSQL_INSTANCENAME=myinstance
+      - MSSQL_MAXMEMORY=2050
+      # For debugging timeout at 40s
+      - SBS_SHUTDOWNTIMEOUT=40
+      # Start services
       - SBS_SRVENSURE=SQLSERVERAGENT;newrelic-infra
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
+      # Monitor from event viewer
+      - SBS_MONITORLOGNAMES=Application,System
       - SBS_MONITORLOGSOURCE=*
       - SBS_MONITORLOGMINLEVEL=Warning
       - SBS_CRONRUNONBOOT=DeployMssqlNri
       - NEW_RELIC_LICENSE_KEY=
+      - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      - SBS_CRON_MssqlReleaseMemory=
 networks:
   container_default:
     external: true

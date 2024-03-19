@@ -16,6 +16,11 @@ reg import $regFilePath;
 ################################################
 # Disable default pool
 ################################################
+
+Write-Host "`n---------------------------------------"
+Write-Host " Configurating default application pool"
+Write-Host "-----------------------------------------`n"
+
 Stop-WebAppPool -Name "DefaultAppPool";
 Import-Module WebAdministration;
 $ApplicationPoolName = "IIS:\AppPools\DefaultAppPool";
@@ -27,6 +32,10 @@ $AppPool | Set-Item;
 ################################################
 # IIS remote management
 ################################################
+
+Write-Host "`n---------------------------------------"
+Write-Host " Deploying IIS remote management"
+Write-Host "-----------------------------------------`n"
 
 # https://mcpmag.com/articles/2014/10/21/enabling-iis-remote-management.aspx
 Install-WindowsFeature  Web-Mgmt-Service;

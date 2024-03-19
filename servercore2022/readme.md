@@ -157,14 +157,14 @@ Note that if you are using docker and starting/stopping the same image, the imag
 
 For shutdown scripts please consider the following important information: inside a windows container - by default - it is complex and tricky to setup shutdown logic that keeps the image running until you are done. Read this: [Unable to react to graceful shutdown of (Windows) container · Issue #25982 · moby/moby (github.com)](https://github.com/moby/moby/issues/25982)
 
-To deal with this, this image overrides the default process shutting down timeout boosting it to 30 minutes versus the default 5 seconds.
+To deal with this, this image overrides the default process shutting down timeout boosting it to 20 seconds versus the default 5 seconds. You can tune this through the SBS_SHUTDOWNTIMEOUT  environment variable.
 
 ```powershell
 RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 1800
 RUN reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 1800000 /f
 ```
 
-This means that a missconfiguration or missbehaviour during shutdown can leave your container held for up to 30 minutes until it is forcefully shutdown. It also means that **any dangling process** opened by the container manager (i.e. containerd) (such as a remote console in either K8S or docker) will keep your container from being freed. To deal with this, we assume that the entry point should be the only source of shutdown blocking, and anything that needs to be shutdown gracefully should be dealt with in the entry point. The entry point will forcefully close these danging processes if any, this is controlled through the enviornment variable:
+**Any dangling process** opened by the container manager (i.e. containerd) (such as a remote console in either K8S or docker) will keep your container from being freed during the timeout period. To deal with this, we assume that the entry point should be the only source of shutdown blocking, and anything that needs to be shutdown gracefully should be dealt with in the entry point. The entry point will forcefully close these dangling processes if any, this is controlled through the environment variable:
 
 ```powershell
 SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
@@ -172,7 +172,15 @@ SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
 
 If none specified, defaults to "cmd,powershell,pwsh".
 
-**Handling shutdown in Kubernetes**
+### Setting the shutdown timeout dynamically
+
+Use the environment variable SBS_SHUTDOWNTIMEOUT to set the container shutdown timeout (in seconds)
+
+```yaml
+SBS_SHUTDOWNTIMEOUT=60
+```
+
+### Handling shutdown in Kubernetes
 
 [Container Lifecycle Hooks | Kubernetes](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/)
 
@@ -198,6 +206,12 @@ lifecycle {
    }
 }
 ```
+
+### Final thoughts on configuring shutdown
+
+When developing with docker, use a high SBS_SHUTDOWNTIMEOUT to control and debug container shutdowns. But make sure that you are careful with container consoles being open, or your container will get stuck (even with the use of SBS_SHUTDOWNCLOSEPROCESSES, this is not bullet proof and seems no be working always).
+
+In production K8S environments, because we have hooks to deal with this, try to keep SBS_SHUTDOWNTIMEOUT low to avoid stuck container shutdowns (i.e. 15-20s), and set SBS_AUTOSHUTDOWN=0.
 
 ## New Relic and NRI Perfmon
 

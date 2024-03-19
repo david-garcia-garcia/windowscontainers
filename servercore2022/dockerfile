@@ -6,18 +6,15 @@ SHELL ["powershell.exe"]
 RUN mkdir "c:\LogMonitor"; `
     Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe" -OutFile "C:\LogMonitor\LogMonitor.exe"
 
-RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 900
-RUN reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 900000 /f
+# Change the default to something a little bit larger than the default 5s.... 20s
+# https://github.com/dotnet/runtime/issues/63709
+RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 10
+RUN reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 10000 /f
 
 # Set shell to PowerShell
 # SHELL ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe"]
 
 COPY "setup\\external" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
-
-COPY "setup\\logrotate" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;
@@ -28,6 +25,11 @@ RUN c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 COPY "setup\\perfmon" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+RUN c:\setup\setup.ps1
+RUN Remove-Item -Path c:\setup -Recurse -Force;
+
+COPY "setup\\logrotate" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;

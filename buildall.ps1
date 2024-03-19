@@ -4,7 +4,8 @@
 
 param (
     [bool]$Push = $false,
-    [bool]$Test = $false
+    [bool]$Test = $false,
+    [string]$Images = ".*"
 )
 
 function WaitForLog {
@@ -40,6 +41,9 @@ function ThrowIfError() {
 
 # TODO: Write some tests with PESTER
 if ($test) {
+
+    Import-Module Pester -PassThru;
+
     # Check if the 'container_default' network exists
     $networkName = "container_default"
     $existingNetwork = docker network ls --format "{{.Name}}" | Where-Object { $_ -eq $networkName }
@@ -60,15 +64,16 @@ Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
 ThrowIfError
 
-if ($test) {
-    docker compose -f servercore2022/compose-basic.yaml up -d;
-    WaitForLog "servercore2022-servercore-1" "Initialization Ready"
-    docker compose -f servercore2022/compose-basic.yaml down;
-}
+if ("servercore2022" -match $Images) {
+    if ($test) {
+        Invoke-Pester servercore2022\tests\ComposeBasic.Tests.ps1
+        Invoke-Pester servercore2022\tests\Compose.Tests.ps1
+    }
 
-if ($push) {
-    docker push "$($Env:IMG_SERVERCORE2022)"
-    ThrowIfError
+    if ($push) {
+        docker push "$($Env:IMG_SERVERCORE2022)"
+        ThrowIfError
+    }
 }
 
 # IIS Base
@@ -76,9 +81,16 @@ Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
 docker compose -f servercore2022iis/compose.yaml build
 ThrowIfError
 
-if ($push) { 
-    docker push "$($Env:IMG_SERVERCORE2022IIS)" 
-    ThrowIfError
+if ("servercore2022iis" -match $Images) {
+    if ($test) {
+        Invoke-Pester servercore2022iis\tests\Compose.Tests.ps1
+        Invoke-Pester servercore2022iis\tests\ComposeCerts.Tests.ps1
+    }
+
+    if ($push) { 
+        docker push "$($Env:IMG_SERVERCORE2022IIS)" 
+        ThrowIfError
+    }
 }
 
 # IIS NET 48
@@ -86,9 +98,11 @@ Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
 docker compose -f servercore2022iisnet48/compose.yaml build
 ThrowIfError
 
-if ($push) { 
-    docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
-    ThrowIfError
+if ("servercore2022iisnet48" -match $Images) {
+    if ($push) { 
+        docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
+        ThrowIfError
+    }
 }
 
 # SQL Server Base
@@ -96,9 +110,11 @@ Write-Host "Building $($Env:IMG_SQLSERVER2022BASE)"
 docker compose -f sqlserver2022base/compose.yaml build
 ThrowIfError
 
-if ($push) { 
-    docker push "$($Env:IMG_SQLSERVER2022BASE)"
-    ThrowIfError
+if ("sqlserver2022base" -match $Images) {
+    if ($push) { 
+        docker push "$($Env:IMG_SQLSERVER2022BASE)"
+        ThrowIfError
+    }
 }
 
 # SQL Server Analysis Services
@@ -116,7 +132,13 @@ Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
 docker compose -f sqlserver2022k8s/compose.yaml build
 ThrowIfError
 
-if ($push) {
-    docker push "$($Env:IMG_SQLSERVER2022K8S)"
-    ThrowIfError
+if ("sqlserver2022k8s" -match $Images) {
+    if ($test) {
+        Invoke-Pester sqlserver2022k8s\tests\Compose.Tests.ps1
+    }
+
+    if ($push) {
+        docker push "$($Env:IMG_SQLSERVER2022K8S)"
+        ThrowIfError
+    }
 }

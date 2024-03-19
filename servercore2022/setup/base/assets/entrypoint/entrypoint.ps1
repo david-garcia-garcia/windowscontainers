@@ -2,6 +2,24 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 
 Import-Module Sbs;
 
+$stopwatch = [System.Diagnostics.Stopwatch]::StartNew();
+
+#####################################
+# Setting timezone hardcoded here
+#####################################
+
+$timezone = [Environment]::GetEnvironmentVariable("SBS_CONTAINERTIMEZONE")
+
+# Check if the timezone value was retrieved
+if (-not [string]::IsNullOrWhiteSpace($timezone)) {
+    # Set the timezone
+    Set-TimeZone -Id $timezone;
+    SbsWriteHost "Timezone set to $timezone from SBS_CONTAINERTIMEZONE";
+} else {
+    $timeZone = Get-TimeZone;
+    SbsWriteHost "System Timezone: ${$timeZone.Id}";
+}
+
 #####################################
 # Delete Readyness Probe
 #####################################
@@ -222,8 +240,10 @@ else {
 }
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
-SbsWriteHost "Initialization Ready";
 New-Item -Path 'C:\\ready' -ItemType 'File' -Force;
+
+$stopwatch.Stop();
+SbsWriteHost "Initialization completed in $($stopwatch.Elapsed.TotalSeconds)s";
 
 $lastCheck = (Get-Date).AddSeconds(-1);
 

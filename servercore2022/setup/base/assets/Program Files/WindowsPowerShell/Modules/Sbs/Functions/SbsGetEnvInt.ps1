@@ -4,13 +4,14 @@ function SbsGetEnvInt {
         [int]$defaultValue
     )
 
-    $envValue = [System.Environment]::GetEnvironmentVariable($name)
+    $envValue = [System.Environment]::GetEnvironmentVariable($name);
+    [int]$result = $null;
     if ([string]::IsNullOrWhiteSpace($envValue)) {
-        return $defaultValue
+        return $defaultValue;
     } elseif ([int]::TryParse($envValue, [ref]$result)) {
-        return $result
+        return $result;
     } else {
-        SbsWriteHost "The environment variable value for '$name' is not a valid number. Using default value: $defaultValue"
-        return $defaultValue
+        SbsWriteHost "The environment variable value for '$name' is not a valid number. Using default value: $defaultValue";
+        return $defaultValue;
     }
 }

@@ -24,8 +24,10 @@ $parsedEnvSettings = @{}
 if ($null -ne $envSettings) {
     $settingsArray = $envSettings.Split(';')
     foreach ($setting in $settingsArray) {
-        $splitSetting = $setting.Split(':');
-        $parsedEnvSettings[$splitSetting[0].Trim()] = $splitSetting[1].Trim();
+        if (-not [String]::IsNullOrWhiteSpace($setting)) {
+            $splitSetting = $setting.Split(':');
+            $parsedEnvSettings[$splitSetting[0].Trim()] = $splitSetting[1].Trim();
+        }
     }
 }
 
@@ -47,6 +49,12 @@ foreach ($key in $finalSettings.Keys) {
             $needsRestart = $true;
         }
     }
+}
+
+$maxMemory = SbsGetEnvInt -name "MSSQL_MAXMEMORY" -defaultValue $null;
+if ($null -ne $maxMemory) {
+    SbsWriteHost "Setting max memory to $maxMemory";
+    Set-DbaMaxMemory -SqlInstance $sqlInstance -Max $maxMemory;
 }
 
 if (($true -eq $needsRestart) -or ($Env:MSSQL_SPCONFIGURERESTART -eq '1')) {
