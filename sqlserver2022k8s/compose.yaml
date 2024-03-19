@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  mssql2:
+  mssql:
     stop_grace_period: 60s
     deploy:
       resources:
@@ -31,7 +31,7 @@ services:
       - MSSQL_ADMIN_PWD=sapwd
       - MSSQL_DATABASE=mydatabase
       - MSSQL_LIFECYCLE=ATTACH
-      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
+      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;max server memory:2050
       - MSSQL_SPCONFIGURERESTART=0
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
@@ -50,6 +50,8 @@ services:
       - SBS_MONITORLOGMINLEVEL=Warning
       - SBS_CRONRUNONBOOT=DeployMssqlNri
       - NEW_RELIC_LICENSE_KEY=
+      - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      - SBS_CRON_MssqlReleaseMemory=
 networks:
   container_default:
     external: true

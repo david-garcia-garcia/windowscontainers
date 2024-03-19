@@ -31,3 +31,7 @@ Add-WebConfigurationProperty -pspath 'MACHINE/WEBROOT/APPHOST/Default Web Site' 
 }
 
 Add-WebConfiguration -Filter "system.webServer/security/isapiCgiRestriction" -Value @{description='My ISAPI Extension'; path=$extensionPath; allowed=$true} -PSPath 'IIS:\'
+
+# Clean temp data
+Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
+Remove-Item -Path "$env:TEMP\*" -Recurse -Force;

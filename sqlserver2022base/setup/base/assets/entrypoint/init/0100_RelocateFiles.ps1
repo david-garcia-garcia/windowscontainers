@@ -64,8 +64,10 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 ###############################
 # START THE SERVER
 ###############################
-SbsWriteHost "Starting MSSQLSERVER Service";
+SbsWriteHost "MSSQLSERVER Service Starting...";
 Start-Service 'MSSQLSERVER';
+SbsWriteHost "MSSQLSERVER Service started";
+
 $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
 if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
@@ -124,7 +126,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 }
 
 # Prepare path for data, log, backup, temporary and control
-$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance localhost;
+$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance;
 
 $backupPath = $dbaDefaultPath.Backup;
 $dataPath = $dbaDefaultPath.Data;
@@ -139,17 +141,9 @@ SbsWriteHost "SQL Data Path: $dataPath";
 SbsWriteHost "SQL Log Path: $logPath";
 
 ########################################
-# Set MAX DOP, default to 1
-########################################
-$maxDopEnv = [System.Environment]::GetEnvironmentVariable('MSSQL_MAXDOP');
-$maxDop = if ([string]::IsNullOrWhiteSpace($maxDopEnv) -or $maxDopEnv -match '^\d+$' -and $maxDopEnv -ge 0) { [int]$maxDopEnv } else { 1 }
-Set-DbaMaxDop -SqlInstance $sqlInstance -MaxDop $maxDop;
-
-########################################
 # Set ADMIN account
 ########################################
+SbsWriteHost "Configuring admin account";
 $securePassword = ConvertTo-SecureString $Env:MSSQL_ADMIN_PWD -AsPlainText -Force;
-Reset-DbaAdmin -SqlInstance $sqlInstance -Login $Env:MSSQL_ADMIN_USERNAME -SecurePassword $securePassword  -Confirm:$false
+Set-DbaLogin -SqlInstance $sqlInstance -Login $Env:MSSQL_ADMIN_USERNAME -SecurePassword $securePassword -Enable -GrantLogin -PasswordPolicyEnforced:$false -Force -Confirm:$false
 
-$IPs = (Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -ne "127.0.0.1" }).IPAddress -join ", ";
-Write-Output "IP Addresses: $IPs";

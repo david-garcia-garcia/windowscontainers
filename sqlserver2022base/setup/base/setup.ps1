@@ -30,3 +30,7 @@ Set-Service SQLWriter -StartupType Disabled;
 # If agent is needed, then enable it in the dockerfile config
 Stop-Service SQLSERVERAGENT;
 Set-Service SQLSERVERAGENT -StartupType Disabled;
+
+# Clean temp data
+Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
+Remove-Item -Path "$env:TEMP\*" -Recurse -Force;

@@ -4,7 +4,8 @@
 
 param (
     [bool]$Push = $false,
-    [bool]$Test = $false
+    [bool]$Test = $false,
+    [string]$Images = ".*"
 )
 
 function WaitForLog {
@@ -63,14 +64,16 @@ Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
 ThrowIfError
 
-if ($test) {
-    #Invoke-Pester -Output Detailed servercore2022\ComposeBasic.Tests.ps1
-    #Invoke-Pester -Output Detailed servercore2022\Compose.Tests.ps1
-}
+if ("servercore2022" -match $Images) {
+    if ($test) {
+        Invoke-Pester -Output Detailed servercore2022\ComposeBasic.Tests.ps1
+        Invoke-Pester -Output Detailed servercore2022\Compose.Tests.ps1
+    }
 
-if ($push) {
-    docker push "$($Env:IMG_SERVERCORE2022)"
-    ThrowIfError
+    if ($push) {
+        docker push "$($Env:IMG_SERVERCORE2022)"
+        ThrowIfError
+    }
 }
 
 # IIS Base
@@ -78,26 +81,28 @@ Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
 docker compose -f servercore2022iis/compose.yaml build
 ThrowIfError
 
-if ($test) {
-    Invoke-Pester -Output Detailed servercore2022iis\Compose.Tests.ps1
-    Invoke-Pester -Output Detailed servercore2022iis\ComposeCerts.Tests.ps1
-}
+if ("servercore2022iis" -match $Images) {
+    if ($test) {
+        Invoke-Pester -Output Detailed servercore2022iis\Compose.Tests.ps1
+        Invoke-Pester -Output Detailed servercore2022iis\ComposeCerts.Tests.ps1
+    }
 
-if ($push) { 
-    docker push "$($Env:IMG_SERVERCORE2022IIS)" 
-    ThrowIfError
+    if ($push) { 
+        docker push "$($Env:IMG_SERVERCORE2022IIS)" 
+        ThrowIfError
+    }
 }
-
-return;
 
 # IIS NET 48
 Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
 docker compose -f servercore2022iisnet48/compose.yaml build
 ThrowIfError
 
-if ($push) { 
-    docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
-    ThrowIfError
+if ("servercore2022iisnet48" -match $Images) {
+    if ($push) { 
+        docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
+        ThrowIfError
+    }
 }
 
 # SQL Server Base
@@ -105,9 +110,11 @@ Write-Host "Building $($Env:IMG_SQLSERVER2022BASE)"
 docker compose -f sqlserver2022base/compose.yaml build
 ThrowIfError
 
-if ($push) { 
-    docker push "$($Env:IMG_SQLSERVER2022BASE)"
-    ThrowIfError
+if ("sqlserver2022base" -match $Images) {
+    if ($push) { 
+        docker push "$($Env:IMG_SQLSERVER2022BASE)"
+        ThrowIfError
+    }
 }
 
 # SQL Server Analysis Services
@@ -125,7 +132,13 @@ Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
 docker compose -f sqlserver2022k8s/compose.yaml build
 ThrowIfError
 
-if ($push) {
-    docker push "$($Env:IMG_SQLSERVER2022K8S)"
-    ThrowIfError
+if ("sqlserver2022k8s" -match $Images) {
+    if ($test) {
+        Invoke-Pester -Output Detailed sqlserver2022k8s\Compose.Tests.ps1
+    }
+
+    if ($push) {
+        docker push "$($Env:IMG_SQLSERVER2022K8S)"
+        ThrowIfError
+    }
 }

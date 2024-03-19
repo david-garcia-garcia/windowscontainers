@@ -109,15 +109,25 @@ All SQL  paths (MSSQL_PATH_*) have been moved to persistent volume store. This e
 
 ## Memory usage
 
-**PENDING**
-
 MSSQL will use as much memory as possible. This is huge problem if not controlled in a K8S cluster. The same if you have multiple instances of MSSQL on the same server, they will compete for memory resources.
 
-This can even become more problematic if K8S decides to memory evict your Statefulset pod.
+This can even become more problematic if K8S decides to memory evict your pods. This requires careful planning on how you are going to assign memory to the MSSQL pods.
 
-Currrently, memory eviction does not work in windows nodes:
+Currently, memory eviction does not work in windows nodes:
 
 [Windows Nodes Don't Currently Support Out of Memory Eviction (OOMKILL) · Issue #2820 · Azure/AKS (github.com)](https://github.com/Azure/AKS/issues/2820)
+
+Consider configuring the memory release scheduled task. Make sure you run this at a time where it will not be impacting backups or database load. This task temporarily reduces the server configured Max Memory (for a few seconds), forcing a release.
+
+```
+'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+```
+
+You can also tune de Max Server Memory for the instance through MSSQL_SPCONFIGURE
+
+```yaml
+MSSQL_SPCONFIGURE=max server memory:2048
+```
 
 ## Control Operations
 

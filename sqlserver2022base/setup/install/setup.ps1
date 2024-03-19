@@ -54,3 +54,7 @@ Remove-Item -Path C:\SQLServerISO -Recurse -Force;
 # Install DBA tools
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
 choco install dbatools -y --no-progress;
+
+# Clean temp data
+Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
+Remove-Item -Path "$env:TEMP\*" -Recurse -Force;
