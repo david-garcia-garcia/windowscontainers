@@ -21,7 +21,12 @@ function SbsSetTaskTrigger {
         # Handle TimeSpan conversion
         if ($param.Name -match "RandomDelay|RepetitionDuration|RepetitionInterval") {
             try {
-                $value = [TimeSpan]::ParseExact($param.Value, "hh\:mm\:ss", $null)
+                if ($param.Value -eq "Timeout.InfiniteTimeSpan") {
+                    $value = [System.Threading.Timeout]::InfiniteTimeSpan;
+                }
+                else {
+                    $value = [TimeSpan]::ParseExact($param.Value, "hh\:mm\:ss", $null);
+                }
             }
             catch {
                 Write-Host "Invalid TimeSpan format for $($param.Name). Use 'HH:mm:ss'."
