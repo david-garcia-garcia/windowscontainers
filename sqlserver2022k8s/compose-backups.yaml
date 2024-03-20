@@ -1,0 +1,64 @@
+# Backup base lifecyle: there is no persistent state, backup restored when pod
+# spins up, and backup done when it tears down.
+version: "3.7"
+services:
+  mssql:
+    stop_grace_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '3'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          #memory: 2G
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+    image: ${IMG_SQLSERVER2022K8S}
+    volumes:
+      - "f:/databases/example/data:d:"
+    networks:
+      - container_default
+    environment:
+      - MSSQL_ADMIN_USERNAME=sa
+      - MSSQL_ADMIN_PWD=sapwd
+      # Backup based lifecyle. Restore on pod startup, backup on pod close. High
+      # downtime when moving pods, but good to test backup behavior. Can perfectly
+      # work on dev environments with good underlying NVME hardware where these
+      # restores take 4 min for 70GB backups.
+      - MSSQL_LIFECYCLE=BACKUP
+      # We need to configure backup schedules
+      - 'SBS_CRON_MssqlFull={"Daily":true,"At":"2023-01-01T02:00:00","DaysInterval":1, "RandomDelay": "00:30:00"}'
+      - 'SBS_CRON_MssqlDifferential={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      - 'SBS_CRON_MssqlLog={"Once":true,"At":"2023-01-01T00:00:00","DaysInterval":1, "RepetitionInterval": "00:15:00", "RepetitionDuration": "Timeout.InfiniteTimeSpan"}'
+      - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T04:00:00","DaysInterval":1}'
+      - 'SBS_CRON_MssqlSystem={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      # Automated certificates
+      - MSSQL_BACKUP_CERT=AUTO
+      # Log backup criteria
+      - MSSQL_BACKUP_LOGSIZESINCELASTBACKUP=200
+      - MSSQL_BACKUP_TIMESINCELASTLOGBACKUP=600
+      # Backup retention
+      - MSSQL_BACKUP_CLEANUPTIME_LOG=48
+      - MSSQL_BACKUP_CLEANUPTIME_DIFF=72
+      - MSSQL_BACKUP_CLEANUPTIME_FULL=128
+      # Other stuff
+      - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
+      - MSSQL_SPCONFIGURERESTART=0
+      - MSSQL_PATH_DATA=d:\data
+      - MSSQL_PATH_LOG=d:\log
+      - MSSQL_PATH_BACKUP=d:\backup
+      - MSSQL_PATH_CONTROL=d:\control
+      # Database info
+      - MSSQL_DB_NAME=mytestdatabase
+      - MSSQL_DB_RECOVERYMODEL=FULL
+      - SBS_TEMPORARY=d:\temp
+      - SBS_ENTRYPOINTERRORACTION=Stop
+networks:
+  container_default:
+    external: true

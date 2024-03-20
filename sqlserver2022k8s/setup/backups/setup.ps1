@@ -1,15 +1,5 @@
 $global:ErrorActionPreference = 'Stop'
 
-Start-Service 'MSSQLSERVER';
-
-# https://github.com/dataplat/dbatools/pull/9252
-# Install https://ola.hallengren.com/
-Write-Host "`n---------------------------------------"
-Write-Host " Install https://ola.hallengren.com/"
-Write-Host "-----------------------------------------`n"
-
-Install-DbaMaintenanceSolution -SqlInstance "localhost" -LogToTable;
-
 Write-Host "`n---------------------------------------"
 Write-Host " Registering Backup Scheduled Tasks"
 Write-Host "-----------------------------------------`n"

@@ -26,8 +26,8 @@ Disable-ScheduledTask -TaskName "MssqlReleaseMemory"
 Set-DbaDbState -SqlInstance $sqlInstance -AllDatabases -ReadOnly -Force;
 
 if ($autoBackup -eq 1) {
-    # Run a final backup before getting rid of the pod
     SbsMssqlRunBackups -backupType "LOGNOW";
+    SbsMssqlRunBackups -backupType "SYSTEM";
 }
 
 switch ($Env:MSSQL_LIFECYCLE) {

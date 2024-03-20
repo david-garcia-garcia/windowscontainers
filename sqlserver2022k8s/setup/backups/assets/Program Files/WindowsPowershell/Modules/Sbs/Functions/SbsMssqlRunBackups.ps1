@@ -19,7 +19,11 @@ function SbsMssqlRunBackups {
 	# Default to 10min or 100Mb whatever comes first
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
-	$cleanupTime = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME" -DefaultValue 24;
+
+	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 48;
+	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 168;
+	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 168;
+
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "N";
 
@@ -93,13 +97,35 @@ function SbsMssqlRunBackups {
 				$cmd.CommandTimeout = 1200;
 
 				$solutionBackupType = $backupType;
-				
+
 				if ($backupType -eq "SYSTEM") {
 					$solutionBackupType = "FULL";
 				}
 
+				# LOGNOW is used to FORCE a backup prior to container teardown. Not sure if hallengren solution
+				# will make a diff if a LOG is requested when recovery mode is simple.
 				if ($backupType -eq "LOGNOW") {
-					$solutionBackupType = "LOG";
+					$recoveryModel = (Get-DbaDbRecoveryModel -SqlInstance $sqlInstance -Database $db.Name).RecoveryModel;
+					switch ($recoveryModel) {
+						"FULL" {  
+							$solutionBackupType = "LOG";
+						}
+						Default {
+							$solutionBackupType = "DIFF";
+						}
+					}
+				}
+
+				switch ($solutionBackupType) {
+					"FULL" {
+						$cleanupTime = $cleanupTimeFull;
+					}
+					"DIFF" {
+						$cleanupTime = $cleanupTimeDiff;
+					}
+					"LOG" {
+						$cleanupTime = $cleanupTimeLog;
+					}
 				}
 
 				# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
