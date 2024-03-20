@@ -31,7 +31,7 @@ Foreach-Object {
 	$fullName = $_.FullName;
 	Try {
 		$message = "PING Cron started: " + $baseName;
-		Write-EventLog -LogName "Application" -Source "ContainerLifecycle" -EventID 23000 -EntryType Information -Message $message;
+		Write-EventLog -LogName "Application" -Source "SbsContainer" -EventID 23000 -EntryType Information -Message $message;
 		& $fullName
 		if ($LASTEXITCODE -ne 0) {
 			if ($Error.Count -gt 0) {

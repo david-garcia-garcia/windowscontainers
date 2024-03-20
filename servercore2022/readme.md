@@ -8,7 +8,7 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 * 7zip ([Chocolatey Software | 7-Zip (Install) 23.1.0](https://community.chocolatey.org/packages/7zip.install))
 * Nuget package provider for Powershell
 * Powershell-yaml ([cloudbase/powershell-yaml: PowerShell CmdLets for YAML format manipulation (github.com)](https://github.com/cloudbase/powershell-yaml))
-* Log Source for event viewer "ContainerLifecycle" in the "Application" category
+* Log Source for event viewer "SbsContainer" in the "Application" category
 * Enabled Long Path Support through windows registry
 * Disable IEEnhancedSecurity through windows reigstry
 * Enabled Session events auditing to Event Viewer
@@ -127,7 +127,7 @@ If you want make sure you properly have traceability of scheduled task failures,
 </Exec>
 ```
 
-This script treats errors and logs calls to the scheduled task on the Application::ContainerLifecycle event source. In case of error, the event code 23003 is added. You can use this to monitor scheduled task behaviours on an external logging system.
+This script treats errors and logs calls to the scheduled task on the Application::SbsContainer event source. In case of error, the event code 23003 is added. You can use this to monitor scheduled task behaviours on an external logging system.
 
 ## Startup and shutdown
 

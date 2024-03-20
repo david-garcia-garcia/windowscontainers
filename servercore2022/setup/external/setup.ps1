@@ -78,7 +78,7 @@ Write-Host "-----------------------------------------`n"
 Install-Module -Name powershell-yaml -Force;
 
 Write-Host "`n---------------------------------------"
-Write-Host " Creating log source: ContainerLifecycle"
+Write-Host " Creating log source: SbsContainer"
 Write-Host "-----------------------------------------`n"
 
 New-EventLog -LogName Application -Source "SbsContainer" -ErrorAction SilentlyContinue;
