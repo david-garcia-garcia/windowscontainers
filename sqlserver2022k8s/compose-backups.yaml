@@ -23,7 +23,8 @@ services:
     volumes:
       - "f:/databases/example/data:d:"
     networks:
-      - container_default
+      container_default:
+        ipv4_address: 172.18.8.8
     environment:
       # Temporary workaround to make scheduled tasks work
       - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC|^MSSQL_
