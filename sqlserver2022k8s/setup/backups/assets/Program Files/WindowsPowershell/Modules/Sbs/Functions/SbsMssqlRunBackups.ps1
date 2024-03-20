@@ -12,6 +12,9 @@ function SbsMssqlRunBackups {
 
 	Import-Module dbatools;
 
+	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
+	Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register 
+
 	$certificateBackupDirectory = $Env:MSSQL_PATH_BACKUP;
 	$databaseBackupDirectory = $Env:MSSQL_PATH_BACKUP;
 	$backupCertificate = $Env:MSSQL_BACKUP_CERT;
@@ -28,6 +31,9 @@ function SbsMssqlRunBackups {
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "N";
 
 	$instance = "localhost";
+	Test-DbaConnection $instance;
+	$sqlInstance = Connect-DbaInstance $instance;
+	$connectionString = $sqlInstance | New-DbaConnectionString;
 
 	$ErrorActionPreference = "Stop";
 	
@@ -38,11 +44,11 @@ function SbsMssqlRunBackups {
 	$StopWatch.Start();
 		
 	SbsWriteHost "Starting $($backupType) backup generation $($instance)"
-	$systemDatabases = Get-DbaDatabase -SqlInstance $instance -ExcludeUser;
+	$systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
 
 	# Recorremos todas las bases de datos
 	# Check for null and determine count
-	$dbs = Get-DbaDatabase -SqlInstance $instance -Status @('Normal');
+	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal');
 
 	# Check for null and determine count
 	$dbCount = 0
@@ -50,7 +56,7 @@ function SbsMssqlRunBackups {
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
 	}
-    else {
+	else {
 		SbsWriteError "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
@@ -81,13 +87,13 @@ function SbsMssqlRunBackups {
 				# Do not encrypt backups for system databases
 				if (($isSystemDb -eq $false) -and ($backupCertificate -eq "AUTO")) {
 					$certificate = "$($db.Name)_$((Get-Date).year)";
-					if (($null -eq (Get-DbaDbCertificate -SqlInstance $instance -Certificate $certificate))) {
+					if (($null -eq (Get-DbaDbCertificate -SqlInstance $sqlInstance -Certificate $certificate))) {
 						SbsMssqlEnsureCert -Name $certificate -BackupLocation $certificateBackupDirectory;
 					}
 				}
 			
 				# Llamamos al store procedure que genera los backups
-				$SqlConn = New-Object System.Data.SqlClient.SqlConnection("Server = $instance; Database = master; Integrated Security = True;");
+				$SqlConn = New-Object System.Data.SqlClient.SqlConnection($connectionString);
 				$SqlConn.Open();
 
 				$cmd = $SqlConn.CreateCommand();
