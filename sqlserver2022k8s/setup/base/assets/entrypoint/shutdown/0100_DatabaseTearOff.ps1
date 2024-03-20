@@ -6,6 +6,30 @@ $dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance;
 $dataPath = $dbaDefaultPath.Data;
 SbsWriteHost "Default data path: $dataPath";
 
+# Stop all backup related scheduled tasks
+[int]$autoBackup = SbsGetEnvInt -Name "MSSQL_AUTOBACKUP" -DefaultValue 0;
+
+# Stop all backup tasks
+Stop-ScheduledTask -TaskName "MssqlDifferential";
+Stop-ScheduledTask -TaskName "MssqlFull";
+Stop-ScheduledTask -TaskName "MssqlLog";
+Stop-ScheduledTask -TaskName "MssqlSystem";
+Stop-ScheduledTask -TaskName "MssqlReleaseMemory";
+
+Disable-ScheduledTask -TaskName "MssqlDifferential"
+Disable-ScheduledTask -TaskName "MssqlFull"
+Disable-ScheduledTask -TaskName "MssqlLog"
+Disable-ScheduledTask -TaskName "MssqlSystem"
+Disable-ScheduledTask -TaskName "MssqlReleaseMemory"
+
+# Set all databases in readonly mode
+Set-DbaDbState -SqlInstance $sqlInstance -AllDatabases -ReadOnly -Force;
+
+if ($autoBackup -eq 1) {
+    # Run a final backup before getting rid of the pod
+    SbsMssqlRunBackups -backupType "LOGNOW";
+}
+
 switch ($Env:MSSQL_LIFECYCLE) {
     'ATTACH' {
         # Although this image is aimed at only being able to handle one database per MSSQL instance,

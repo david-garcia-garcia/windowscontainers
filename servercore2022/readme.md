@@ -14,42 +14,49 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 * Enabled Session events auditing to Event Viewer
 * Creates a "localadmin" account with a random password
 
-## Log monitor and EntryPoint
+## Entry Point and Log Monitor
 
-Default entrypoint for this image is LogMonitor, which in turn starts the c:\entrypoint\entrypoint.ps1 script.
-
-[windows-container-tools/LogMonitor/README.md at main · microsoft/windows-container-tools (github.com)](https://github.com/microsoft/windows-container-tools/blob/main/LogMonitor/README.md)
-
-To fine-tune what logs are being monitored, refer to the LogMonitor documentation.
-
-If you don't want to use LogMonitor as the entrypoint just add this in your image:
+Default Entry Point for this image is the c:\entrypoint\entrypoint.ps1 script.
 
 ```powershell
 CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
-**WARNING**: Log monitor is an excellent tool for debugging while setting up your containers, but a terrible companion for production loads. The lack of configuration options, plus several bugs that interfere with the container shutdown when timeouts have been expanded make it a dangerous choice for production workloads. Find another way of moving your logging information out of the container.
-
-If you are not using LogMonitor and want to output Event Viewer data through the container entry point use
+This entry point can redirect to the container output stream Event Log data during execution:
 
 ```yaml
 SBS_MONITORLOGNAMES=Application,System # What logs to monitor
 SBS_MONITORSOURCE=* #Filter the source, empty for all sourceds
+SBS_MONITORLOGMINLEVEL=Warning # Minimum level to log
 ```
+
+If this is not sufficient, you can use LogMonitor as a replacement
+
+[windows-container-tools/LogMonitor/README.md at main · microsoft/windows-container-tools (github.com)](https://github.com/microsoft/windows-container-tools/blob/main/LogMonitor/README.md)
+
+```powershell
+CMD ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+```
+
+To fine-tune what logs are being monitored, refer to the LogMonitor documentation.
+
+**WARNING**: Log monitor is an excellent tool for debugging while setting up your containers, but a terrible companion for production loads. The lack of configuration options, plus several bugs that interfere with the container shutdown when timeouts have been expanded make it a dangerous choice for production workloads. Find another way of moving your logging information out of the container.
 
 ## Environment variable promotion
 
-By default, all the environment variables you setup for a container will be process injected to the entrypoint or the shell. They are not (and should not) all be system wide environment variables. If you need some of these environment variables promoted to system, so they can be seen by any process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment configuration
+By default, all the environment variables you setup for a container will be process injected to the Entry Point or the Shell. They are **not** (and should not) system wide environment variables. That means that these ENV will - by default - not be seen by scheduled tasks, IIS, or any other process that does not spin off the entry point itself. 
+
+If you need some of these environment variables promoted to system, so they can be seen by any other process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment configuration
 
 ```powershell
-SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC # Regular expresion to match ENV that you want to promote to system
 ```
 
 All the environment variables that have a name that matches the Regular Expression in SBS_PROMOTE_ENV_REGEX will be promoted to System.
 
-Get your timings and services startup right. I.E. if you have an application pool in IIS that is in autostart mode, there is chance that it will be started before the entrypoint script promotes the environment variables. The solution here is that you should design your container to have everything stopped by default, and do a controlled bootstrap using entrypoint script extensions (placing your startup logic in entrypoint/init)
+Be careful to get your timings and services startup right. If you have an application pool in IIS that is in autostart mode, there is chance that it will be started before the Entry Point script promotes the environment variables. The solution here is that you should design your container to have everything stopped by default, and do a **controlled** bootstrap using Entry Point script extensions (placing your startup logic in entrypoint/init, continue reading for more information about this).
 
-If you have sensible information in your environment variables that you don't want to be seen at the system level, the entrypoint script has automated logic to encrypt using DPAPI any environment variable that you define by prepending "_PROTECT".
+If you have sensible information in your environment variables that you don't want to be seen at the system level, the Entry Point script has automated logic to encrypt using DPAPI any environment variable that you define by prepending "_PROTECT".
 
 In example:
 
@@ -93,13 +100,23 @@ c:\logrotate\log-rotate.d
 
 ## Scheduled Tasks
 
-If you need to deploy scheduled tasks into the container, you can copy the XML definition of the task into:
+Some of the images might deploy Schedule Tasks. To adjust the triggers of the tasks you can use:
 
-```powershell
-c:\cron\definitions
+```
+- 'SBS_CRON_TaskName={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
 ```
 
-and they will be automatically setup/updated when the container boots. If you need any of the tasks to run inmediately on boot, use the *SBS_CRONRUNONBOOT* environment variable to define a commad separated list of scheduled tasks to run on boot.
+The available arguments in the JSON definition are passed to: [New-ScheduledTaskTrigger (ScheduledTasks) | Microsoft Learn](https://learn.microsoft.com/en-us/powershell/module/scheduledtasks/new-scheduledtasktrigger?view=windowsserver2022-ps)
+
+Examples of scheduled task configurations:
+
+```
+# SbsAddTriggerToTask -taskName "test" -jsonTrigger '{"Weekly" : true, "At": "2023-01-01T03:00:00", "DaysOfWeek": ["Saturday"], "WeeksInterval": 1}'; 
+# SbsAddTriggerToTask -taskName "test" -jsonTrigger '{"Daily" : true, "At": "00:00:00", "RepetitionInterval": "00:15:00", "RepetitionDuration": "23:59:59"}'
+# SbsAddTriggerToTask -taskName "test" -jsonTrigger '{"Daily" : true, "At": "2023-01-01T04:00:00", "DaysInterval": 1}'
+```
+
+If you need any of the tasks to run immediately on boot, use the *SBS_CRONRUNONBOOT* environment variable to define a comma separated list of scheduled tasks to run on boot.
 
 If you want make sure you properly have traceability of scheduled task failures, whatever you run in the scheduled task make sure is invoked through the helper script provided in the image:
 
