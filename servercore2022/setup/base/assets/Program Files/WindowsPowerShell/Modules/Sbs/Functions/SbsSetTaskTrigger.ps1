@@ -32,6 +32,13 @@ function SbsSetTaskTrigger {
                 Write-Host "Invalid TimeSpan format for $($param.Name). Use 'HH:mm:ss'."
                 return
             }
+        } elseif ($param.Name -eq "DaysOfWeek") {
+            # Convert DayOfWeek from JSON string/array to [System.DayOfWeek] enum values
+            $dayOfWeekValues = @()
+            foreach ($day in $value) {
+                $dayOfWeekValues += [System.DayOfWeek]::Parse([System.DayOfWeek], $day)
+            }
+            $value = $dayOfWeekValues
         }
 
         # Assign the parameter
