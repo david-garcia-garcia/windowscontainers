@@ -93,7 +93,7 @@ function SbsMssqlRunBackups {
 				}
 			
 				# Llamamos al store procedure que genera los backups
-				$SqlConn = New-Object System.Data.SqlClient.SqlConnection($connectionString);
+				$SqlConn = New-Object System.Data.SqlClient.SqlConnection("Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;");
 				$SqlConn.Open();
 
 				$cmd = $SqlConn.CreateCommand();

@@ -24,9 +24,6 @@ foreach ($JobName in $JobsToDisable) {
     Set-DbaAgentJob -SqlInstance "localhost" -Job $JobName -Disabled;
 }
 
-# Add scheduled for the basic maintenance jobs
-
-
 Write-Host "`n---------------------------------------"
 Write-Host " Install azcopy"
 Write-Host "-----------------------------------------`n"
