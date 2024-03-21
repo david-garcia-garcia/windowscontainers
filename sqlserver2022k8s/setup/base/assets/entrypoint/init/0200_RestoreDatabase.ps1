@@ -153,11 +153,16 @@ else {
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $restoreResult = Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -Path $backupPath -WithReplace -UseDestinationDefaultDirectories -Verbose;
-    # Output the restored database names
-    foreach ($db in $restoreResult) {
-        $restored = $true;
-        Write-Output "Database restored: $($db.Database)";
+    $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
+    if ($null -ne $files) {
+        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -WithReplace -UseDestinationDefaultDirectories -Verbose;
+        $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
+        if ($database) {
+            SbsWriteHost "Database $($databaseName) restored successfully."
+            $restored = $true;
+            # The teardown scripts buts the backup in readly, and this will be the state after restore
+            $database | Set-DbaDbState -ReadWrite -Force;
+        }
     }
 }
 

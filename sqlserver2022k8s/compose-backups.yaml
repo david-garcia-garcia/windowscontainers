@@ -44,7 +44,7 @@ services:
       - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T04:00:00","DaysInterval":1}'
       - 'SBS_CRON_MssqlSystem={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
       # Automated certificates
-      - MSSQL_BACKUP_CERT=AUTO
+      #- MSSQL_BACKUP_CERT=AUTO
       # Log backup criteria
       - MSSQL_BACKUP_LOGSIZESINCELASTBACKUP=200
       - MSSQL_BACKUP_TIMESINCELASTLOGBACKUP=600
