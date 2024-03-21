@@ -28,7 +28,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install azcopy"
 Write-Host "-----------------------------------------`n"
 
-choco install azcopy10 -y --no-progress;
+choco install azcopy10 -y --version=10.23.0 --no-progress;
 
 # Cleanup
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
