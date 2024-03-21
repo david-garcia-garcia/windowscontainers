@@ -8,19 +8,22 @@ param (
     [string]$Images = ".*"
 )
 
+$PesterPreference = [PesterConfiguration]::Default
+$PesterPreference.Output.Verbosity = 'Detailed'
+
 function WaitForLog {
     param (
         [string]$containerName,
         [string]$logContains,
-        [int]$timeoutSeconds = 10
+        [int]$timeoutSeconds = 25
     )
 
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
     while ($sw.Elapsed -lt $timeout) {
-        Start-Sleep -Seconds 1
-        $logs = docker logs $containerName 2>&1
+        Start-Sleep -Seconds 2
+        $logs = docker logs $containerName --tail 150 2>&1
         if ($logs -match $logContains) {
             return;
         }
@@ -66,8 +69,8 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        Invoke-Pester servercore2022\tests\ComposeBasic.Tests.ps1
-        Invoke-Pester servercore2022\tests\Compose.Tests.ps1
+        Invoke-Pester -Path "servercore2022\tests\ComposeBasic.Tests.ps1"
+        Invoke-Pester -Path "servercore2022\tests\Compose.Tests.ps1"
     }
 
     if ($push) {
@@ -135,6 +138,7 @@ ThrowIfError
 if ("sqlserver2022k8s" -match $Images) {
     if ($test) {
         Invoke-Pester sqlserver2022k8s\tests\Compose.Tests.ps1
+        Invoke-Pester sqlserver2022k8s\tests\Compose-backups.Tests.ps1
     }
 
     if ($push) {

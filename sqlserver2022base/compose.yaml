@@ -22,6 +22,9 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_SYSTEM=d:\system
       - MSSQL_PATH_BACKUP=d:\backup
+      - SBS_MONITORLOGNAMES=Application,System
+      - SBS_MONITORLOGSOURCE=*
+      - SBS_MONITORLOGMINLEVEL=Warning
       - SBS_ENTRYPOINTERRORACTION=Stop
 networks:
   container_default:

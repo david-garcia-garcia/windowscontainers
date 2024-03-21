@@ -15,7 +15,8 @@ if (-not [string]::IsNullOrWhiteSpace($timezone)) {
     # Set the timezone
     Set-TimeZone -Id $timezone;
     SbsWriteHost "Timezone set to $timezone from SBS_CONTAINERTIMEZONE";
-} else {
+}
+else {
     $timeZone = Get-TimeZone;
     SbsWriteHost "System Timezone: ${$timeZone.Id}";
 }
@@ -242,6 +243,11 @@ else {
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
 New-Item -Path 'C:\\ready' -ItemType 'File' -Force;
 
+# To ensure that shutdown runs only once, place a unique flag
+New-Item -ItemType Directory -Path "C:\shutdownflags\" -Force;
+$shutdownFlagFile = "C:\shutdownflags\" + [Guid]::NewGuid().ToString() + ".lock";
+Set-Content -Path ($shutdownFlagFile) -Value "" -Force
+
 $stopwatch.Stop();
 SbsWriteHost "Initialization completed in $($stopwatch.Elapsed.TotalSeconds)s";
 
@@ -270,13 +276,14 @@ try {
     #Start-Sleep -Seconds 1 # Add a small delay to make the output more readable
     #}
 
-    if ($Env:SBS_AUTOSHUTDOWN -ne '0') {
-        SbsWriteHost "Shutdown start";
-        & c:\entrypoint\shutdown.ps1;
-        SbsWriteHost "Shutdown end";
+    # There are two ways to avoid calling shutodwn here:
+    # 1. Shutdown was called somewhere else (i.e. lifecycle hook in K8S)
+    # 2. SBS_AUTOSHUTDOWN was explicitly set to som
+    if (($Env:SBS_DISABLEAUTOSHUTDOWN -eq "True") -or ((Test-Path $shutdownFlagFile) -eq $false)) {
+        SbsWriteHost "Integrated shutdown skipped.";
     }
     else {
-        SbsWriteHost "Integrated shutdown skipped.";
+        & c:\entrypoint\shutdown.ps1;
     }
 }
 finally {

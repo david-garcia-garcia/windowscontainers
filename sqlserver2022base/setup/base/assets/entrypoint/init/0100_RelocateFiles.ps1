@@ -139,11 +139,3 @@ if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath; }
 SbsWriteHost "SQL Backup Path: $backupPath";
 SbsWriteHost "SQL Data Path: $dataPath";
 SbsWriteHost "SQL Log Path: $logPath";
-
-########################################
-# Set ADMIN account
-########################################
-SbsWriteHost "Configuring admin account";
-$securePassword = ConvertTo-SecureString $Env:MSSQL_ADMIN_PWD -AsPlainText -Force;
-Set-DbaLogin -SqlInstance $sqlInstance -Login $Env:MSSQL_ADMIN_USERNAME -SecurePassword $securePassword -Enable -GrantLogin -PasswordPolicyEnforced:$false -Force -Confirm:$false
-

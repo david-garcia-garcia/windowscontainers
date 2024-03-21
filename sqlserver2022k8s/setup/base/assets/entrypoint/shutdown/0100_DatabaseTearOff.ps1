@@ -6,6 +6,31 @@ $dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance;
 $dataPath = $dbaDefaultPath.Data;
 SbsWriteHost "Default data path: $dataPath";
 
+# Stop all backup related scheduled tasks
+[int]$autoBackup = SbsGetEnvInt -Name "MSSQL_AUTOBACKUP" -DefaultValue 0;
+
+# Stop all backup tasks
+Stop-ScheduledTask -TaskName "MssqlDifferential";
+Stop-ScheduledTask -TaskName "MssqlFull";
+Stop-ScheduledTask -TaskName "MssqlLog";
+Stop-ScheduledTask -TaskName "MssqlSystem";
+Stop-ScheduledTask -TaskName "MssqlReleaseMemory";
+
+Disable-ScheduledTask -TaskName "MssqlDifferential"
+Disable-ScheduledTask -TaskName "MssqlFull"
+Disable-ScheduledTask -TaskName "MssqlLog"
+Disable-ScheduledTask -TaskName "MssqlSystem"
+Disable-ScheduledTask -TaskName "MssqlReleaseMemory"
+
+# Set all user databases in readonly mode
+Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeSystem | Set-DbaDbState -ReadOnly -Force;
+
+if ($autoBackup -eq 1 -or $Env:MSSQL_LIFECYCLE -eq "BACKUP") {
+    SbsWriteHost "Performing shutdown backups...."
+    SbsMssqlRunBackups -backupType "LOGNOW";
+    SbsMssqlRunBackups -backupType "SYSTEM";
+}
+
 switch ($Env:MSSQL_LIFECYCLE) {
     'ATTACH' {
         # Although this image is aimed at only being able to handle one database per MSSQL instance,

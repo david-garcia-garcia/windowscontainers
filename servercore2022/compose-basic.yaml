@@ -10,6 +10,10 @@ services:
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SERVERCORE2022}
+    environment:
+      - SBS_MONITORLOGNAMES=Application,System
+      - SBS_MONITORLOGSOURCE=*
+      - SBS_MONITORLOGMINLEVEL=Information
     networks:
       - container_default
     # Environment completely wiped out on purpose, to test

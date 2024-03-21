@@ -20,6 +20,13 @@ Describe 'compose-basic.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Disabled"
     }
 
+    It 'Shutdown not called twice' {
+        docker exec servercore2022-servercore-1 powershell "powershell -File 'c:\entrypoint\shutdown.ps1'"
+        WaitForLog "servercore2022-servercore-1" "SHUTDOWN END"
+        docker compose -f servercore2022/compose-basic.yaml stop;
+        WaitForLog "servercore2022-servercore-1" "Integrated shutdown skipped"
+    }
+
     AfterAll {
         docker compose -f servercore2022/compose-basic.yaml down;
     }

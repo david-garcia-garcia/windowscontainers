@@ -1,5 +1,3 @@
-
-    
 Describe 'compose.yaml' {
     BeforeAll {
         docker compose -f servercore2022iis/compose.yaml up -d;

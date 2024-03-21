@@ -6,9 +6,7 @@ function SbsMssqlEnsureCert {
         [Parameter(Mandatory = $true)]
         [string]$Name,
         [Parameter(Mandatory = $true)]
-        [string]$BackupLocation,
-        # Optional parameter to set a password for the compressed cert backup
-        [string]$CertificatePassword
+        [string]$BackupLocation
     )
 
     $instanceName = "localhost";
@@ -25,8 +23,15 @@ function SbsMssqlEnsureCert {
     Write-Host "Cert '$certificate' backup exists $existingCertificateBackup";
 
     # We must ensure that both the certificate and the backup exist
-    if (($null -ne $existingCertificate) -or ($true -eq $existingCertificateBackup)) {
-        Write-Host "Certificate or certificate backup already exist.";
+    if (($null -ne $existingCertificate)) {
+        Write-Host "Certificate already exist in the database.";
+        return;
+    }
+
+    # Restore the backup
+    if (($true -eq $existingCertificateBackup)) {
+        SbsWriteHost "Certificate backup found, importing...";
+        SbsMssqlImportCert -zipPath $existingCertificateBackup;
         return;
     }
 

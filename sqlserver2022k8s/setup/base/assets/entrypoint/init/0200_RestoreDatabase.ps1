@@ -28,7 +28,9 @@ SbsWriteHost "SQL Data Path: $dataPath";
 SbsWriteHost "SQL Log Path: $logPath";
 
 $controlPath = $Env:MSSQL_PATH_CONTROL;
-$databaseName = $Env:MSSQL_DATABASE;
+
+$databaseName = SbsGetEnvString -Name "MSSQL_DB_NAME" -DefaultValue "";
+$databaseRecoveryModel = SbsGetEnvString -Name "MSSQL_DB_RECOVERYMODEL" -DefaultValue "SIMPLE";
 
 if ($null -eq $tempDir) {
     SbsWriteWarning "No temporary directory set in ENV SBS_TEMPORARY, using default c:\windows\temp. Note that this will consume storage inside the container mount (MAX 20GB) and can become an issue with very large databases.";
@@ -149,12 +151,26 @@ else {
 }
 
 # If nothing was restored try from a backup
-if ($restored -eq $false) {
+if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $restoreResult = Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -Path $backupPath -WithReplace -UseDestinationDefaultDirectories -Verbose;
-
-    # Output the restored database names
-    foreach ($db in $restoreResult) {
-        Write-Output "Database restored: $($db.Database)";
+    $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
+    if ($null -ne $files) {
+        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -WithReplace -UseDestinationDefaultDirectories -Verbose;
+        $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
+        if ($database) {
+            SbsWriteHost "Database $($databaseName) restored successfully."
+            $restored = $true;
+            # The teardown scripts buts the backup in readly, and this will be the state after restore
+            $database | Set-DbaDbState -ReadWrite -Force;
+        }
     }
+}
+
+if (($restored -eq $false) -and ($null -ne $databaseName)) {
+    # Create the database
+    New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
+}
+
+if ($null -ne $databaseName) {
+    Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false;
 }

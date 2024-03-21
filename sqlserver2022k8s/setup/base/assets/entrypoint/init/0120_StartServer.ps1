@@ -52,7 +52,7 @@ foreach ($key in $finalSettings.Keys) {
 }
 
 $maxMemory = SbsGetEnvInt -name "MSSQL_MAXMEMORY" -defaultValue $null;
-if ($null -ne $maxMemory) {
+if (($null -ne $maxMemory) -and ($maxMemory -gt 512)) {
     SbsWriteHost "Setting max memory to $maxMemory";
     Set-DbaMaxMemory -SqlInstance $sqlInstance -Max $maxMemory;
 }
@@ -60,4 +60,16 @@ if ($null -ne $maxMemory) {
 if (($true -eq $needsRestart) -or ($Env:MSSQL_SPCONFIGURERESTART -eq '1')) {
     SbsWriteHost "Server post config restart.";
     Restart-DbaService -ComputerName "localhost";
+}
+
+# Check timeouts - in K8S use lifecycle hooks
+if ($null -eq $Env:MSSQL_DISABLESHUTDOWNTIMEOUTCHECK) {
+    $timeout = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\cexecsvc").ProcessShutdownTimeoutSeconds;
+    $minimium = 20;
+    if (($Env:MSSQL_LIFECYCLE -eq "BACKUP") -or ($Env:MSSQL_AUTOBACKUP -eq "1")) {
+        $minimium = 60;
+    }
+    if ($timeout -lt $minimium) {
+        Write-Error "Current shutdown timeout of $($timeout)s is lower than the minimum of $($minimium)s for this workload. Use SBS_SHUTDOWNTIMEOUT to set a bigger timeout. If this is running in K8S, configure a LifeCycleHook for shutdown instead of increasing the timeout."
+    }
 }
