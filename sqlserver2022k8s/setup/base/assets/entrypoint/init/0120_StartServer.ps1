@@ -63,7 +63,7 @@ if (($true -eq $needsRestart) -or ($Env:MSSQL_SPCONFIGURERESTART -eq '1')) {
 }
 
 # Check timeouts - in K8S use lifecycle hooks
-if ($null -ne $Env:MSSQL_DISABLESHUTDOWNTIMEOUTCHECK) {
+if ($null -eq $Env:MSSQL_DISABLESHUTDOWNTIMEOUTCHECK) {
     $timeout = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\cexecsvc").ProcessShutdownTimeoutSeconds;
     $minimium = 20;
     if (($Env:MSSQL_LIFECYCLE -eq "BACKUP") -or ($Env:MSSQL_AUTOBACKUP -eq "1")) {

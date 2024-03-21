@@ -68,6 +68,8 @@ services:
       - SBS_MONITORLOGNAMES=Application,System
       - SBS_MONITORLOGSOURCE=*
       - SBS_MONITORLOGMINLEVEL=Information
+      # Shutdown timeout
+      - SBS_SHUTDOWNTIMEOUT=60
 networks:
   container_default:
     external: true
