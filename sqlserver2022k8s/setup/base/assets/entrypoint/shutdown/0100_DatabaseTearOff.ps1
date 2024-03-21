@@ -25,7 +25,8 @@ Disable-ScheduledTask -TaskName "MssqlReleaseMemory"
 # Set all databases in readonly mode
 Set-DbaDbState -SqlInstance $sqlInstance -AllDatabases -ReadOnly -Force;
 
-if ($autoBackup -eq 1) {
+if ($autoBackup -eq 1 -or $Env:MSSQL_LIFECYCLE -eq "BACKUP") {
+    SbsWriteHost "Performing shutdown backups...."
     SbsMssqlRunBackups -backupType "LOGNOW";
     SbsMssqlRunBackups -backupType "SYSTEM";
 }

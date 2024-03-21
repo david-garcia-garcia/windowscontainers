@@ -28,12 +28,11 @@ function SbsMssqlRunBackups {
 	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 168;
 
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
-	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "N";
+	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
 
 	$instance = "localhost";
 	Test-DbaConnection $instance;
 	$sqlInstance = Connect-DbaInstance $instance;
-	$connectionString = $sqlInstance | New-DbaConnectionString;
 
 	$ErrorActionPreference = "Stop";
 	
@@ -177,9 +176,11 @@ function SbsMssqlRunBackups {
 					$indexCmd.ExecuteScalar();
 				}
 				
-				if ($backupType -eq "DIFF") {
+				# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
+				$cmd.Parameters.AddWithValue("@ChangeBackupType", $changeBackupType) | Out-Null
+
+				if ($changeBackupType -eq "Y" -and $modificationLeve > 0) {
 					$cmd.Parameters.AddWithValue("@ModificationLevel", $modificationLevel) | Out-Null
-					$cmd.Parameters.AddWithValue("@ChangeBackupType", $changeBackupType) | Out-Null
 				}
 				
 				if ($backupType -eq "LOG") {
@@ -198,12 +199,6 @@ function SbsMssqlRunBackups {
 				}
 				
 				$success = $true;
-				
-				# Eliminamos fulls y diferenciales antiguos
-				#$instancia = $instance.Replace('\', '$')
-				#$BackupFolderPath = Get-ChildItem $json.Directory -recurse | Where-Object { $_.PSIsContainer -eq $true -and $_.Name -eq $db -and (CheckParentFolders $_ $instancia) } | % { $_.FullName }
-				#If (([string]::IsNullOrEmpty($BackupFolderPath)) -or ($backupType -eq "LOG")) { continue }
-				#Remove-RedundantBackups -Instance $instance -BackupFolderPath $BackupFolderPath
 			}
 			Catch {
 				$retryCount++
@@ -219,14 +214,7 @@ function SbsMssqlRunBackups {
 		}
 	}
 	
-	# Ejecutamos script adicional al acabar la ejecución 
-	#$pathPostScript = "$PSScriptRoot\$($postScript).ps1"
-	#if (Test-Path $pathPostScript -PathType Leaf) {
-	#	& $pathPostScript
-	#}
-	
 	$StopWatch.Stop()
-	$Minutes = $StopWatch.Elapsed.TotalMinutes
+	$Minutes = $StopWatch.Elapsed.TotalMinutes 
 	SbsWriteHost "$($backupType) backups created successfully in $($Minutes) min"
-
 }
