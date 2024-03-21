@@ -21,7 +21,7 @@ services:
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
-      - "f:/databases/example/data:d:"
+      - "c:/datavolume:d:"
     networks:
       container_default:
         ipv4_address: 172.18.8.8
