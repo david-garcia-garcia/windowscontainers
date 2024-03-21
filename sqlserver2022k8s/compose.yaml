@@ -19,9 +19,9 @@ services:
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
-      - "f:/databases/example/data:d:"
-      - "f:/databases/example/backup:e:"
-      - "f:/databases/example/control:c:/SQLControl"
+      - "c:/datavolume/data:d:"
+      - "c:/datavolume/backup:e:"
+      - "c:/datavolume/control:c:/SQLControl"
       - "c:/windows/temp:f:"
     networks:
       container_default:

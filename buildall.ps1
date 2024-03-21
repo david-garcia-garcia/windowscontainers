@@ -15,7 +15,7 @@ function WaitForLog {
     param (
         [string]$containerName,
         [string]$logContains,
-        [int]$timeoutSeconds = 20
+        [int]$timeoutSeconds = 25
     )
 
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
@@ -23,7 +23,7 @@ function WaitForLog {
 
     while ($sw.Elapsed -lt $timeout) {
         Start-Sleep -Seconds 2
-        $logs = docker logs $containerName --tail 100 2>&1
+        $logs = docker logs $containerName --tail 150 2>&1
         if ($logs -match $logContains) {
             return;
         }
@@ -138,6 +138,7 @@ ThrowIfError
 if ("sqlserver2022k8s" -match $Images) {
     if ($test) {
         Invoke-Pester sqlserver2022k8s\tests\Compose.Tests.ps1
+        Invoke-Pester sqlserver2022k8s\tests\Compose-backups.Tests.ps1
     }
 
     if ($push) {
