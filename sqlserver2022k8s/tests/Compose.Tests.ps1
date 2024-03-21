@@ -8,7 +8,12 @@ Describe 'compose.yaml' {
     It 'Can connect to the SQL Server' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
+
     It 'Max Server Memory is what configured' {
+        (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "2050";
+    }
+
+    It 'Database Exists' {
         (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "2050";
     }
 

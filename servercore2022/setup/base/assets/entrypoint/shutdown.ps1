@@ -1,5 +1,10 @@
+Import-Module Sbs;
+
 SbsWriteHost "Starting teardown.";
 $shutdownScriptDirectory = "C:\entrypoint\shutdown";
+
+# Remove the shutdown flags to ensure the entrypoint does not 
+Get-ChildItem -Path "C:\shutdownflags\" -File | Remove-Item;
 
 if (Test-Path -Path $shutdownScriptDirectory) {
     # Get all .ps1 files in the directory
