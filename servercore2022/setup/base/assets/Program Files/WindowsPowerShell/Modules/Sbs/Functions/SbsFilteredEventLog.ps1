@@ -24,7 +24,7 @@ function SbsFilteredEventLog {
             $minLevel = "Information"
         }
 
-        $events = Get-EventLog -LogName $logName -After $After -Source $source | Where-Object { $_.EntryType -ge $minLevel }
+        $events = Get-EventLog -LogName $logName -After $After -Source $source | Where-Object { $_.EntryType -le $minLevel }
         $allMessages += $events
     }
 
