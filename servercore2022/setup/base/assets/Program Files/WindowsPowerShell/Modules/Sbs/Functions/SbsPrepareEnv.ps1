@@ -35,7 +35,13 @@ function SbsPrepareEnv {
         foreach ($key in $configMap.PSObject.Properties) {
             $variableName = $key.Name
             $variableValue = $key.Value
-            [System.Environment]::SetEnvironmentVariable($variableName, $variableValue, [System.EnvironmentVariableTarget]::Process)
+            try {
+                [System.Environment]::SetEnvironmentVariable($variableName, $variableValue, [System.EnvironmentVariableTarget]::Process)
+            }
+            catch {
+                $originalErrorMessage = $_.Exception.Message;
+                Write-Error "Cannot set environment variable '$variableName' ($originalErrorMessage)";
+            }
         }
     }
 
