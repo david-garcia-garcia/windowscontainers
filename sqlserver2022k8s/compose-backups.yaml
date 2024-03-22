@@ -65,9 +65,7 @@ services:
       - SBS_TEMPORARY=d:\temp
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Output in the entrypoint loop
-      - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORLOGSOURCE=*
-      - SBS_MONITORLOGMINLEVEL=Information
+      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:"Application",Source:"*",MinLevel:"Warning"},{LogName:"System",Source:"*",MinLevel:"Warning"},{LogName:"Application", Source:"SbsContainer", MinLevel:"Information"}]
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
 networks:

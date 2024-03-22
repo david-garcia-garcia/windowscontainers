@@ -70,6 +70,6 @@ if ($null -eq $Env:MSSQL_DISABLESHUTDOWNTIMEOUTCHECK) {
         $minimium = 60;
     }
     if ($timeout -lt $minimium) {
-        Write-Error "Current shutdown timeout of $($timeout)s is lower than the minimum of $($minimium)s for this workload. Use SBS_SHUTDOWNTIMEOUT to set a bigger timeout. If this is running in K8S, configure a LifeCycleHook for shutdown instead of increasing the timeout."
+        Write-Error "Current shutdown timeout of $($timeout)s is lower than the minimum of $($minimium)s for this workload. Use SBS_SHUTDOWNTIMEOUT to set a bigger timeout. If this is running in K8S, configure a LifeCycleHook for shutdown instead of increasing the timeout and set the MSSQL_DISABLESHUTDOWNTIMEOUTCHECK environment variable."
     }
 }

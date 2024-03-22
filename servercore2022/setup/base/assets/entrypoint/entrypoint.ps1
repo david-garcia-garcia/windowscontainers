@@ -2,6 +2,8 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 
 Import-Module Sbs;
 
+SbsPrepareEnv;
+
 $stopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
 #####################################
@@ -96,46 +98,6 @@ $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandl
 
 # Register the handler
 [ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true);
-
-##########################################################################
-# Protect environment variables using DPAPI
-##########################################################################
-$processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
-SbsWriteHost "Initiating ENV protection";
-foreach ($key in $processEnvironmentVariables.Keys) {
-    $variableName = $key.ToString()
-    if ($variableName -match "^(.*)_PROTECT$") {
-        Add-Type -AssemblyName System.Security;
-        $originalVariableName = $matches[1];
-        $originalValue = $processEnvironmentVariables[$key];
-        $protectedValue = [System.Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($originalValue), $null, 'LocalMachine'));
-        [System.Environment]::SetEnvironmentVariable($originalVariableName, $protectedValue, [System.EnvironmentVariableTarget]::Process);
-        Remove-Item -Path "Env:\$variableName";
-        SbsWriteHost "Protected environment variable '$variableName' with DPAPI at the machine level and renamed to '$originalVariableName'";
-    }
-}
-
-##########################################################################
-# Promote process level env variables to machine level. This is the most straighforward
-# way making these accessible ot other processes in the container such as IIS pools,
-# scheduled tasks, etc.
-# Some of these contain sensible information that should not be promoted or readily available
-# to those services (i.e. there could be 3d party software such as NR running that will
-# have access to theses inmmediately)
-##########################################################################
-$SBS_PROMOTE_ENV_REGEX = [System.Environment]::GetEnvironmentVariable("SBS_PROMOTE_ENV_REGEX");
-if (-not [string]::IsNullOrWhiteSpace($SBS_PROMOTE_ENV_REGEX)) {
-    SbsWriteHost "Initiating ENV system promotion for variables that match '$SBS_PROMOTE_ENV_REGEX'";
-    $processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
-    foreach ($key in $processEnvironmentVariables.Keys) {
-        $variableName = $key.ToString();
-        if ($variableName -match $SBS_PROMOTE_ENV_REGEX) {
-            $variableValue = [System.Environment]::GetEnvironmentVariable($variableName, [System.EnvironmentVariableTarget]::Process);
-            [System.Environment]::SetEnvironmentVariable($variableName, $variableValue, [System.EnvironmentVariableTarget]::Machine);
-            SbsWriteHost "Promoted environment variable: $variableName";
-        }
-    }
-}
 
 function Wait-JobOrThrow {
     param (
@@ -258,9 +220,18 @@ try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
-        SbsFilteredEventLog -After $lastCheck -LogNames $Env:SBS_MONITORLOGNAMES -Source $Env:SBS_MONITORLOGSOURCE -MinLevel $Env:SBS_MONITORLOGMINLEVEL;
+        try {
+            SbsPrepareEnv;
+            if (-not [String]::isNullOrWhiteSpace($Env:SBS_MONITORLOGCONFIGURATIONS)) {
+                $logConfigurations = $Env:SBS_MONITORLOGCONFIGURATIONS | ConvertFrom-Json;
+                SbsFilteredEventLog -After $lastCheck -Configurations $logConfigurations;
+            }
+        }
+        catch {
+            Write-Host "Error occurred: $_";
+        }
         $lastCheck = Get-Date 
-        Start-Sleep -Seconds 2;
+        Start-Sleep -Seconds 3;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving

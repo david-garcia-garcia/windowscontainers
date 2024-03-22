@@ -37,15 +37,13 @@ services:
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
       # Output in the entrypoint loop
-      - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORLOGSOURCE=*
-      - SBS_MONITORLOGMINLEVEL=Warning
+      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:"Application",Source:"*",MinLevel:"Warning"},{LogName:"System",Source:"*",MinLevel:"Warning"},{LogName:"Application", Source:"SbsContainer", MinLevel:"Information"}]
       # New relic license KEY
       - NEW_RELIC_LICENSE_KEY=badlicensekey
       # Secret key
       - SBS_TESTPROTECT_PROTECT=supersecretekey
       # Other new relic stuff
-      - NRIA_CUSTOM_ATTRIBUTES='{"environment":"docker"}'
+      - NRIA_CUSTOM_ATTRIBUTES={"environment":"docker"}
 networks:
   container_default:
     external: true

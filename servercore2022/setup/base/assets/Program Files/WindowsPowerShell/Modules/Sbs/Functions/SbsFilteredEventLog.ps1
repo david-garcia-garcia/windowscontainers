@@ -1,35 +1,37 @@
 function SbsFilteredEventLog {
     param (
         [DateTime]$After,
-        [string]$LogNames,
-        [string]$Source = "*",
-        [Nullable[System.Diagnostics.EventLogEntryType]]$MinLevel = "Information"
+        [array]$Configurations
     )
-    
-    if ([string]::IsNullOrWhiteSpace($Source)) {
-        $Source = "*";
-    }
 
-    if ($null -eq $MinLevel) {
-        $MinLevel = "Information";
-    }
+    $allMessages = @()
 
-    # Split the LogNames string into an array based on comma separation
-    $LogNameArray = $LogNames -split ","
-    
-    foreach ($LogName in $LogNameArray) {
-        # Trim spaces that might be present around log names
-        $LogName = $LogName.Trim();
+    foreach ($config in $Configurations) {
 
-        # Ensure the current log name is not empty
-        if (-not [string]::IsNullOrWhiteSpace($LogName)) {
-            $events = Get-EventLog -LogName $LogName -Source $Source -After $After | Where-Object {
-                $_.EntryType -le $MinLevel
-            }
+        $logName = $config.LogName;
+        $source = $config.Source;
+        $minLevel = $config.MinLevel;
 
-            foreach ($event in $events) {
-                $event | Select-Object @{Name = 'LogName'; Expression = { $LogName } }, Source, TimeGenerated, EntryType, Message
-            }
+        if ([string]::IsNullOrWhiteSpace($logName)) {
+            continue;
         }
+
+        if ([string]::IsNullOrWhiteSpace($source)) {
+            $source = "*"
+        }
+
+        if ($null -eq $minLevel) {
+            $minLevel = "Information"
+        }
+
+        $events = Get-EventLog -LogName $logName -After $After -Source $source | Where-Object { $_.EntryType -ge $minLevel }
+        $allMessages += $events
+    }
+
+    $sortedMessages = $allMessages | Sort-Object -Property TimeGenerated
+
+    foreach ($message in $sortedMessages) {
+        $formattedMessage = "[{0}] [{2}: {1}] {3}" -f $message.TimeGenerated.ToString("HH:mm:ss"), $message.Source, $message.EntryType, $message.Message
+        Write-Output $formattedMessage
     }
 }

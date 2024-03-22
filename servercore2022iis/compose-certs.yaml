@@ -39,9 +39,7 @@ services:
       # designar bindings manualmente en SBS_IISBINDINGS
       - SBS_AUTOSSLSITESYNC=Default Web Site
       # Output in the entrypoint loop
-      - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORLOGSOURCE=*
-      - SBS_MONITORLOGMINLEVEL=Warning
+      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:"Application",Source:"*",MinLevel:"Warning"},{LogName:"System",Source:"*",MinLevel:"Warning"},{LogName:"Application", Source:"SbsContainer", MinLevel:"Information"}]
 networks:
   container_default:
     external: true
