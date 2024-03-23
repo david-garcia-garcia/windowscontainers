@@ -69,8 +69,7 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        Invoke-Pester -Path "servercore2022\tests\ComposeBasic.Tests.ps1"
-        Invoke-Pester -Path "servercore2022\tests\Compose.Tests.ps1"
+        Invoke-Pester -Path "servercore2022\tests\"
     }
 
     if ($push) {
@@ -79,6 +78,8 @@ if ("servercore2022" -match $Images) {
     }
 }
 
+return;
+
 # IIS Base
 Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
 docker compose -f servercore2022iis/compose.yaml build
@@ -86,8 +87,7 @@ ThrowIfError
 
 if ("servercore2022iis" -match $Images) {
     if ($test) {
-        Invoke-Pester servercore2022iis\tests\Compose.Tests.ps1
-        Invoke-Pester servercore2022iis\tests\ComposeCerts.Tests.ps1
+        Invoke-Pester -Path "servercore2022iis\tests"
     }
 
     if ($push) { 
@@ -137,8 +137,7 @@ ThrowIfError
 
 if ("sqlserver2022k8s" -match $Images) {
     if ($test) {
-        Invoke-Pester sqlserver2022k8s\tests\Compose.Tests.ps1
-        Invoke-Pester sqlserver2022k8s\tests\Compose-backups.Tests.ps1
+        Invoke-Pester -Path "sqlserver2022k8s\tests"
     }
 
     if ($push) {

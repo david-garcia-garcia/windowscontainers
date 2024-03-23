@@ -4,6 +4,10 @@ Describe 'compose-basic.yaml' {
         WaitForLog "servercore2022-servercore-1" "Initialization Completed"
     }
         
+    It 'Booted synchronously' {
+        WaitForLog "servercore2022-servercore-1" "Sync Initialization"
+    }
+
     It 'LogRotate is enabled by default' {
         docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
     }

@@ -36,26 +36,44 @@ $database = "master";
 # Start the background job
 Start-Job -ScriptBlock {
     param($sqlInstanceName, $database, $sqlQuery)
-    Import-Module dbatools;
-    $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
     while ($true) {
-        $result = Invoke-DbaQuery -SqlInstance $sqlInstance -Database $database -Query $sqlQuery;
-        if ($result) {
-            foreach ($row in $result) {
-                # Initialize an empty array to hold the column-value pairs for the current row
-                $messageParts = @();
-                # Iterate through each property (column) of the row
-                foreach ($property in $row.PSObject.Properties) {
-                    # Construct a string "ColumnName: Value" for each property
-                    $messagePart = "$($property.Name): $($property.Value)"
-                    # Add the constructed string to the messageParts array
-                    $messageParts += $messagePart
+        try {
+            $connectionString = "Server=$sqlInstanceName;Database=$database;Integrated Security=True;TrustServerCertificate=True"
+            $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString)
+            
+
+            while ($true) {
+                try {
+                    $connection.Open()
+                    
+                    $reader = $command.ExecuteReader()
+
+                    if ($reader.HasRows) {
+                        while ($reader.Read()) {
+                            $messageParts = @()
+                            for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+                                $columnName = $reader.GetName($i)
+                                $columnValue = $reader.GetValue($i)
+                                $messagePart = "$columnName: $columnValue"
+                                $messageParts += $messagePart
+                            }
+                            $message = $messageParts -join "; "
+                            SbsWriteHost $message
+                        }
+                    }
+
+                    $reader.Close()
+                    $connection.Close()
+                } catch {
+                    SbsWriteError "An error occurred: $_"
                 }
-                # Join all the column-value pairs with a semicolon and a space
-                $message = $messageParts -join "; "
-                SbsWriteHost $message;
+
+                Start-Sleep -Seconds 10
             }
+        } catch {
+            # Handle the exception here
+            SbsWriteError "An error occurred: $_"
         }
-        Start-Sleep -Seconds 8;
+        Start-Sleep -Seconds 10;
     }
 } -ArgumentList $sqlInstanceName, $database, $sqlQuery

@@ -99,49 +99,6 @@ $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandl
 # Register the handler
 [ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true);
 
-function Wait-JobOrThrow {
-    param (
-        [Parameter(Mandatory = $true)]
-        [int]$JobId,
-        [Parameter(Mandatory = $true)]
-        [int]$Timeout
-    )
-
-    $job = Get-Job -Id $JobId;
-
-    if (-not $job) {
-        throw "Job with ID $JobId not found";
-    }
-
-    $jobName = $job.Name;
-
-    $startTime = Get-Date;
-    Wait-Job -Job $job -Timeout $Timeout;
-    $endTime = Get-Date;
-
-    $elapsed = $endTime - $startTime;
-    $formattedElapsed = "{0:hh\:mm\:ss}" -f [timespan]::FromSeconds($elapsed.TotalSeconds);
-
-    if ($job.State -eq "Running") {
-        SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed with error in $formattedElapsed";
-        $host.SetShouldExit(1);
-        throw "Task $jobName did not complete within the specified timeout of $Timeout seconds!";
-    }
-
-    $endState = $job.State;
-    Receive-Job -Job $job -Wait -AutoRemoveJob;
-
-    # Check if the state is 'Failed' or if there are error records in the results
-    if ($job.State -eq 'Failed') {
-        SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName encountered an error during execution in $formattedElapsed";
-        # Throw the first error or adjust as needed
-        $host.SetShouldExit(1);
-        throw "Task $jobName failed";
-    }
-
-    SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed in state $endState with success in $formattedElapsed";
-}
-
 ##########################################################################
 # Adjust the ENTRY POINT error preference.
 # Preferred is Stop, because app/container might have inconsistent
@@ -160,41 +117,46 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 ##########################################################################
 # Run entry point scripts
 ##########################################################################
-$SBS_ENTRYPOINTRYNASYNC = [System.Environment]::GetEnvironmentVariable("SBS_ENTRYPOINTRYNASYNC");
 $initScriptDirectory = "C:\entrypoint\init";
 if (Test-Path -Path $initScriptDirectory) {
-    # Get all .ps1 files in the directory
-    $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name;
-
-    # Iterate through each script and execute it
-    foreach ($script in $scripts) {
-        if ($SBS_ENTRYPOINTRYNASYNC -eq 'True') {
-            # Ejecutamos estos scripts así para evitar que cualquier cosa que carguen en la sesión
-            # de Powershell quede bloqueada (p.e. un módulo de PS que se utilice en estos arraques
-            # quedaría eternamente bloqueado en el contenedor porque el entypoint lo bloquea).
-            # En princpio esto no es malo, pero si para depurar o diagnosticar hay que actualizar
-            # un módulo PS que está bloqueado, no podremos sin matar el contenedor.
-            SbsWriteHost "Executing init script asynchronously START: $($script.FullName)";
-            # Start the script as a job
-            $job = Start-Job -FilePath $script.FullName -Name $script.Name;
-            Wait-JobOrThrow -JobId $job.Id -Timeout (SbsGetEnvInt 'SBS_ENTRYPOINTRYNASYNCTIMEOUT' 180);
-            SbsWriteHost "Executing init script asynchronously END: $($script.FullName)";
-        }
-        else {
-            SbsWriteHost "Executing init script synchronously START: $($script.FullName)";
-            try {
+    if ($Env:SBS_INITASYNC -eq "True") {
+        Write-Host "Async Initialization";
+        # We run this asynchronously for multiple reasons:
+        # * Any PS loaded modules directly in the entrypoint will be LOCKED. This is an issue for debugging/hot replacing.
+        # * Entrypoint init scripts can load huge modules (i.e. dbatools that uses 200MB or memory). If we run them directly in the entrypoint, the memory is not released.
+        # Doing this ASYNC is a little bit slower, but it pays off in some situations.
+        $job = Start-Job -ScriptBlock {
+            param ($iniDir)
+            # Get all .ps1 files in the directory
+            $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
+            Write-Host "Running init scripts: $($scripts.Count) found."
+            $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
+            Import-Module Sbs;
+            foreach ($script in $scripts) {
+                Write-Host "START init script: $($script.Name)";
                 & $script.FullName;
+                Write-Host "END init script: $($script.Name)";
             }
-            catch {
-                if ($global:ErrorActionPreference -match 'Continue') {
-                    SbsWriteHost "An error was found";
-                    SbsWriteHost $_;
-                }
-                else {
-                    throw $_;
-                }
-            }
-            SbsWriteHost "Executing init script synchronously END: $($script.FullName)";
+        } -ArgumentList $initScriptDirectory
+
+        Receive-Job -Job $job -Wait -AutoRemoveJob;
+
+        # Check if the state is 'Failed' or if there are error records in the results
+        if ($job.State -eq 'Failed') {
+            SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task encountered an error during execution";
+            $host.SetShouldExit(1);
+            throw "Task $jobName failed";
+        }
+    }
+    else {
+        Write-Host "Sync Initialization";
+        $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
+        Write-Host "Running init scripts synchronously. $($scripts.Count) found."
+        Import-Module Sbs;
+        foreach ($script in $scripts) {
+            Write-Host "START init script: $($script.Name)";
+            & $script.FullName;
+            Write-Host "END init script: $($script.Name)";
         }
     }
 }
@@ -214,22 +176,36 @@ $stopwatch.Stop();
 SbsWriteHost "Initialization completed in $($stopwatch.Elapsed.TotalSeconds)s";
 
 $lastCheck = (Get-Date).AddSeconds(-1);
+$stopwatch.Start();
 
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
+    $logConfigurations = $null;
+
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
-        try {
-            SbsPrepareEnv;
-            if (-not [String]::isNullOrWhiteSpace($Env:SBS_MONITORLOGCONFIGURATIONS)) {
+
+        # Refresh environment every 10 seconds
+        if ($stopwatch.Elapsed.TotalSeconds -gt 10) {
+            $changed = SbsPrepareEnv;
+            if ($true -eq $changed) {
+                SbsWriteHost "Environment refreshed.";
+                $logConfigurations = $null;
+            }
+            $stopwatch.Restart();
+        }
+
+        if (($null -eq $logConfigurations) -and (-not [String]::isNullOrWhiteSpace($Env:SBS_MONITORLOGCONFIGURATIONS))) {
+            try {
                 $logConfigurations = $Env:SBS_MONITORLOGCONFIGURATIONS | ConvertFrom-Json;
-                SbsFilteredEventLog -After $lastCheck -Configurations $logConfigurations;
+            }
+            catch {
+                Write-Host "Error when parsing SBS_MONITORLOGCONFIGURATIONS: $_";
             }
         }
-        catch {
-            Write-Host "Error occurred: $_";
-        }
+
+        SbsFilteredEventLog -After $lastCheck -Configurations $logConfigurations;
         $lastCheck = Get-Date 
         Start-Sleep -Seconds 3;
     }
@@ -294,42 +270,3 @@ $processes = Get-Process | Where-Object {
 
 $processes | ForEach-Object { SbsWriteHost "Will close: $($_.ProcessName) (ID: $($_.Id))" };
 $processes | ForEach-Object { $_.Kill() }
-
-#####################################
-# Close processes II
-#
-# Keeping this for the records, when using 
-# log monitor as an entrypoint if you
-# keep a shell from docker open, there seems
-# to be no way to kill it from here. You need
-# to manually exit it for the container to be released.
-#####################################
-
-#public class WinApi {
-#    [DllImport("kernel32.dll", SetLastError = true)]
-#    public static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
-#
-#   [DllImport("kernel32.dll", SetLastError = true)]
-#    [return: MarshalAs(UnmanagedType.Bool)]
-#    public static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
-#
-#    [DllImport("kernel32.dll", SetLastError = true)]
-#    [return: MarshalAs(UnmanagedType.Bool)]
-#    public static extern bool CloseHandle(IntPtr hObject);
-#}
-#'@
-#
-#$processes | ForEach-Object { 
-#    Write-Output "Will close: $($_.ProcessName) (ID: $($_.Id))"
-#    $processId = $_.Id;
-#    $PROCESS_ALL_ACCESS = 0x001F0FFF;
-#    $processHandle = [WinApi]::OpenProcess($PROCESS_ALL_ACCESS, $false, $processId);
-#    if ($processHandle -ne [IntPtr]::Zero) {
-#        [WinApi]::TerminateProcess($processHandle, 1) | Out-Null;
-#        [WinApi]::CloseHandle($processHandle) | Out-Null;
-#        Write-Output "Process terminated.";
-#    }
-#    else {
-#        Write-Error "Failed to open process.";
-#    }
-#}
