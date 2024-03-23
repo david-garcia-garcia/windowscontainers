@@ -155,7 +155,7 @@ In both cases, the scripts in those folders are run in their alphabetical order.
 0999_StartScheduledTasks
 ```
 
-By default the init scripts are run synchronously, if you want to run them through a Job, use the SBS_ENTRYPOINTRYNASYNC environment variable. Running them sincrhonously is usually much fater, but remember that Powershell will lock assemblies that have been loaded in to the script. Using the asynchronous mode will prevent this from happening as the assemblies are released when the initialization job is over.
+By default the init scripts are run synchronously, if you want to run them through a Job, use the SBS_INITASYNC environment variable. Running them sincrhonously is usually much fater, but remember that Powershell will lock assemblies that have been loaded in to the script. Using the asynchronous mode will prevent this from happening as the assemblies are released when the initialization job is over.
 
 To check for container readyness the entrypoint script will write a "ready" file to the c:\ drive, so you can check in K8S if the container has been through the setup process:
 

@@ -195,7 +195,7 @@ try {
             }
             $stopwatch.Restart();
         }
-
+        
         if (($null -eq $logConfigurations) -and (-not [String]::isNullOrWhiteSpace($Env:SBS_MONITORLOGCONFIGURATIONS))) {
             try {
                 $logConfigurations = $Env:SBS_MONITORLOGCONFIGURATIONS | ConvertFrom-Json;
