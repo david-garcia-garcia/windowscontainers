@@ -119,7 +119,8 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 ##########################################################################
 $initScriptDirectory = "C:\entrypoint\init";
 if (Test-Path -Path $initScriptDirectory) {
-    if ($Env:SBS_INITASYNC -eq "True") {
+    $initAsync = SbsGetEnvBool "SBS_INITASYNC" $false;
+    if ($initAsync -eq $true) {
         Write-Host "Async Initialization";
         # We run this asynchronously for multiple reasons:
         # * Any PS loaded modules directly in the entrypoint will be LOCKED. This is an issue for debugging/hot replacing.
@@ -165,10 +166,10 @@ else {
 }
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
-New-Item -Path 'C:\\ready' -ItemType 'File' -Force;
+New-Item -Path 'C:\\ready' -ItemType 'File' -Force | Out-Null;
 
 # To ensure that shutdown runs only once, place a unique flag
-New-Item -ItemType Directory -Path "C:\shutdownflags\" -Force;
+New-Item -ItemType Directory -Path "C:\shutdownflags\" -Force | Out-Null;
 $shutdownFlagFile = "C:\shutdownflags\" + [Guid]::NewGuid().ToString() + ".lock";
 Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 
@@ -178,55 +179,46 @@ SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)
 $lastCheck = (Get-Date).AddSeconds(-1);
 
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
-$stopwatchLogForward = [System.Diagnostics.Stopwatch]::StartNew();
 
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
-    $logConfigurations = $null;
-
-    $validProviders = Get-WinEvent -ErrorAction SilentlyContinue -ListProvider * | 
-        Where-Object { -not ($_.Name -match "^Microsoft|^Group Policy|^GroupPolicy|^System|^Windows|^ServiceModel|^SME|^SMS|^LSI|^LSA|^VDS |^amd|^iaStor") -and ($_.LogLinks.Count -eq 1) } |
-        Select-Object -ExpandProperty Name |
-        Where-Object { $_ -ne $null };
+    $logConf = $null;
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
-        # Refresh environment every 10 seconds
+        # Warm refresh environment configuration
         if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
+
             $changed = SbsPrepareEnv;
+
             if ($true -eq $changed) {
                 SbsWriteHost "Environment refreshed.";
-                $logConfigurations = $null;
             }
+
+            # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance
+            # is terrible, taking almost 1 whole CPU once published in an AKS cluster. And it's not the cmdlet going crazy,
+            # it's the Event Viewer service after the querying.
+            if (-not [string]::isNullOrWhiteSpace($Env:SBS_GETEVENTLOG) -and ($null -eq $logConf -or $changed -eq $true)) {
+                try {
+                    $logConf = ConvertFrom-Json $Env:SBS_GETEVENTLOG;
+                }
+                catch {
+                    Write-Host "Error parsing SBS_GETEVENTLOG: $_";
+                    $logConf = @(@{ LogName = 'Application'; Source = '*'; Level = 'Warning'; });
+                }
+                Write-Host "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
+            }
+
+            if ($null -ne $logConf) {
+                SbsFilteredEventLog -After $lastCheck -Configurations $logConf;
+            }
+
+            $lastCheck = Get-Date;
             $stopwatchEnvRefresh.Restart();
         }
-        
-        if (($null -eq $logConfigurations) -and (-not [String]::isNullOrWhiteSpace($Env:SBS_MONITORLOGCONFIGURATIONS))) {
-            try {
-                $logConfigurations = $Env:SBS_MONITORLOGCONFIGURATIONS | ConvertFrom-Json;
-                Write-Host "Parsed logging configuration correctly: '$Env:SBS_MONITORLOGCONFIGURATIONS'";
-                Write-Host "Wildcard providers: $($validProviders -join ', ')";
-            }
-            catch {
-                Write-Host "Error when parsing SBS_MONITORLOGCONFIGURATIONS: $_";
-                $logConfigurations = @();
-                $logConfigurations += @{
-                    LogName      = @('Application')
-                    ProviderName = "SbsContainer"
-                    Level        = @(1, 2, 3, 4, 5)
-                };
-            }
-        }
-        
-        # The windows event log is everything but efficient or fast.
-        if ($null -ne $logConfigurations -and $stopwatchLogForward.Elapsed.TotalSeconds -gt 6) {
-            SbsFilteredEventLog -After $lastCheck -Configurations $logConfigurations -ValidProviders $validProviders;
-            $stopwatchLogForward.Restart();
-        }
-        
-        $lastCheck = Get-Date 
+         
         Start-Sleep -Seconds 2;
     }
 

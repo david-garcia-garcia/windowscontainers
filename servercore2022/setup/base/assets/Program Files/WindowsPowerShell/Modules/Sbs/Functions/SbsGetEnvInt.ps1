@@ -1,4 +1,5 @@
 function SbsGetEnvInt {
+    [OutputType([int])]
     param (
         [string]$name,
         [int]$defaultValue

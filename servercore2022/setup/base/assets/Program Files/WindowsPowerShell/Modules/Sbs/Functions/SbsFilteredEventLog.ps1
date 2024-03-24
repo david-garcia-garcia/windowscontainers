@@ -1,33 +1,33 @@
-function global:SbsFilteredEventLog {
+function SbsFilteredEventLog {
     param (
         [DateTime]$After,
-        [array]$Configurations,
-        $ValidProviders
+        [array]$Configurations
     )
+    
+    foreach ($configuration in $Configurations) {
 
-    # Create a new collection to hold the remapped configurations as hashtables
-    $remappedConfigurations = @()
+        $Source = $configuration.Source;
+        $MinLevel = $configuration.MinLevel;
+        $LogName = $configuration.LogName;
 
-    foreach ($config in $Configurations) {
-        $ht = @{}
-        foreach ($prop in $config.PSObject.Properties) {
-            $ht[$prop.Name] = $prop.Value
-        }
-        $ht['StartTime'] = $After
-
-        if ($ht['ProviderName'] -eq '*') {
-            $ht['ProviderName'] = $ValidProviders;
+        if ([string]::IsNullOrWhiteSpace($Source)) {
+            $Source = "*";
         }
 
-        $remappedConfigurations += $ht
-    }
+        if ($null -eq $MinLevel) {
+            $MinLevel = "Information";
+        }
 
-    # Write-Host ($remappedConfigurations | ConvertTo-Json -Depth 5);
+        # Ensure the current log name is not empty
+        if (-not [string]::IsNullOrWhiteSpace($LogName)) {
+            $events = Get-EventLog -LogName $LogName -Source $Source -After $After -Newest 200 | Where-Object {
+                $_.EntryType -le $MinLevel
+            }
 
-    $events = Get-WinEvent -ErrorAction SilentlyContinue -FilterHashtable $remappedConfigurations -Force;
-
-    foreach ($message in $events) {
-        $formattedMessage = "[{0}] [{2}: {1}] {3}" -f $message.TimeCreated.ToString("HH:mm:ss"), $message.ProviderName, $message.LevelDisplayName, $message.Message
-        Write-Output $formattedMessage
+            foreach ($event in $events) {
+                $formattedMessage = "[{0}] [{4}:{1}] {2} {3}" -f $event.TimeGenerated.ToString("HH:mm:ss"), $event.Source, $event.EntryType, $event.Message, $LogName
+                Write-Output $formattedMessage
+            }
+        }
     }
 }
