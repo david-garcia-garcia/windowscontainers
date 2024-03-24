@@ -4,7 +4,7 @@ Import-Module Sbs;
 
 SbsPrepareEnv;
 
-$stopwatch = [System.Diagnostics.Stopwatch]::StartNew();
+$initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
 #####################################
 # Setting timezone hardcoded here
@@ -172,11 +172,13 @@ New-Item -ItemType Directory -Path "C:\shutdownflags\" -Force;
 $shutdownFlagFile = "C:\shutdownflags\" + [Guid]::NewGuid().ToString() + ".lock";
 Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 
-$stopwatch.Stop();
-SbsWriteHost "Initialization completed in $($stopwatch.Elapsed.TotalSeconds)s";
+$initStopwatch.Stop();
+SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)s";
 
 $lastCheck = (Get-Date).AddSeconds(-1);
-$stopwatch.Start();
+
+$stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
+$stopwatchLogForward = [System.Diagnostics.Stopwatch]::StartNew();
 
 # It is only from this point on that we block shutdown.
 try {
@@ -184,30 +186,46 @@ try {
 
     $logConfigurations = $null;
 
+    $validProviders = Get-WinEvent -ErrorAction SilentlyContinue -ListProvider * | 
+    Where-Object { -not ($_.Name -match "^Microsoft|^Group Policy|^System|^Windows|^ServiceModel|^SME|^SMS|^LSI|^LSA|^VDS |^amd|^iaStor|") -and ($_.LogLinks.Count -eq 1) } |
+    Select-Object -ExpandProperty Name;
+
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
         # Refresh environment every 10 seconds
-        if ($stopwatch.Elapsed.TotalSeconds -gt 10) {
+        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
             $changed = SbsPrepareEnv;
             if ($true -eq $changed) {
                 SbsWriteHost "Environment refreshed.";
                 $logConfigurations = $null;
             }
-            $stopwatch.Restart();
+            $stopwatchEnvRefresh.Restart();
         }
         
         if (($null -eq $logConfigurations) -and (-not [String]::isNullOrWhiteSpace($Env:SBS_MONITORLOGCONFIGURATIONS))) {
             try {
                 $logConfigurations = $Env:SBS_MONITORLOGCONFIGURATIONS | ConvertFrom-Json;
+                Write-Host "Parsed logging configuration correctly: '$Env:SBS_MONITORLOGCONFIGURATIONS'";
             }
             catch {
                 Write-Host "Error when parsing SBS_MONITORLOGCONFIGURATIONS: $_";
+                $logConfigurations = @();
+                $logConfigurations += @{
+                    LogName      = @('Application')
+                    ProviderName = "SbsContainer"
+                    Level        = @(1, 2, 3, 4, 5)
+                };
             }
         }
-
-        SbsFilteredEventLog -After $lastCheck -Configurations $logConfigurations;
+        
+        # The windows event log is everything but efficient or fast.
+        if ($null -ne $logConfigurations -and $stopwatchLogForward.Elapsed.TotalSeconds -gt 6) {
+            SbsFilteredEventLog -After $lastCheck -Configurations $logConfigurations -ValidProviders $validProviders;
+            $stopwatchLogForward.Restart();
+        }
+        
         $lastCheck = Get-Date 
-        Start-Sleep -Seconds 3;
+        Start-Sleep -Seconds 2;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving

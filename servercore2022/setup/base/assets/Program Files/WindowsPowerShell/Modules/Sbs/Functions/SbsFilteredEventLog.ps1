@@ -1,37 +1,33 @@
-function SbsFilteredEventLog {
+function global:SbsFilteredEventLog {
     param (
         [DateTime]$After,
-        [array]$Configurations
+        [array]$Configurations,
+        $ValidProviders
     )
 
-    $allMessages = @()
+    # Create a new collection to hold the remapped configurations as hashtables
+    $remappedConfigurations = @()
 
     foreach ($config in $Configurations) {
+        $ht = @{}
+        foreach ($prop in $config.PSObject.Properties) {
+            $ht[$prop.Name] = $prop.Value
+        }
+        $ht['StartTime'] = $After
 
-        $logName = $config.LogName;
-        $source = $config.Source;
-        $minLevel = $config.MinLevel;
-
-        if ([string]::IsNullOrWhiteSpace($logName)) {
-            continue;
+        if ($ht['ProviderName'] -eq '*') {
+            $ht['ProviderName'] = $ValidProviders;
         }
 
-        if ([string]::IsNullOrWhiteSpace($source)) {
-            $source = "*"
-        }
-
-        if ($null -eq $minLevel) {
-            $minLevel = "Information"
-        }
-
-        $events = Get-EventLog -LogName $logName -After $After -Source $source | Where-Object { $_.EntryType -le $minLevel }
-        $allMessages += $events
+        $remappedConfigurations += $ht
     }
 
-    $sortedMessages = $allMessages | Sort-Object -Property TimeGenerated
+    # Write-Host ($remappedConfigurations | ConvertTo-Json -Depth 5);
 
-    foreach ($message in $sortedMessages) {
-        $formattedMessage = "[{0}] [{2}: {1}] {3}" -f $message.TimeGenerated.ToString("HH:mm:ss"), $message.Source, $message.EntryType, $message.Message
+    $events = Get-WinEvent -ErrorAction SilentlyContinue -FilterHashtable $remappedConfigurations -Force;
+
+    foreach ($message in $events) {
+        $formattedMessage = "[{0}] [{2}: {1}] {3}" -f $message.TimeCreated.ToString("HH:mm:ss"), $message.ProviderName, $message.LevelDisplayName, $message.Message
         Write-Output $formattedMessage
     }
 }
