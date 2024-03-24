@@ -3,6 +3,9 @@
 # + prepares them (system level promotion or DPAPI protection)
 ##########################################################################
 function SbsPrepareEnv {
+    [OutputType([bool])]
+    param (
+    )
 
     $configuration = "";
 
@@ -22,7 +25,7 @@ function SbsPrepareEnv {
     # In docker this is confusing because the ENV is gone when restarting containers, but the filesystem inside
     # the container is preserved. So we use ENVHASH to coordinate that.
     if ($md5HashString -eq $currentHash -and $md5HashString -eq $Env:ENVHASH) {
-        return;
+        return $false;
     }
     
     # Store to avoid reprocessing
@@ -84,4 +87,6 @@ function SbsPrepareEnv {
             }
         }
     }
+
+    return $true;
 }
