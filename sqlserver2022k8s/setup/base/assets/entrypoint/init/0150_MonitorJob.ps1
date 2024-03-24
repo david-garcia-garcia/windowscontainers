@@ -37,43 +37,39 @@ $database = "master";
 Start-Job -ScriptBlock {
     param($sqlInstanceName, $database, $sqlQuery)
     while ($true) {
+        $connectionString = "Server=$sqlInstanceName;Database=$database;Integrated Security=True;TrustServerCertificate=True"
+        $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString);
         try {
-            $connectionString = "Server=$sqlInstanceName;Database=$database;Integrated Security=True;TrustServerCertificate=True"
-            $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString)
-            
+            $connection.Open()
+            $command = $connection.CreateCommand()
+            $command.CommandText = $sqlQuery
+            $reader = $command.ExecuteReader()
 
-            while ($true) {
-                try {
-                    $connection.Open()
-                    
-                    $reader = $command.ExecuteReader()
-
-                    if ($reader.HasRows) {
-                        while ($reader.Read()) {
-                            $messageParts = @()
-                            for ($i = 0; $i -lt $reader.FieldCount; $i++) {
-                                $columnName = $reader.GetName($i)
-                                $columnValue = $reader.GetValue($i)
-                                $messagePart = "$columnName: $columnValue"
-                                $messageParts += $messagePart
-                            }
-                            $message = $messageParts -join "; "
-                            SbsWriteHost $message
-                        }
+            if ($reader.HasRows) {
+                while ($reader.Read()) {
+                    $messageParts = @()
+                    for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+                        $columnName = $reader.GetName($i)
+                        $columnValue = $reader.GetValue($i)
+                        $messagePart = "${columnName}: ${columnValue}"
+                        $messageParts += $messagePart
                     }
-
-                    $reader.Close()
-                    $connection.Close()
-                } catch {
-                    SbsWriteError "An error occurred: $_"
+                    $message = $messageParts -join "; "
+                    SbsWriteHost $message
                 }
-
-                Start-Sleep -Seconds 10
             }
-        } catch {
+
+            $reader.Close();
+            $connection.Close();
+        }
+        catch {
             # Handle the exception here
             SbsWriteError "An error occurred: $_"
         }
+        finally {
+            $connection.Dispose();
+        }
+        
         Start-Sleep -Seconds 10;
     }
 } -ArgumentList $sqlInstanceName, $database, $sqlQuery
