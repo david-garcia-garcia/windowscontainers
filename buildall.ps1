@@ -136,6 +136,7 @@ ThrowIfError
 if ("sqlserver2022k8s" -match $Images) {
     if ($test) {
         Invoke-Pester -Path "sqlserver2022k8s\tests"
+        Invoke-Pester sqlserver2022k8s\tests\Compose-backups.Tests.ps1
     }
 
     if ($push) {
