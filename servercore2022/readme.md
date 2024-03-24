@@ -22,12 +22,12 @@ Default Entry Point for this image is the c:\entrypoint\entrypoint.ps1 script.
 CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
-This entry point can redirect to the container output stream Event Log data during execution:
+This entry point can redirect to the container output stream Event Log data during execution. It uses the Get-Winevent hashtable filter format:
+
+https://learn.microsoft.com/es-es/powershell/module/microsoft.powershell.diagnostics/get-winevent?view=powershell-7.4
 
 ```yaml
-SBS_MONITORLOGNAMES=Application,System # What logs to monitor
-SBS_MONITORSOURCE=* #Filter the source, empty for all sourceds
-SBS_MONITORLOGMINLEVEL=Warning # Minimum level to log
+- SBS_MONITORLOGCONFIGURATIONS=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
 ```
 
 If this is not sufficient, you can use LogMonitor as a replacement

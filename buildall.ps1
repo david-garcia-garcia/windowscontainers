@@ -78,8 +78,6 @@ if ("servercore2022" -match $Images) {
     }
 }
 
-return;
-
 # IIS Base
 Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
 docker compose -f servercore2022iis/compose.yaml build

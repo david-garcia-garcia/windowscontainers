@@ -11,7 +11,7 @@ services:
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SERVERCORE2022}
     environment:
-      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:"Application",Source:"*",MinLevel:"Warning"},{LogName:"System",Source:"*",MinLevel:"Warning"},{LogName:"Application", Source:"SbsContainer", MinLevel:"Information"}]
+      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
     networks:
       - container_default
     # Environment completely wiped out on purpose, to test

@@ -19,7 +19,7 @@ services:
       - SBS_ENTRYPOINTERRORACTION=Stop
       - SBS_SRVENSURE=MSSQLServerOLAPService
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
-      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:"Application",Source:"*",MinLevel:"Warning"},{LogName:"System",Source:"*",MinLevel:"Warning"},{LogName:"Application", Source:"SbsContainer", MinLevel:"Information"}]
+      - SBS_MONITORLOGCONFIGURATIONS=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
 networks:
   container_default:
     external: true
