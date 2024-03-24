@@ -95,7 +95,7 @@ Focusing on the minimum ENV setup needed for this:
       - container_default
     environment:
       - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD=sapwd
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_LIFECYCLE=PERSISTENT
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log

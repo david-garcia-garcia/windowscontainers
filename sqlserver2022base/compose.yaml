@@ -17,7 +17,7 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD=sapwd
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_SYSTEM=d:\system

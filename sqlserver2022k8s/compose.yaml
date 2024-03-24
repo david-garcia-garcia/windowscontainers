@@ -28,7 +28,7 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD=sapwd
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_DATABASE=mydatabase
       - MSSQL_LIFECYCLE=ATTACH
       - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;
