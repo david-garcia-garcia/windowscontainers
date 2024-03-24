@@ -186,7 +186,7 @@ $parentProcess = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID").Pare
     $process = Get-CimInstance Win32_Process -Filter "ProcessId = $_";
     $process.Name
 };
-if ($parentProcess -eq "logmonitor.exe") {
+if ($parentProcess -eq "LogMonitor.exe") {
     $parentProcessIsLogMonitor = $true;
 }
 

@@ -118,16 +118,6 @@ if ("sqlserver2022base" -match $Images) {
     }
 }
 
-# SQL Server Analysis Services
-Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
-docker compose -f sqlserver2022as/compose.yaml build
-ThrowIfError
-
-if ($push) {
-    docker push "$($Env:IMG_SQLSERVER2022AS)"
-    ThrowIfError
-}
-
 # SQL Server K8S
 Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
 docker compose -f sqlserver2022k8s/compose.yaml build
@@ -136,11 +126,20 @@ ThrowIfError
 if ("sqlserver2022k8s" -match $Images) {
     if ($test) {
         Invoke-Pester -Path "sqlserver2022k8s\tests"
-        Invoke-Pester sqlserver2022k8s\tests\Compose-backups.Tests.ps1
     }
 
     if ($push) {
         docker push "$($Env:IMG_SQLSERVER2022K8S)"
         ThrowIfError
     }
+}
+
+# SQL Server Analysis Services
+Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
+docker compose -f sqlserver2022as/compose.yaml build
+ThrowIfError
+
+if ($push) {
+    docker push "$($Env:IMG_SQLSERVER2022AS)"
+    ThrowIfError
 }

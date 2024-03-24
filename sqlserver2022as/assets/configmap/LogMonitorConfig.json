@@ -13,10 +13,6 @@
           {
             "name": "application",
             "level": "Information"
-          },
-          {
-            "name": "Microsoft-Windows-DSC/Operational",
-            "level": "Information"
           }
         ]
       },

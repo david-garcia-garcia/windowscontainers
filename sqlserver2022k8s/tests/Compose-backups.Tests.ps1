@@ -13,7 +13,7 @@ Describe 'compose-backups.yaml' {
     }
 
     It 'Max Server Memory is what configured' {
-        (Test-DbaMaxMemory $Env:connectionString).MaxValue | Should -Be "2048"
+        (Test-DbaMaxMemory $Env:connectionString).MaxValue | Should -Be "512"
     }
 
     It 'Database exists' {

@@ -9,18 +9,18 @@ Describe 'compose-async.yaml' {
     }
 
     It 'Executed 0001_SetShutdownTimeout.ps1' {
-        WaitForLog "servercore2022-servercore-1" "START INIT SCRIPT: 0001_SetShutdownTimeout.ps1"
-        WaitForLog "servercore2022-servercore-1" "END INIT SCRIPT: 0001_SetShutdownTimeout.ps1"
+        WaitForLog "servercore2022-servercore-1" "0001_SetShutdownTimeout.ps1: START"
+        WaitForLog "servercore2022-servercore-1" "0001_SetShutdownTimeout.ps1: END"
     }
 
     It 'Executed 0300_StartServices.ps1' {
-        WaitForLog "servercore2022-servercore-1" "START INIT SCRIPT: 0300_StartServices.ps1"
-        WaitForLog "servercore2022-servercore-1" "END INIT SCRIPT: 0300_StartServices.ps1"
+        WaitForLog "servercore2022-servercore-1" "0300_StartServices.ps1: START"
+        WaitForLog "servercore2022-servercore-1" "0300_StartServices.ps1: END"
     }
 
     It 'Executed 0999_ConfigureScheduledTasks.ps1' {
-        WaitForLog "servercore2022-servercore-1" "START INIT SCRIPT: 0999_ConfigureScheduledTasks.ps1"
-        WaitForLog "servercore2022-servercore-1" "END INIT SCRIPT: 0999_ConfigureScheduledTasks.ps1"
+        WaitForLog "servercore2022-servercore-1" "0999_ConfigureScheduledTasks.ps1: START"
+        WaitForLog "servercore2022-servercore-1" "0999_ConfigureScheduledTasks.ps1: END"
     }
 
     AfterAll {
