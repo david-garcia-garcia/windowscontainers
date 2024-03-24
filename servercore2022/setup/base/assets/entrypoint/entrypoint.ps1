@@ -121,22 +121,23 @@ $initScriptDirectory = "C:\entrypoint\init";
 if (Test-Path -Path $initScriptDirectory) {
     $initAsync = SbsGetEnvBool "SBS_INITASYNC" $false;
     if ($initAsync -eq $true) {
-        Write-Host "Async Initialization";
+        SbsWriteHost "Async Initialization";
         # We run this asynchronously for multiple reasons:
         # * Any PS loaded modules directly in the entrypoint will be LOCKED. This is an issue for debugging/hot replacing.
         # * Entrypoint init scripts can load huge modules (i.e. dbatools that uses 200MB or memory). If we run them directly in the entrypoint, the memory is not released.
         # Doing this ASYNC is a little bit slower, but it pays off in some situations.
         $job = Start-Job -ScriptBlock {
             param ($iniDir)
+            Import-Module Sbs;
             # Get all .ps1 files in the directory
             $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
-            Write-Host "Running init scripts: $($scripts.Count) found."
+            SbsWriteHost "Running init scripts: $($scripts.Count) found."
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
             Import-Module Sbs;
             foreach ($script in $scripts) {
-                Write-Host "START init script: $($script.Name)";
+                SbsWriteHost "$($script.Name): START ";
                 & $script.FullName;
-                Write-Host "END init script: $($script.Name)";
+                SbsWriteHost "$($script.Name): END";
             }
         } -ArgumentList $initScriptDirectory
 
@@ -150,14 +151,14 @@ if (Test-Path -Path $initScriptDirectory) {
         }
     }
     else {
-        Write-Host "Sync Initialization";
+        SbsWriteHost "Sync Initialization";
         $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
-        Write-Host "Running init scripts synchronously. $($scripts.Count) found."
+        SbsWriteHost "Running init scripts synchronously. $($scripts.Count) found."
         Import-Module Sbs;
         foreach ($script in $scripts) {
-            Write-Host "START init script: $($script.Name)";
+            SbsWriteHost "$($script.Name): START";
             & $script.FullName;
-            Write-Host "END init script: $($script.Name)";
+            SbsWriteHost "$($script.Name): END";
         }
     }
 }
@@ -179,6 +180,17 @@ SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)
 $lastCheck = (Get-Date).AddSeconds(-1);
 
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
+
+$parentProcessIsLogMonitor = $false;
+$parentProcess = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID").ParentProcessId | ForEach-Object {
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId = $_";
+    $process.Name
+};
+if ($parentProcess -eq "logmonitor.exe") {
+    $parentProcessIsLogMonitor = $true;
+}
+
+SbsWriteHost "Parent process: $parentProcess";
 
 # It is only from this point on that we block shutdown.
 try {
@@ -205,13 +217,13 @@ try {
                     $logConf = ConvertFrom-Json $Env:SBS_GETEVENTLOG;
                 }
                 catch {
-                    Write-Host "Error parsing SBS_GETEVENTLOG: $_";
+                    SbsWriteWarning "Error parsing SBS_GETEVENTLOG: $_";
                     $logConf = @(@{ LogName = 'Application'; Source = '*'; Level = 'Warning'; });
                 }
-                Write-Host "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
+                SbsWriteHost "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
             }
 
-            if ($null -ne $logConf) {
+            if ($null -ne $logConf -and $parentProcessIsLogMonitor -eq $false) {
                 SbsFilteredEventLog -After $lastCheck -Configurations $logConf;
             }
 
@@ -219,7 +231,7 @@ try {
             $stopwatchEnvRefresh.Restart();
         }
          
-        Start-Sleep -Seconds 2;
+        Start-Sleep -Seconds 3;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving
