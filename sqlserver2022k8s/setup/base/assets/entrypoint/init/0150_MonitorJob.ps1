@@ -3,6 +3,8 @@
 # operations, logging progress to the event log.
 # This is crucial to monitor long lasting operations
 # that affect a container startup or tear-down.
+#
+# AVOID USING DBATOOLS TO REDUCE MEMORY FOOTPRINT FOR PROCESS
 ########################################################
 
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
@@ -69,7 +71,7 @@ Start-Job -ScriptBlock {
         finally {
             $connection.Dispose();
         }
-        
+
         Start-Sleep -Seconds 10;
     }
 } -ArgumentList $sqlInstanceName, $database, $sqlQuery

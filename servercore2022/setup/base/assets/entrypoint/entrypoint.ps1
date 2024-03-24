@@ -187,8 +187,9 @@ try {
     $logConfigurations = $null;
 
     $validProviders = Get-WinEvent -ErrorAction SilentlyContinue -ListProvider * | 
-    Where-Object { -not ($_.Name -match "^Microsoft|^Group Policy|^System|^Windows|^ServiceModel|^SME|^SMS|^LSI|^LSA|^VDS |^amd|^iaStor|") -and ($_.LogLinks.Count -eq 1) } |
-    Select-Object -ExpandProperty Name;
+        Where-Object { -not ($_.Name -match "^Microsoft|^Group Policy|^GroupPolicy|^System|^Windows|^ServiceModel|^SME|^SMS|^LSI|^LSA|^VDS |^amd|^iaStor") -and ($_.LogLinks.Count -eq 1) } |
+        Select-Object -ExpandProperty Name |
+        Where-Object { $_ -ne $null };
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
@@ -206,6 +207,7 @@ try {
             try {
                 $logConfigurations = $Env:SBS_MONITORLOGCONFIGURATIONS | ConvertFrom-Json;
                 Write-Host "Parsed logging configuration correctly: '$Env:SBS_MONITORLOGCONFIGURATIONS'";
+                Write-Host "Wildcard providers: $($validProviders -join ', ')";
             }
             catch {
                 Write-Host "Error when parsing SBS_MONITORLOGCONFIGURATIONS: $_";
