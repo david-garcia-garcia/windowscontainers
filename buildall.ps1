@@ -8,6 +8,7 @@ param (
     [string]$Images = ".*"
 )
 
+Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
 
@@ -44,8 +45,6 @@ function ThrowIfError() {
 
 # TODO: Write some tests with PESTER
 if ($test) {
-
-    Import-Module Pester -PassThru;
 
     # Check if the 'container_default' network exists
     $networkName = "container_default"

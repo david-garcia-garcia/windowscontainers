@@ -8,7 +8,7 @@ RUN mkdir "c:\LogMonitor"; `
 
 # Change the default to something a little bit larger than the default 5s.... 15s
 # https://github.com/dotnet/runtime/issues/63709
-RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15s
+RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15
 RUN reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f
 
 # Set shell to PowerShell

@@ -32,7 +32,7 @@ services:
       # Error behaviour
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Call the entrypoint shutdown logic
-      - SBS_AUTOSHUTDOWN=1
+      - SBS_DISABLEAUTOSHUTDOWN=0
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
       # Output in the entrypoint loop

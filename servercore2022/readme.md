@@ -297,12 +297,20 @@ The second is just an extension for the NRI agent to collect Performance Counter
 
 The service is stopped and needs to be configured if you want it to be started.
 
-```
+```powershell
 # Ensure the new relic service starts with the container as it is disabled by default
 SBS_SRVENSURE=newrelic-infra
+
 # Add the new relic license key
 NEW_RELIC_LICENSE_KEY=MYLICENSEKEY
 ```
+
+By default the infrastructure agent is configured to NOT capture any sort of metrics (which make no sense inside a container). The purpose of this integration is to support remote monitoring and visibility of:
+
+* Windows Performance counters (very valuable for IIS, .Net, MSSQL and other workloads)
+* Log forwarding
+
+Memory, CPU, network and other standard metrics should be obtained using the standard tools for the K8S ecosystem.
 
 ## Time Zone
 
@@ -337,3 +345,24 @@ c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\MyExampleFunction.ps1
 ```
 
 This will be available for you entry point scripts and inside the container. The function needs to be named exactly as the powershell file so that it can be automatically detected.
+
+## Image configuration Cheat Sheet
+
+
+
+Environment variables
+
+| Name                       | Default Value       | Description                                                  |
+| -------------------------- | ------------------- | ------------------------------------------------------------ |
+| SBS_CONTAINERTIMEZONE      | $null               | Container Timezone                                           |
+| SBS_PROMOTE_ENV_REGEX      | $null               | When an environment variable matches this regular expression, it is promoted to system level. Careful with sensitive data. |
+| XXX_PROTECT                | N/A                 | When an environment variable ends in _PROTECT it is encoded with DPAPI at the machine level, and the suffix removed. |
+| SBS_INITASYNC              | $false              | Run initialization scripts in their own JOB.                 |
+| SBS_SHUTDOWNTIMEOUT        | 15                  | Container shutdown timeout in seconds.                       |
+| SBS_ENTRYPOINTERRORACTION  | Stop                | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
+| SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | List of processes that will be terminated when shutdown has completed |
+| NEW_RELIC_LICENSE_KEY      | $null               | New Relic infrastructure license key                         |
+| SBS_SRVENSURE              | $null               | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
+| SBS_SRVSTOP                | $null               | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
+| SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Use this to configure the trigger for a scheduled task that is already present inside the image. |
+
