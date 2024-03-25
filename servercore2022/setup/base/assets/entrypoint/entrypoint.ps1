@@ -201,7 +201,7 @@ try {
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
         # Warm refresh environment configuration
-        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
+        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 5) {
 
             $changed = SbsPrepareEnv;
 
@@ -231,7 +231,7 @@ try {
             $stopwatchEnvRefresh.Restart();
         }
          
-        Start-Sleep -Seconds 3;
+        Start-Sleep -Seconds 2;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving

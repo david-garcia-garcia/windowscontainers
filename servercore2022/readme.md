@@ -33,12 +33,12 @@ If this is not sufficient, you can use LogMonitor as a replacement
 [windows-container-tools/LogMonitor/README.md at main · microsoft/windows-container-tools (github.com)](https://github.com/microsoft/windows-container-tools/blob/main/LogMonitor/README.md)
 
 ```powershell
-CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap\\logmonitorconfig.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap_logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
 The image automatically detects that LogMonitor is the container entrypoint, and will ignore any log fowarding configuration set through SBS_GETEVENTLOG.
 
-Note that the Log Monitor configuration has been moved to /configmap/logmonitorconfig.json instead of the default location. This allows you to directly mount the Log Monitor configuration through a K8S volume bound to a [Config Map](https://kubernetes.io/es/docs/concepts/configuration/configmap/), replacing the default configuration already present in the container image.
+Note that the Log Monitor configuration has been moved to /configmap_logmonitor/config.json instead of the default location. This allows you to directly mount the Log Monitor configuration through a K8S volume bound to a [Config Map](https://kubernetes.io/es/docs/concepts/configuration/configmap/), replacing the default configuration already present in the container image.
 
 To fine-tune what logs are being monitored, refer to the LogMonitor documentation.
 
@@ -372,6 +372,6 @@ Relevant locations
 | c:\entrypoint\init\                                      | Path for initialization scripts                         |
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                               |
 | c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                           |
-| c:\\configmap\\logmonitorconfig.json                     | Default location for the LogMonitor configuration file. |
+| c:\configmap_logmonitor\config.json                     | Default location for the LogMonitor configuration file. |
 | c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions          |
 

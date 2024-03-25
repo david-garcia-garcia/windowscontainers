@@ -33,7 +33,8 @@ Foreach-Object {
 		$message = "PING Cron started: " + $baseName;
 		Write-EventLog -LogName "Application" -Source "SbsContainer" -EventID 23000 -EntryType Information -Message $message;
 		& $fullName
-		if ($LASTEXITCODE -ne 0) {
+		# Null and 0 are OK exit codes
+		if (($LASTEXITCODE -ne 0) -and ($null -ne $LASTEXITCODE)) {
 			if ($Error.Count -gt 0) {
 				for ($x = 0; $x -lt $Error.Count; $x = $x + 1) {
 					Write-ErrorLog -baseName $baseName -exception $Error[$x].Exception;

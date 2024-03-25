@@ -41,4 +41,4 @@ RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 SHELL ["cmd.exe"]
 CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
-#CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap\\logmonitorconfig.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+#CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap_logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
