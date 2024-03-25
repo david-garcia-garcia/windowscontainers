@@ -12,7 +12,7 @@ Describe 'compose.yaml' {
     }
 
     It 'Max Server Memory is what configured' {
-        (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "2050";
+        (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "286";
     }
 
     AfterAll {

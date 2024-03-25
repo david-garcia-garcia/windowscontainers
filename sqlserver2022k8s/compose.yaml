@@ -38,7 +38,7 @@ services:
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
       - MSSQL_INSTANCENAME=myinstance
-      - MSSQL_MAXMEMORY=256
+      - MSSQL_MAXMEMORY=286
       # For debugging timeout at 40s
       - SBS_SHUTDOWNTIMEOUT=40
       # Start services
@@ -51,7 +51,6 @@ services:
       - SBS_CRONRUNONBOOT=DeployMssqlNri
       - NEW_RELIC_LICENSE_KEY=
       - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
-      - SBS_CRON_MssqlReleaseMemory=
 networks:
   container_default:
     external: true

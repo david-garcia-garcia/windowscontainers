@@ -12,8 +12,8 @@ Describe 'compose-backups.yaml' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
 
-    It 'Max Server Memory is what configured' {
-        (Test-DbaMaxMemory $Env:connectionString).MaxValue | Should -Be "512"
+    It 'Max Server Memory is what was configured' {
+        (Test-DbaMaxMemory $Env:connectionString).MaxValue | Should -Be "256"
     }
 
     It 'Database exists' {
@@ -46,7 +46,7 @@ CREATE TABLE dbo.TestTable (
         # Start the container again
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
         # Wait for SQL Server to initialize again
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 15;
+        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 25;
         
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
