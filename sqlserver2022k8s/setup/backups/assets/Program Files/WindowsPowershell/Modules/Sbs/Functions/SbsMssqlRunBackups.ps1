@@ -10,6 +10,8 @@ function SbsMssqlRunBackups {
 		[string]$backupType
 	)
 
+    $backupType = $backupType.ToUpper();
+
 	Import-Module dbatools;
 
 	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
