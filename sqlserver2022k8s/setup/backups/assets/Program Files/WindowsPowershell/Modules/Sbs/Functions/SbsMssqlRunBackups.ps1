@@ -80,7 +80,9 @@ function SbsMssqlRunBackups {
 					break;
 				}
 
-				SbsWriteHost "Backup '$db' isSystemDatabase: $($isSystemDb)";
+				$recoveryModel = (Get-DbaDbRecoveryModel -SqlInstance $sqlInstance -Database $db.Name).RecoveryModel;
+
+				SbsWriteHost "Backup '$db' isSystemDatabase '$($isSystemDb)' with recovery model '$($recoveryModel)'";
 
 				# Certificate rotates every year
 				$certificate = $null;
@@ -108,11 +110,10 @@ function SbsMssqlRunBackups {
 				if ($backupType -eq "SYSTEM") {
 					$solutionBackupType = "FULL";
 				}
-
+				
 				# LOGNOW is used to FORCE a backup prior to container teardown. Not sure if hallengren solution
 				# will make a diff if a LOG is requested when recovery mode is simple.
 				if ($backupType -eq "LOGNOW") {
-					$recoveryModel = (Get-DbaDbRecoveryModel -SqlInstance $sqlInstance -Database $db.Name).RecoveryModel;
 					switch ($recoveryModel) {
 						"FULL" {  
 							$solutionBackupType = "LOG";
@@ -133,6 +134,10 @@ function SbsMssqlRunBackups {
 					"LOG" {
 						$cleanupTime = $cleanupTimeLog;
 					}
+				}
+
+				if ($solutionBackupType -eq "LOG" -and ($recoveryModel -eq "SIMPLE")) {
+					SbsWriteWarning "LOG backup requested for database $($db.Name) with SIMPLE recovery model.";
 				}
 
 				# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
