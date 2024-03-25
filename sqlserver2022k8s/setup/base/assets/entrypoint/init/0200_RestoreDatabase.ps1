@@ -37,6 +37,13 @@ if ($null -eq $tempDir) {
     $tempDir = "c:\windows\temp";
 }
 
+$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
+
+if ($backupUrl) {
+    SbsWriteHost "SAS URL for backup found: $($backupUrl.baseUrl)"
+    SbsEnsureSqlCredential -SqlInstance $sqlInstance -CredentialName $backupUrl.credentialName -SasToken $backupUrl.sasToken;
+}
+
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 
     SbsWriteHost "Lifecycle attach mode starting up..."
@@ -166,11 +173,11 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
     }
 }
 
-if (($restored -eq $false) -and ($null -ne $databaseName)) {
+if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     # Create the database
     New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
 }
 
-if ($null -ne $databaseName) {
-    Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false;
+if (-not [String]::isNullOrWhitespace($databaseName)) {
+    Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false | Out-Null;
 }

@@ -19,6 +19,8 @@ function SbsMssqlRunBackups {
 	$databaseBackupDirectory = $Env:MSSQL_PATH_BACKUP;
 	$backupCertificate = $Env:MSSQL_BACKUP_CERT;
 
+	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
+
 	# Default to 10min or 100Mb whatever comes first
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
@@ -141,6 +143,10 @@ function SbsMssqlRunBackups {
 				# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 				$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 
+				if ($backupUrl) {
+					$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrl) | Out-Null
+				}
+
 				$cmd.Parameters.AddWithValue("@DirectoryStructure", $directoryStructure ) | Out-Null
 				$cmd.Parameters.AddWithValue("@fileName", $fileName ) | Out-Null
 				$cmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
@@ -148,7 +154,14 @@ function SbsMssqlRunBackups {
 				$cmd.Parameters.AddWithValue("@BackupType", $solutionBackupType) | Out-Null
 				$cmd.Parameters.AddWithValue("@Verify", "N") | Out-Null
 				$cmd.Parameters.AddWithValue("@Compress", "Y") | Out-Null
+
+				# Cleanup time not supported when using URL for backup
+				if ($null -eq $backupUrl) {
+					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
+				}
+
 				$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
+
 				$cmd.Parameters.AddWithValue("@CheckSum", "N") | Out-Null
 				$cmd.Parameters.AddWithValue("@LogToTable", "Y") | Out-Null
 				
@@ -179,7 +192,7 @@ function SbsMssqlRunBackups {
 				# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
 				$cmd.Parameters.AddWithValue("@ChangeBackupType", $changeBackupType) | Out-Null
 
-				if ($changeBackupType -eq "Y" -and $modificationLeve > 0) {
+				if ($changeBackupType -eq "Y" -and ($modificationLeve -gt 0)) {
 					$cmd.Parameters.AddWithValue("@ModificationLevel", $modificationLevel) | Out-Null
 				}
 				
