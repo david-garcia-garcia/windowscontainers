@@ -93,7 +93,7 @@ function SbsMssqlRunBackups {
 					}
 				}
 			
-				# Llamamos al store procedure que genera los backups
+				# Llamamos al stored procedure que genera los backups
 				$SqlConn = New-Object System.Data.SqlClient.SqlConnection("Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;");
 				$SqlConn.Open();
 
@@ -144,23 +144,24 @@ function SbsMssqlRunBackups {
 				$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 
 				if ($backupUrl) {
-					$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrl) | Out-Null
+					Write-Host "Backing up to URL: $($backupUrl.baseUrl)"
+					$cmd.Parameters.AddWithValue("@Url", "$($backupUrl.baseUrl)") | Out-Null
+					$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
+					$cmd.Parameters.AddWithValue("@BlockSize", 65536) | Out-Null
+				}
+				else {
+					# These are incompatible with the use of URL
+					$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
+					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
 				}
 
 				$cmd.Parameters.AddWithValue("@DirectoryStructure", $directoryStructure ) | Out-Null
 				$cmd.Parameters.AddWithValue("@fileName", $fileName ) | Out-Null
 				$cmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
-				$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
+				
 				$cmd.Parameters.AddWithValue("@BackupType", $solutionBackupType) | Out-Null
 				$cmd.Parameters.AddWithValue("@Verify", "N") | Out-Null
 				$cmd.Parameters.AddWithValue("@Compress", "Y") | Out-Null
-
-				# Cleanup time not supported when using URL for backup
-				if ($null -eq $backupUrl) {
-					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
-				}
-
-				$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
 
 				$cmd.Parameters.AddWithValue("@CheckSum", "N") | Out-Null
 				$cmd.Parameters.AddWithValue("@LogToTable", "Y") | Out-Null
