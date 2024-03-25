@@ -348,9 +348,7 @@ This will be available for you entry point scripts and inside the container. The
 
 ## Image configuration Cheat Sheet
 
-
-
-Environment variables
+### Environment variables
 
 | Name                       | Default Value       | Description                                                  |
 | -------------------------- | ------------------- | ------------------------------------------------------------ |
@@ -365,4 +363,15 @@ Environment variables
 | SBS_SRVENSURE              | $null               | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
 | SBS_SRVSTOP                | $null               | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
 | SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Use this to configure the trigger for a scheduled task that is already present inside the image. |
+
+Relevant locations
+
+| Path                                                     | Usage                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------- |
+| c:\configmap\env.json                                    | Provide environment variables as a json file            |
+| c:\entrypoint\init\                                      | Path for initialization scripts                         |
+| c:\entrypoint\shutdown\                                  | Path for shutdown scripts                               |
+| c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                           |
+| c:\\configmap\\logmonitorconfig.json                     | Default location for the LogMonitor configuration file. |
+| c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions          |
 

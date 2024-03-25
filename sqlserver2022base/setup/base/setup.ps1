@@ -15,7 +15,8 @@ Set-DbaNetworkConfiguration -SqlInstance $sqlInstance -EnableProtocol TcpIp -Con
 # Server defaults
 Set-DbaSpConfigure -SqlInstance $sqlInstance -Name 'backup compression default' -Value 1;
 Set-DbaMaxDop -SqlInstance $sqlInstance -MaxDop 1;
-Set-DbaMaxMemory -SqlInstance $sqlInstance -Max 512;
+Set-DbaMaxMemory -SqlInstance $sqlInstance -Max 256;
+Set-DbaSpConfigure -SqlInstance $sqlInstance -Name "min server memory" -Value 256;
 
 #################################
 # Disable uneeded services

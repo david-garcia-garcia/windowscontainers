@@ -1,8 +1,7 @@
 function SbsGetEnvBool {
     [OutputType([bool])]
     param (
-        [string]$name,
-        [bool]$defaultValue
+        [string]$name
     )
 
     $envValue = [System.Environment]::GetEnvironmentVariable($name)

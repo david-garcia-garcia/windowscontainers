@@ -19,6 +19,37 @@ The image comes with a well known backup solution already installed:
 
 [SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html)
 
+You need to configure backups, the image comes with the following scheduled tasks:
+
+- **MssqlDifferential**: run differential backup on all user databases. Differential is promoted to FULL according to MSSQL_BACKUP_MODIFICATIONLEVEL and MSSQL_BACKUP_CHANGEBACKUPTYPE.
+- **MssqlFull**: run full backup on all user databases.
+- **MssqlLog**: run log backup on all user databases.
+- **MssqlSystem**: run full backups on all system databases
+
+You can schedule these tasks using environment variables:
+
+```yaml
+# Full every saturdaY
+- 'SBS_CRON_MssqlFull={"Weekly":true,"At":"2023-01-01T02:00:00", "RandomDelay": "00:30:00", "DaysOfWeek": ["Saturday"]}'
+
+# Differential every day at 4:00
+- 'SBS_CRON_MssqlDifferential={"Daily":true,"At":"2023-01-01T04:00:00","DaysInterval":1}'
+
+# Log backup every 15 minutes
+- 'SBS_CRON_MssqlLog={"Once":true,"At":"2023-01-01T00:00:00","RepetitionInterval": "00:15:00", "RepetitionDuration": "Timeout.InfiniteTimeSpan"}'
+
+# System databases daily at 22:00
+- 'SBS_CRON_MssqlSystem={"Daily":true,"At":"2023-01-01T22:00:00","DaysInterval":1}'
+```
+
+You can define backup cleanup times for each type of backup (retention)
+
+```yaml
+- MSSQL_BACKUP_CLEANUPTIME_LOG=48
+- MSSQL_BACKUP_CLEANUPTIME_DIFF=72
+- MSSQL_BACKUP_CLEANUPTIME_FULL=128
+```
+
 ## Master key
 
 A master key with a random password is automatically deployed on start. If this is a persistent setup and a master key already exists, none will be deployed.
@@ -78,6 +109,10 @@ To enable the agent add the service name to the list of start on boot services i
 SBS_SRVENSURE=SQLSERVERAGENT
 ```
 
+## Full Text Search
+
+Full text search services are installed and enabled in the image.
+
 ## Lifecycle
 
 The lifecycle determines "how" the image intends to treat persistent data and configuration. I.E. you might totally want to have a configuration-free MSSQL setup where the only persistent thing are the data files themselves. On the other hand, you might want to have total control on the SQL Instance and have any config change you make to it persisted.
@@ -107,9 +142,13 @@ Focusing on the minimum ENV setup needed for this:
 
 All SQL  paths (MSSQL_PATH_*) have been moved to persistent volume store. This ensures that master, model and everything you setup in this MSSQL instance is retained and stored in persistent storage. The pod can move between nodes in K8S and will recover it's previous state with a minimum downtime. For a zero downtime pod we need to rely on replication/mirroring (pending).
 
-## Memory usage
+## Memory usage and footpring
 
-MSSQL will use as much memory as possible. This is huge problem if not controlled in a K8S cluster. The same if you have multiple instances of MSSQL on the same server, they will compete for memory resources.
+The base memory consumption AKA memory footprint for this image is approx. **356Mb**. ~100MB are for the entrypoint and windows services, the other 256MB are for MSSQL Server itself. You cannot run MSSQL with less than 256MB (although official documentation states a minimum of Max Server memory of 128MB). If you push this limit too much, you will loose access to the server and CPU usage will spike - plus your logs will be getting flooded. I have tested 256MB to be the bare minimum to keep MSSQL running (probably due to the image having Full Text Search and SQL Server Agent).
+
+[SQL SERVER - Error: 17300 - The Error is Printed in Terse Mode Because There was Error During Formatting - SQL Authority with Pinal Dave](https://blog.sqlauthority.com/2018/08/16/sql-server-error-17300-the-error-is-printed-in-terse-mode-because-there-was-error-during-formatting/)
+
+MSSQL will use as much memory as possible. This is a huge problem if not controlled in a K8S cluster. The same if you have multiple instances of MSSQL on the same server, they will compete for memory resources.
 
 This can even become more problematic if K8S decides to memory evict your pods. This requires careful planning on how you are going to assign memory to the MSSQL pods.
 
@@ -123,10 +162,10 @@ Consider configuring the memory release scheduled task. Make sure you run this a
 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
 ```
 
-You can also tune de Max Server Memory for the instance through MSSQL_SPCONFIGURE
+You can also tune the Max Server Memory for the instance through MSSQL_SPCONFIGURE
 
 ```yaml
-MSSQL_SPCONFIGURE=max server memory:2048
+MSSQL_MAXMEMORY=512
 ```
 
 ## Control Operations
