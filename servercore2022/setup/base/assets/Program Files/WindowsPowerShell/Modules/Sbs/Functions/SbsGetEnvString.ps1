@@ -1,4 +1,5 @@
 function SbsGetEnvString {
+    [OutputType([string])]
     param (
         [string]$name,
         [string]$defaultValue

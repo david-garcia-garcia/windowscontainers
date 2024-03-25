@@ -26,11 +26,15 @@ foreach ($var in $triggerEnvVars) {
 
     Write-Output $jsonTrigger;
 
-    # Execute the function to apply the trigger to the task
-    SbsSetTaskTrigger -taskName $taskName -jsonTrigger $jsonTrigger;
-
-    # Output for confirmation or debugging
-    SbsWriteHost "Applied trigger to task: $taskName with config: $jsonTrigger";
+    # Check if the task exists before applying the trigger
+    if (Get-ScheduledTask | Where-Object { $_.TaskName -eq $taskName }) {
+        SbsSetTaskTrigger -taskName $taskName -jsonTrigger $jsonTrigger;
+        SbsWriteHost "Applied trigger to task: $taskName with config: $jsonTrigger";
+    }
+    else {
+        SbsWriteWarning "Task $taskName does not exist.";
+        continue;
+    }
 
     # If the task name is in the $SBS_CRONRUNONBOOT_Array, start it immediately
     if ($taskName -in $SBS_CRONRUNONBOOT_Array) {

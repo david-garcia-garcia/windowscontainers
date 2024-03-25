@@ -3,6 +3,8 @@
 ARG IMG_SERVERCORE2022
 FROM ${IMG_SERVERCORE2022}
 
+SHELL ["powershell.exe"]
+
 # Component and role install
 COPY "setup\\install" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
@@ -26,5 +28,7 @@ COPY "setup\\base" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;
+
+SHELL ["cmd.exe"]
 
 

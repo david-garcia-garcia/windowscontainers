@@ -28,6 +28,20 @@ Describe 'compose.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Automatic"
     }
 
+    It 'Env warm reload' {
+        $jsonString = @{
+            "SBS_TESTVALUE" = "value1"
+        } | ConvertTo-Json
+
+        # Create directory and set configmap
+        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\configmap'; Set-Content -Path 'C:\configmap\env.json' -Value '$jsonString'"
+
+        # Force refresh
+        docker exec servercore2022-servercore-1 powershell "Import-Module Sbs; SbsPrepareEnv;"
+
+        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
+    }
+
     AfterAll {
         docker compose -f servercore2022/compose.yaml down;
     }

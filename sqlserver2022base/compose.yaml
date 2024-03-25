@@ -17,14 +17,13 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD=sapwd
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_SYSTEM=d:\system
       - MSSQL_PATH_BACKUP=d:\backup
-      - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORLOGSOURCE=*
-      - SBS_MONITORLOGMINLEVEL=Warning
+      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
+      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_ENTRYPOINTERRORACTION=Stop
 networks:
   container_default:

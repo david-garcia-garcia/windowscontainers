@@ -22,8 +22,7 @@ services:
       # Services that need to be stopped on shutdown
       - SBS_SRVSTOP=newrelic-infra
       # Do not run in ASYNC boot mode
-      - SBS_ENTRYPOINTRYNASYNC=false
-      - SBS_ENTRYPOINTRYNASYNCTIMEOUT=180
+      - SBS_INITASYNC=false
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
       # Scheduled tasks that must be run once during startup
@@ -33,19 +32,18 @@ services:
       # Error behaviour
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Call the entrypoint shutdown logic
-      - SBS_AUTOSHUTDOWN=1
+      - SBS_DISABLEAUTOSHUTDOWN=0
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
       # Output in the entrypoint loop
-      - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORLOGSOURCE=*
-      - SBS_MONITORLOGMINLEVEL=Warning
+      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
+      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       # New relic license KEY
       - NEW_RELIC_LICENSE_KEY=badlicensekey
       # Secret key
       - SBS_TESTPROTECT_PROTECT=supersecretekey
       # Other new relic stuff
-      - NRIA_CUSTOM_ATTRIBUTES='{"environment":"docker"}'
+      - NRIA_CUSTOM_ATTRIBUTES={"environment":"docker"}
 networks:
   container_default:
     external: true

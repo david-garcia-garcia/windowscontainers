@@ -6,10 +6,10 @@ SHELL ["powershell.exe"]
 RUN mkdir "c:\LogMonitor"; `
     Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe" -OutFile "C:\LogMonitor\LogMonitor.exe"
 
-# Change the default to something a little bit larger than the default 5s.... 20s
+# Change the default to something a little bit larger than the default 5s.... 15s
 # https://github.com/dotnet/runtime/issues/63709
-RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 10
-RUN reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 10000 /f
+RUN reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15
+RUN reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f
 
 # Set shell to PowerShell
 # SHELL ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe"]
@@ -39,5 +39,6 @@ RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;
 
+SHELL ["cmd.exe"]
 CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
-#CMD ["C:\\LogMonitor\\LogMonitor.exe", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+#CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap_logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]

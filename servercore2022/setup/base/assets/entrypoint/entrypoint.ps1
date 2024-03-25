@@ -2,7 +2,9 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 
 Import-Module Sbs;
 
-$stopwatch = [System.Diagnostics.Stopwatch]::StartNew();
+SbsPrepareEnv;
+
+$initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
 #####################################
 # Setting timezone hardcoded here
@@ -98,89 +100,6 @@ $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandl
 [ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true);
 
 ##########################################################################
-# Protect environment variables using DPAPI
-##########################################################################
-$processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
-SbsWriteHost "Initiating ENV protection";
-foreach ($key in $processEnvironmentVariables.Keys) {
-    $variableName = $key.ToString()
-    if ($variableName -match "^(.*)_PROTECT$") {
-        Add-Type -AssemblyName System.Security;
-        $originalVariableName = $matches[1];
-        $originalValue = $processEnvironmentVariables[$key];
-        $protectedValue = [System.Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($originalValue), $null, 'LocalMachine'));
-        [System.Environment]::SetEnvironmentVariable($originalVariableName, $protectedValue, [System.EnvironmentVariableTarget]::Process);
-        Remove-Item -Path "Env:\$variableName";
-        SbsWriteHost "Protected environment variable '$variableName' with DPAPI at the machine level and renamed to '$originalVariableName'";
-    }
-}
-
-##########################################################################
-# Promote process level env variables to machine level. This is the most straighforward
-# way making these accessible ot other processes in the container such as IIS pools,
-# scheduled tasks, etc.
-# Some of these contain sensible information that should not be promoted or readily available
-# to those services (i.e. there could be 3d party software such as NR running that will
-# have access to theses inmmediately)
-##########################################################################
-$SBS_PROMOTE_ENV_REGEX = [System.Environment]::GetEnvironmentVariable("SBS_PROMOTE_ENV_REGEX");
-if (-not [string]::IsNullOrWhiteSpace($SBS_PROMOTE_ENV_REGEX)) {
-    SbsWriteHost "Initiating ENV system promotion for variables that match '$SBS_PROMOTE_ENV_REGEX'";
-    $processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
-    foreach ($key in $processEnvironmentVariables.Keys) {
-        $variableName = $key.ToString();
-        if ($variableName -match $SBS_PROMOTE_ENV_REGEX) {
-            $variableValue = [System.Environment]::GetEnvironmentVariable($variableName, [System.EnvironmentVariableTarget]::Process);
-            [System.Environment]::SetEnvironmentVariable($variableName, $variableValue, [System.EnvironmentVariableTarget]::Machine);
-            SbsWriteHost "Promoted environment variable: $variableName";
-        }
-    }
-}
-
-function Wait-JobOrThrow {
-    param (
-        [Parameter(Mandatory = $true)]
-        [int]$JobId,
-        [Parameter(Mandatory = $true)]
-        [int]$Timeout
-    )
-
-    $job = Get-Job -Id $JobId;
-
-    if (-not $job) {
-        throw "Job with ID $JobId not found";
-    }
-
-    $jobName = $job.Name;
-
-    $startTime = Get-Date;
-    Wait-Job -Job $job -Timeout $Timeout;
-    $endTime = Get-Date;
-
-    $elapsed = $endTime - $startTime;
-    $formattedElapsed = "{0:hh\:mm\:ss}" -f [timespan]::FromSeconds($elapsed.TotalSeconds);
-
-    if ($job.State -eq "Running") {
-        SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed with error in $formattedElapsed";
-        $host.SetShouldExit(1);
-        throw "Task $jobName did not complete within the specified timeout of $Timeout seconds!";
-    }
-
-    $endState = $job.State;
-    Receive-Job -Job $job -Wait -AutoRemoveJob;
-
-    # Check if the state is 'Failed' or if there are error records in the results
-    if ($job.State -eq 'Failed') {
-        SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName encountered an error during execution in $formattedElapsed";
-        # Throw the first error or adjust as needed
-        $host.SetShouldExit(1);
-        throw "Task $jobName failed";
-    }
-
-    SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task $jobName completed in state $endState with success in $formattedElapsed";
-}
-
-##########################################################################
 # Adjust the ENTRY POINT error preference.
 # Preferred is Stop, because app/container might have inconsistent
 # state. Continue should be used for debugging purposes only.
@@ -198,41 +117,48 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 ##########################################################################
 # Run entry point scripts
 ##########################################################################
-$SBS_ENTRYPOINTRYNASYNC = [System.Environment]::GetEnvironmentVariable("SBS_ENTRYPOINTRYNASYNC");
 $initScriptDirectory = "C:\entrypoint\init";
 if (Test-Path -Path $initScriptDirectory) {
-    # Get all .ps1 files in the directory
-    $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name;
-
-    # Iterate through each script and execute it
-    foreach ($script in $scripts) {
-        if ($SBS_ENTRYPOINTRYNASYNC -eq 'True') {
-            # Ejecutamos estos scripts así para evitar que cualquier cosa que carguen en la sesión
-            # de Powershell quede bloqueada (p.e. un módulo de PS que se utilice en estos arraques
-            # quedaría eternamente bloqueado en el contenedor porque el entypoint lo bloquea).
-            # En princpio esto no es malo, pero si para depurar o diagnosticar hay que actualizar
-            # un módulo PS que está bloqueado, no podremos sin matar el contenedor.
-            SbsWriteHost "Executing init script asynchronously START: $($script.FullName)";
-            # Start the script as a job
-            $job = Start-Job -FilePath $script.FullName -Name $script.Name;
-            Wait-JobOrThrow -JobId $job.Id -Timeout (SbsGetEnvInt 'SBS_ENTRYPOINTRYNASYNCTIMEOUT' 180);
-            SbsWriteHost "Executing init script asynchronously END: $($script.FullName)";
-        }
-        else {
-            SbsWriteHost "Executing init script synchronously START: $($script.FullName)";
-            try {
+    $initAsync = SbsGetEnvBool "SBS_INITASYNC";
+    if ($initAsync -eq $true) {
+        SbsWriteHost "Async Initialization";
+        # We run this asynchronously for multiple reasons:
+        # * Any PS loaded modules directly in the entrypoint will be LOCKED. This is an issue for debugging/hot replacing.
+        # * Entrypoint init scripts can load huge modules (i.e. dbatools that uses 200MB or memory). If we run them directly in the entrypoint, the memory is not released.
+        # Doing this ASYNC is a little bit slower, but it pays off in some situations.
+        $job = Start-Job -ScriptBlock {
+            param ($iniDir)
+            Import-Module Sbs;
+            # Get all .ps1 files in the directory
+            $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
+            SbsWriteHost "Running init scripts: $($scripts.Count) found."
+            $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
+            Import-Module Sbs;
+            foreach ($script in $scripts) {
+                SbsWriteHost "$($script.Name): START ";
                 & $script.FullName;
+                SbsWriteHost "$($script.Name): END";
             }
-            catch {
-                if ($global:ErrorActionPreference -match 'Continue') {
-                    SbsWriteHost "An error was found";
-                    SbsWriteHost $_;
-                }
-                else {
-                    throw $_;
-                }
-            }
-            SbsWriteHost "Executing init script synchronously END: $($script.FullName)";
+        } -ArgumentList $initScriptDirectory
+
+        Receive-Job -Job $job -Wait -AutoRemoveJob;
+
+        # Check if the state is 'Failed' or if there are error records in the results
+        if ($job.State -eq 'Failed') {
+            SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task encountered an error during execution";
+            $host.SetShouldExit(1);
+            throw "Task $jobName failed";
+        }
+    }
+    else {
+        SbsWriteHost "Sync Initialization";
+        $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
+        SbsWriteHost "Running init scripts synchronously. $($scripts.Count) found."
+        Import-Module Sbs;
+        foreach ($script in $scripts) {
+            SbsWriteHost "$($script.Name): START";
+            & $script.FullName;
+            SbsWriteHost "$($script.Name): END";
         }
     }
 }
@@ -241,25 +167,70 @@ else {
 }
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
-New-Item -Path 'C:\\ready' -ItemType 'File' -Force;
+New-Item -Path 'C:\\ready' -ItemType 'File' -Force | Out-Null;
 
 # To ensure that shutdown runs only once, place a unique flag
-New-Item -ItemType Directory -Path "C:\shutdownflags\" -Force;
+New-Item -ItemType Directory -Path "C:\shutdownflags\" -Force | Out-Null;
 $shutdownFlagFile = "C:\shutdownflags\" + [Guid]::NewGuid().ToString() + ".lock";
 Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 
-$stopwatch.Stop();
-SbsWriteHost "Initialization completed in $($stopwatch.Elapsed.TotalSeconds)s";
+$initStopwatch.Stop();
+SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)s";
 
 $lastCheck = (Get-Date).AddSeconds(-1);
+
+$stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
+
+$parentProcessIsLogMonitor = $false;
+$parentProcess = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID").ParentProcessId | ForEach-Object {
+    $process = Get-CimInstance Win32_Process -Filter "ProcessId = $_";
+    $process.Name
+};
+if ($parentProcess -eq "LogMonitor.exe") {
+    $parentProcessIsLogMonitor = $true;
+}
+
+SbsWriteHost "Parent process: $parentProcess";
 
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
+    $logConf = $null;
+
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
-        SbsFilteredEventLog -After $lastCheck -LogNames $Env:SBS_MONITORLOGNAMES -Source $Env:SBS_MONITORLOGSOURCE -MinLevel $Env:SBS_MONITORLOGMINLEVEL;
-        $lastCheck = Get-Date 
+
+        # Warm refresh environment configuration
+        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 5) {
+
+            $changed = SbsPrepareEnv;
+
+            if ($true -eq $changed) {
+                SbsWriteHost "Environment refreshed.";
+            }
+
+            # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance
+            # is terrible, taking almost 1 whole CPU once published in an AKS cluster. And it's not the cmdlet going crazy,
+            # it's the Event Viewer service after the querying.
+            if (-not [string]::isNullOrWhiteSpace($Env:SBS_GETEVENTLOG) -and ($null -eq $logConf -or $changed -eq $true)) {
+                try {
+                    $logConf = ConvertFrom-Json $Env:SBS_GETEVENTLOG;
+                }
+                catch {
+                    SbsWriteWarning "Error parsing SBS_GETEVENTLOG: $_";
+                    $logConf = @(@{ LogName = 'Application'; Source = '*'; Level = 'Warning'; });
+                }
+                SbsWriteHost "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
+            }
+
+            if ($null -ne $logConf -and $parentProcessIsLogMonitor -eq $false) {
+                SbsFilteredEventLog -After $lastCheck -Configurations $logConf;
+            }
+
+            $lastCheck = Get-Date;
+            $stopwatchEnvRefresh.Restart();
+        }
+         
         Start-Sleep -Seconds 2;
     }
 
@@ -279,7 +250,8 @@ try {
     # There are two ways to avoid calling shutodwn here:
     # 1. Shutdown was called somewhere else (i.e. lifecycle hook in K8S)
     # 2. SBS_AUTOSHUTDOWN was explicitly set to som
-    if (($Env:SBS_DISABLEAUTOSHUTDOWN -eq "True") -or ((Test-Path $shutdownFlagFile) -eq $false)) {
+    $disableAutoShutdown = SbsGetEnvBool "SBS_DISABLEAUTOSHUTDOWN";
+    if (($disableAutoShutdown -eq $true) -or ((Test-Path $shutdownFlagFile) -eq $false)) {
         SbsWriteHost "Integrated shutdown skipped.";
     }
     else {
@@ -323,42 +295,3 @@ $processes = Get-Process | Where-Object {
 
 $processes | ForEach-Object { SbsWriteHost "Will close: $($_.ProcessName) (ID: $($_.Id))" };
 $processes | ForEach-Object { $_.Kill() }
-
-#####################################
-# Close processes II
-#
-# Keeping this for the records, when using 
-# log monitor as an entrypoint if you
-# keep a shell from docker open, there seems
-# to be no way to kill it from here. You need
-# to manually exit it for the container to be released.
-#####################################
-
-#public class WinApi {
-#    [DllImport("kernel32.dll", SetLastError = true)]
-#    public static extern IntPtr OpenProcess(uint processAccess, bool bInheritHandle, int processId);
-#
-#   [DllImport("kernel32.dll", SetLastError = true)]
-#    [return: MarshalAs(UnmanagedType.Bool)]
-#    public static extern bool TerminateProcess(IntPtr hProcess, uint uExitCode);
-#
-#    [DllImport("kernel32.dll", SetLastError = true)]
-#    [return: MarshalAs(UnmanagedType.Bool)]
-#    public static extern bool CloseHandle(IntPtr hObject);
-#}
-#'@
-#
-#$processes | ForEach-Object { 
-#    Write-Output "Will close: $($_.ProcessName) (ID: $($_.Id))"
-#    $processId = $_.Id;
-#    $PROCESS_ALL_ACCESS = 0x001F0FFF;
-#    $processHandle = [WinApi]::OpenProcess($PROCESS_ALL_ACCESS, $false, $processId);
-#    if ($processHandle -ne [IntPtr]::Zero) {
-#        [WinApi]::TerminateProcess($processHandle, 1) | Out-Null;
-#        [WinApi]::CloseHandle($processHandle) | Out-Null;
-#        Write-Output "Process terminated.";
-#    }
-#    else {
-#        Write-Error "Failed to open process.";
-#    }
-#}

@@ -28,7 +28,7 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD=sapwd
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_DATABASE=mydatabase
       - MSSQL_LIFECYCLE=ATTACH
       - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;
@@ -38,7 +38,7 @@ services:
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_PATH_CONTROL=c:\SQLControl
       - MSSQL_INSTANCENAME=myinstance
-      - MSSQL_MAXMEMORY=2050
+      - MSSQL_MAXMEMORY=286
       # For debugging timeout at 40s
       - SBS_SHUTDOWNTIMEOUT=40
       # Start services
@@ -46,13 +46,11 @@ services:
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Monitor from event viewer
-      - SBS_MONITORLOGNAMES=Application,System
-      - SBS_MONITORLOGSOURCE=*
-      - SBS_MONITORLOGMINLEVEL=Warning
+      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
+      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_CRONRUNONBOOT=DeployMssqlNri
       - NEW_RELIC_LICENSE_KEY=
       - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
-      - SBS_CRON_MssqlReleaseMemory=
 networks:
   container_default:
     external: true

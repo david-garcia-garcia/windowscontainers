@@ -3,6 +3,8 @@
 # operations, logging progress to the event log.
 # This is crucial to monitor long lasting operations
 # that affect a container startup or tear-down.
+#
+# AVOID USING DBATOOLS TO REDUCE MEMORY FOOTPRINT FOR PROCESS
 ########################################################
 
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
@@ -36,26 +38,40 @@ $database = "master";
 # Start the background job
 Start-Job -ScriptBlock {
     param($sqlInstanceName, $database, $sqlQuery)
-    Import-Module dbatools;
-    $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
     while ($true) {
-        $result = Invoke-DbaQuery -SqlInstance $sqlInstance -Database $database -Query $sqlQuery;
-        if ($result) {
-            foreach ($row in $result) {
-                # Initialize an empty array to hold the column-value pairs for the current row
-                $messageParts = @();
-                # Iterate through each property (column) of the row
-                foreach ($property in $row.PSObject.Properties) {
-                    # Construct a string "ColumnName: Value" for each property
-                    $messagePart = "$($property.Name): $($property.Value)"
-                    # Add the constructed string to the messageParts array
-                    $messageParts += $messagePart
+        $connectionString = "Server=$sqlInstanceName;Database=$database;Integrated Security=True;TrustServerCertificate=True"
+        $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString);
+        try {
+            $connection.Open()
+            $command = $connection.CreateCommand()
+            $command.CommandText = $sqlQuery
+            $reader = $command.ExecuteReader()
+
+            if ($reader.HasRows) {
+                while ($reader.Read()) {
+                    $messageParts = @()
+                    for ($i = 0; $i -lt $reader.FieldCount; $i++) {
+                        $columnName = $reader.GetName($i)
+                        $columnValue = $reader.GetValue($i)
+                        $messagePart = "${columnName}: ${columnValue}"
+                        $messageParts += $messagePart
+                    }
+                    $message = $messageParts -join "; "
+                    SbsWriteHost $message
                 }
-                # Join all the column-value pairs with a semicolon and a space
-                $message = $messageParts -join "; "
-                SbsWriteHost $message;
             }
+
+            $reader.Close();
+            $connection.Close();
         }
-        Start-Sleep -Seconds 8;
+        catch {
+            # Handle the exception here
+            SbsWriteError "An error occurred: $_"
+        }
+        finally {
+            $connection.Dispose();
+        }
+
+        Start-Sleep -Seconds 10;
     }
 } -ArgumentList $sqlInstanceName, $database, $sqlQuery

@@ -52,9 +52,25 @@ foreach ($key in $finalSettings.Keys) {
 }
 
 $maxMemory = SbsGetEnvInt -name "MSSQL_MAXMEMORY" -defaultValue $null;
-if (($null -ne $maxMemory) -and ($maxMemory -gt 512)) {
-    SbsWriteHost "Setting max memory to $maxMemory";
-    Set-DbaMaxMemory -SqlInstance $sqlInstance -Max $maxMemory;
+if (($null -ne $maxMemory)) {
+    if ($maxMemory -gt 256) {
+        SbsWriteHost "Setting max memory to $maxMemory";
+        Set-DbaMaxMemory -SqlInstance $sqlInstance -Max $maxMemory;
+    }
+    else {
+        SbsWriteHost "Max memory is less than 256MB, not setting."
+    }
+}
+
+$minMemory = SbsGetEnvInt -name "MSSQL_MINMEMORY" -defaultValue $null;
+if (($null -ne $minMemory)) {
+    if ($minMemory -gt 256) {
+        SbsWriteHost "Setting min memory to $minMemory";
+        Set-DbaSpConfigure -SqlInstance $sqlInstance -Name "min server memory" -Value $minMemory;
+    }
+    else {
+        SbsWriteHost "Min memory is less than 256MB, not setting."
+    }
 }
 
 if (($true -eq $needsRestart) -or ($Env:MSSQL_SPCONFIGURERESTART -eq '1')) {
@@ -70,6 +86,6 @@ if ($null -eq $Env:MSSQL_DISABLESHUTDOWNTIMEOUTCHECK) {
         $minimium = 60;
     }
     if ($timeout -lt $minimium) {
-        Write-Error "Current shutdown timeout of $($timeout)s is lower than the minimum of $($minimium)s for this workload. Use SBS_SHUTDOWNTIMEOUT to set a bigger timeout. If this is running in K8S, configure a LifeCycleHook for shutdown instead of increasing the timeout."
+        Write-Error "Current shutdown timeout of $($timeout)s is lower than the minimum of $($minimium)s for this workload. Use SBS_SHUTDOWNTIMEOUT to set a bigger timeout. If this is running in K8S, configure a LifeCycleHook for shutdown instead of increasing the timeout and set the MSSQL_DISABLESHUTDOWNTIMEOUTCHECK environment variable."
     }
 }

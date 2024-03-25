@@ -26,10 +26,8 @@ FROM sys.dm_os_sys_memory
     $currentMaxMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MaxMemory;
     $currentMinMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MinMemory;
 
-    # Calculate 25% of the current max memory
-    $reducedMaxMemory = [Math]::Max(($currentMaxMemory * 0.25), $currentMinMemory); # Assuming 1024MB as the minimum
+    $reducedMaxMemory = [Math]::Max(($currentMaxMemory * 0.75), $currentMinMemory);
 
-    # Set the max server memory to 25% of its current value or the minimum value, whichever is more
     Set-DbaMaxMemory -SqlInstance $sqlServer -Max $reducedMaxMemory;
 
     Write-Host "Waiting...";

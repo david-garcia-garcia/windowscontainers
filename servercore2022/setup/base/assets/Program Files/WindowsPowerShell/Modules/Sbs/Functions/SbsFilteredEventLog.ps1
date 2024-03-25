@@ -1,35 +1,37 @@
 function SbsFilteredEventLog {
     param (
         [DateTime]$After,
-        [string]$LogNames,
-        [string]$Source = "*",
-        [Nullable[System.Diagnostics.EventLogEntryType]]$MinLevel = "Information"
+        [array]$Configurations
     )
-    
-    if ([string]::IsNullOrWhiteSpace($Source)) {
-        $Source = "*";
-    }
 
-    if ($null -eq $MinLevel) {
-        $MinLevel = "Information";
-    }
-
-    # Split the LogNames string into an array based on comma separation
-    $LogNameArray = $LogNames -split ","
+    $events = @();
     
-    foreach ($LogName in $LogNameArray) {
-        # Trim spaces that might be present around log names
-        $LogName = $LogName.Trim();
+    foreach ($configuration in $Configurations) {
+
+        $Source = $configuration.Source;
+        $MinLevel = $configuration.MinLevel;
+        $LogName = $configuration.LogName;
+
+        if ([string]::IsNullOrWhiteSpace($Source)) {
+            $Source = "*";
+        }
+
+        if ($null -eq $MinLevel) {
+            $MinLevel = "Information";
+        }
 
         # Ensure the current log name is not empty
         if (-not [string]::IsNullOrWhiteSpace($LogName)) {
-            $events = Get-EventLog -LogName $LogName -Source $Source -After $After | Where-Object {
+            $events += (Get-EventLog -LogName $LogName -Source $Source -After $After -Newest 200 | Where-Object {
                 $_.EntryType -le $MinLevel
-            }
-
-            foreach ($event in $events) {
-                $event | Select-Object @{Name = 'LogName'; Expression = { $LogName } }, Source, TimeGenerated, EntryType, Message
-            }
+            });
         }
+    }
+
+    $sortedEvents = $events | Sort-Object -Property Index, TimeGenerated;
+
+    foreach ($event in $sortedEvents) {
+        $formattedMessage = "[{0}] [{4}:{1}] {2} {3}" -f $event.TimeGenerated.ToString("HH:mm:ss"), $event.Source, $event.EntryType, $event.Message, $LogName
+        Write-Output $formattedMessage
     }
 }

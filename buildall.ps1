@@ -8,6 +8,7 @@ param (
     [string]$Images = ".*"
 )
 
+Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
 
@@ -45,8 +46,6 @@ function ThrowIfError() {
 # TODO: Write some tests with PESTER
 if ($test) {
 
-    Import-Module Pester -PassThru;
-
     # Check if the 'container_default' network exists
     $networkName = "container_default"
     $existingNetwork = docker network ls --format "{{.Name}}" | Where-Object { $_ -eq $networkName }
@@ -69,8 +68,7 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        Invoke-Pester -Path "servercore2022\tests\ComposeBasic.Tests.ps1"
-        Invoke-Pester -Path "servercore2022\tests\Compose.Tests.ps1"
+        Invoke-Pester -Path "servercore2022\tests\"
     }
 
     if ($push) {
@@ -86,8 +84,7 @@ ThrowIfError
 
 if ("servercore2022iis" -match $Images) {
     if ($test) {
-        Invoke-Pester servercore2022iis\tests\Compose.Tests.ps1
-        Invoke-Pester servercore2022iis\tests\ComposeCerts.Tests.ps1
+        Invoke-Pester -Path "servercore2022iis\tests"
     }
 
     if ($push) { 
@@ -120,6 +117,22 @@ if ("sqlserver2022base" -match $Images) {
     }
 }
 
+# SQL Server K8S
+Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
+docker compose -f sqlserver2022k8s/compose.yaml build
+ThrowIfError
+
+if ("sqlserver2022k8s" -match $Images) {
+    if ($test) {
+        Invoke-Pester -Path "sqlserver2022k8s\tests"
+    }
+
+    if ($push) {
+        docker push "$($Env:IMG_SQLSERVER2022K8S)"
+        ThrowIfError
+    }
+}
+
 # SQL Server Analysis Services
 Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
 docker compose -f sqlserver2022as/compose.yaml build
@@ -128,21 +141,4 @@ ThrowIfError
 if ($push) {
     docker push "$($Env:IMG_SQLSERVER2022AS)"
     ThrowIfError
-}
-
-# SQL Server K8S
-Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
-docker compose -f sqlserver2022k8s/compose.yaml build
-ThrowIfError
-
-if ("sqlserver2022k8s" -match $Images) {
-    if ($test) {
-        Invoke-Pester sqlserver2022k8s\tests\Compose.Tests.ps1
-        Invoke-Pester sqlserver2022k8s\tests\Compose-backups.Tests.ps1
-    }
-
-    if ($push) {
-        docker push "$($Env:IMG_SQLSERVER2022K8S)"
-        ThrowIfError
-    }
 }

@@ -1,6 +1,7 @@
 version: "3.7"
 services:
-  web:
+  servercore:
+    stop_grace_period: 40s
     build:
       context: .
       args:
@@ -8,23 +9,15 @@ services:
         IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
-        IMG_SERVERCORE2022IIS: ${IMG_SERVERCORE2022IIS}
-        IMG_SERVERCORE2022IISNET48: ${IMG_SERVERCORE2022IISNET48}
-    image: ${IMG_SERVERCORE2022IIS}
-    networks:
-      container_default:
-        ipv4_address: 172.18.8.8
+    image: ${IMG_SERVERCORE2022}
     environment:
-      # Promocionar variables de entorno a variables de sistema
-      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
-      - SBS_CONTAINERTIMEZONE=Pacific Standard Time
-      - SBS_SRVENSURE=newrelic-infra
-      - SBS_ENTRYPOINTERRORACTION=Stop
-      - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
-      - NEW_RELIC_LICENSE_KEY=badkey
-      # Output in the entrypoint loop
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
+      - SBS_INITASYNC=True
+    networks:
+      - container_default
+    # Environment completely wiped out on purpose, to test
+    # scripts resiliency to null/empty
 networks:
   container_default:
     external: true

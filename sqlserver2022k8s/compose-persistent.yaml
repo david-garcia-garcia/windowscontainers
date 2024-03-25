@@ -25,7 +25,7 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD=sapwd
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_LIFECYCLE=PERSISTENT
       - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
       - MSSQL_SPCONFIGURERESTART=0
@@ -36,6 +36,8 @@ services:
       - MSSQL_PATH_SYSTEM=d:\system
       - SBS_TEMPORARY=d:\temp
       - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
+      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
 networks:
   container_default:
     external: true
