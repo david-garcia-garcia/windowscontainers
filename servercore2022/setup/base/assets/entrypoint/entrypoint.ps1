@@ -119,7 +119,7 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 ##########################################################################
 $initScriptDirectory = "C:\entrypoint\init";
 if (Test-Path -Path $initScriptDirectory) {
-    $initAsync = SbsGetEnvBool "SBS_INITASYNC" $false;
+    $initAsync = SbsGetEnvBool "SBS_INITASYNC";
     if ($initAsync -eq $true) {
         SbsWriteHost "Async Initialization";
         # We run this asynchronously for multiple reasons:
@@ -250,7 +250,8 @@ try {
     # There are two ways to avoid calling shutodwn here:
     # 1. Shutdown was called somewhere else (i.e. lifecycle hook in K8S)
     # 2. SBS_AUTOSHUTDOWN was explicitly set to som
-    if (($Env:SBS_DISABLEAUTOSHUTDOWN -eq "True") -or ((Test-Path $shutdownFlagFile) -eq $false)) {
+    $disableAutoShutdown = SbsGetEnvBool "SBS_DISABLEAUTOSHUTDOWN";
+    if (($disableAutoShutdown -eq $true) -or ((Test-Path $shutdownFlagFile) -eq $false)) {
         SbsWriteHost "Integrated shutdown skipped.";
     }
     else {
