@@ -23,8 +23,44 @@ function SbsCleanupBackups {
     $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
     $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
     Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
-    $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + $_.Name } 
-    $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };
+    $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + $_.Name }
+    
+    # Define the cache directory path
+    $cacheDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "MSSQLHEADERS\$($backupUrl.storageAccountName)\$($backupUrl.container)";
+    New-Item -ItemType Directory -Path $cacheDirectory -Force | Out-Null
+
+    # Loop through the $blobUrls and check if the metadata is already present in the cache
+    $cachedFiles = @{}
+    foreach ($blobUrl in $blobUrls) {
+        $blobName = $blobUrl -replace $backupUrl.baseUrl, '';
+        $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
+        if (Test-Path -Path $cacheFilePath) {
+            $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
+            if ($cachedFile.GeneratedAt -lt (Get-Date).AddHours(-1)) {
+                continue
+            }
+            $cachedFiles[$blobUrl] = $cachedFile
+        }
+    }
+
+    # Get the files that are not present in the cache
+    $filesToFetch = $blobUrls | Where-Object { -not $cachedFiles.ContainsKey($_) }
+
+    # Fetch the missing files using Get-DbaBackupInformation
+    if ($filesToFetch.Count -gt 0) {
+        $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch |
+        Select-Object *, @{Name = "GeneratedAt"; Expression = { Get-Date } }
+
+        # Cache the fetched files
+        foreach ($file in $files) {
+            $blobName = $file.Path[0] -replace $backupUrl.baseUrl, ''
+            $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
+            $file | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
+            $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
+        }
+    }
+
+    $files = $cachedFiles.Values | Where-Object { $_.Database -eq $databaseName }
 
     if ($files.Count -eq 0) {
         Write-Host "No backups found for database $databaseName"
@@ -72,12 +108,12 @@ function SbsCleanupBackups {
 
             # Check if there are any DIFF or LOG backups that depend on this full backup
             $dependentBackups = $files | Where-Object {
-                ($_.Type -eq $diffType -or $_.Type -eq $logType) -and
-                $_.FirstLSN -eq $file.LastLSN
+                (($_.Type -eq $diffType) -or ($_.Type -eq $logType)) -and
+                $_.LastLSN -eq $file.FirstLSN
             }
 
             if ($dependentBackups.Count -gt 0) {
-                Write-Host "The following backups dpend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
+                Write-Host "The following backups depend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
         }
@@ -112,7 +148,7 @@ function SbsCleanupBackups {
                 ($_.Start -gt $file.Start)
             }
 
-            if ($newerBackup.Count -eq 0){
+            if ($newerBackup.Count -eq 0) {
                 Write-Host "No newer full or diff backup found for $($file.Path)"
                 continue
             }
@@ -120,11 +156,13 @@ function SbsCleanupBackups {
 
         # Perform cleanup for the file
         if ($WhatIf) {
-            Write-Host "Would delete $($file.Path)"
+            Write-Host "Would delete blob $($file.Path)"
         }
         else {
+            # Full uri is not supported, we need the blob name
+            $blobName = $file.Path[0] -replace $backupUrl.baseUrl, '';
             Write-Host "Deleting $($file.Path)"
-            Remove-AzStorageBlob -Container $backupUrl.container -Context $ctx -Blob $file.Path;
+            Remove-AzStorageBlob -Container $backupUrl.container -Context $ctx -Blob $blobName;
         }
     }
 
@@ -154,6 +192,6 @@ function SbsCleanupBackups {
     # $historyObject.DatabaseBackupLsn = $dbLsn
     # $historyObject.CheckpointLSN = $group.Group[0].CheckpointLSN
     # $historyObject.LastLsn = $group.Group[0].LastLsn
-    #  $historyObject.SoftwareVersionMajor = $group.Group[0].SoftwareVersionMajor
-    #  $historyObject.RecoveryModel = $group.Group.RecoveryModel
+    # $historyObject.SoftwareVersionMajor = $group.Group[0].SoftwareVersionMajor
+    # $historyObject.RecoveryModel = $group.Group.RecoveryModel
 }

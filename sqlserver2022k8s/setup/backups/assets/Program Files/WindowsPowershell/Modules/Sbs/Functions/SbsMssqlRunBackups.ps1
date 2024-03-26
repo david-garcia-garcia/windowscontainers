@@ -10,7 +10,7 @@ function SbsMssqlRunBackups {
 		[string]$backupType
 	)
 
-    $backupType = $backupType.ToUpper();
+	$backupType = $backupType.ToUpper();
 
 	Import-Module dbatools;
 
@@ -27,7 +27,7 @@ function SbsMssqlRunBackups {
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
 
-	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 48;
+	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 24;
 	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 168;
 	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 168;
 
@@ -150,7 +150,7 @@ function SbsMssqlRunBackups {
 				# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 				$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 
-				if ($backupUrl) {
+				if (-not $null -eq $backupUrl) {
 					Write-Host "Backing up to URL: $($backupUrl.baseUrl)"
 					$cmd.Parameters.AddWithValue("@Url", "$($backupUrl.baseUrl)") | Out-Null
 					$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
@@ -218,8 +218,13 @@ function SbsMssqlRunBackups {
 				else {
 					SbsWriteError "Error running backup: $($result)";
 				}
-				
+
 				$success = $true;
+
+				# Perform cleanup
+				if (-not $null -eq $backupUrl) {
+					SbsCleanupBackups -SqlInstance $sqlInstance -Url $Url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime -WhatIf $true;
+				}
 			}
 			Catch {
 				$retryCount++
