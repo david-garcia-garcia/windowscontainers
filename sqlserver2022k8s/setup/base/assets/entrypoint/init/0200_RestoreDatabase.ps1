@@ -71,7 +71,13 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
     if ($hasData -eq $true) {
         $clearDataPaths = SbsGetEnvBool -Name "MSSQL_CLEARDATAPATHS" -DefaultValue $false;
         if ($clearDataPaths -and $Env:MSSQL_LIFECYCLE -eq "BACKUP") {
-            SbsWriteWarning "Clearing data and log paths...";
+            # This is only here because on docker images have state. If we are using BACKUP lifecyle we
+            # are expecting to have NO STATE whatsoever.
+            SbsWriteWarning "######################################";
+            SbsWriteWarning "# Clearing data and log paths. This is only happening because";
+            SbsWriteWarning "# MSSQL_LIFECYCLE=BACKUP and MSSQL_CLEARDATAPATHS=True";
+            SbsWriteWarning "######################################";
+            Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeSystem | Remove-DbaDatabase -Verbose -Confirm:$false;
             Get-ChildItem -Path $dataPath | Remove-Item -Recurse -Force;
             Get-ChildItem -Path $logPath | Remove-Item -Recurse -Force;
         }
