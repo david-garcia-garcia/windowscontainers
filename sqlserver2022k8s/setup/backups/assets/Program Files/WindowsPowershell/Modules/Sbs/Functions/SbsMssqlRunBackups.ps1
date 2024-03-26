@@ -182,7 +182,8 @@ function SbsMssqlRunBackups {
 					$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrlWithPrefix) | Out-Null
 					$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
 					$cmd.Parameters.AddWithValue("@BlockSize", 65536) | Out-Null
-				} else {
+				}
+				else {
 					# These are incompatible with the use of URL
 					$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
 					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
@@ -272,6 +273,6 @@ function SbsMssqlRunBackups {
 	}
 	
 	$StopWatch.Stop()
-	$Minutes = $StopWatch.Elapsed.TotalMinutes 
+	$Minutes = $StopWatch.Elapsed.TotalMinutes;
 	SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
 }

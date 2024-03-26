@@ -172,20 +172,25 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
         $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
         $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
         Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
-        $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name } 
-        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };
+        if ($blobs -and $blobs.Count -gt 0) {
+            $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name } 
+            $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };
+        }
     }
     else {
         $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
     }
     if ($null -ne $files -and $files.Count -gt 0) {
-        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -WithReplace -UseDestinationDefaultDirectories -Verbose;
+        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
         $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
         if ($database) {
             SbsWriteHost "Database $($databaseName) restored successfully."
             $restored = $true;
             # The teardown scripts puts the backup in ReadOnly, and this will be the state after restore
             $database | Set-DbaDbState -ReadWrite -Force;
+        }
+        else {
+            SbsWriteError "Database $($databaseName) was not restored successfully."
         }
     }
     else {
