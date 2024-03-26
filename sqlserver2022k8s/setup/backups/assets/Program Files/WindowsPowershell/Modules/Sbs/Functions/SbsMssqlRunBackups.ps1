@@ -44,7 +44,9 @@ function SbsMssqlRunBackups {
 	$sqlInstance = Connect-DbaInstance $instance;
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
-	SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
+	if ($null -ne $backupUrl) {
+		SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $backupUrl.url;
+	}
 
 	$MaxRetries = 2;
 	$RetryIntervalInSeconds = 5;
@@ -74,7 +76,8 @@ function SbsMssqlRunBackups {
 
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
-	} else {
+	}
+ else {
 		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
@@ -252,9 +255,11 @@ function SbsMssqlRunBackups {
 
 				$success = $true;
 
-				# Perform cleanup
-				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
-					SbsCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+				# No cleanup for LOGNOW, because it is a forced closeup backup, we need this to be as fast as possible.
+				if ($backupType -ne "LOGNOW") {
+					if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
+						SbsCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+					}
 				}
 			}
 			Catch {
