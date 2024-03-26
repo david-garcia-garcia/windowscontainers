@@ -21,15 +21,14 @@ function SbsMssqlRunBackups {
 	$databaseBackupDirectory = $Env:MSSQL_PATH_BACKUP;
 	$backupCertificate = $Env:MSSQL_BACKUP_CERT;
 
-	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
-
 	# Default to 10min or 100Mb whatever comes first
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
 
-	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 24;
-	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 168;
-	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 168;
+	# ZERO Defaults means keep enough to restore to the most recent consistent backup
+	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
+	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
+	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
 
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
@@ -44,8 +43,9 @@ function SbsMssqlRunBackups {
 	Test-DbaConnection $instance;
 	$sqlInstance = Connect-DbaInstance $instance;
 
-	$ErrorActionPreference = "Stop";
-	
+	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
+	SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
+
 	$MaxRetries = 2;
 	$RetryIntervalInSeconds = 5;
 
@@ -143,16 +143,20 @@ function SbsMssqlRunBackups {
 				switch ($solutionBackupType) {
 					"FULL" {
 						$cleanupTime = $cleanupTimeFull;
-						$mirrorUrl = $mirrorUrlFull;
+						$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlFull;
 					}
 					"DIFF" {
 						$cleanupTime = $cleanupTimeDiff;
-						$mirrorUrl = $mirrorUrlDiff;
+						$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlDiff;
 					}
 					"LOG" {
 						$cleanupTime = $cleanupTimeLog;
-						$mirrorUrl = $mirrorUrlLog;
+						$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlLog;
 					}
+				}
+
+				if ($null -ne $mirrorUrl) {
+					SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $mirrorUrl.url;
 				}
 
 				if ($solutionBackupType -eq "LOG" -and ($recoveryModel -eq "SIMPLE")) {
@@ -170,8 +174,8 @@ function SbsMssqlRunBackups {
 				$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 
 				if (-not $null -eq $backupUrl) {
-					Write-Host "Backing up to URL: $($backupUrl.baseUrl)"
-					$cmd.Parameters.AddWithValue("@Url", "$($backupUrl.baseUrl)") | Out-Null
+					Write-Host "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
+					$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrlWithPrefix) | Out-Null
 					$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
 					$cmd.Parameters.AddWithValue("@BlockSize", 65536) | Out-Null
 				}
@@ -182,7 +186,7 @@ function SbsMssqlRunBackups {
 				}
 
 				if (-not $null -eq $mirrorUrl) {
-					$cmd.Parameters.AddWithValue("@MirrorURL", $mirrorUrl) | Out-Null
+					$cmd.Parameters.AddWithValue("@MirrorURL", $mirrorUrl.baseUrlWithPrefix) | Out-Null
 				}
 
 				$cmd.Parameters.AddWithValue("@DirectoryStructure", $directoryStructure ) | Out-Null
@@ -245,21 +249,24 @@ function SbsMssqlRunBackups {
 				$success = $true;
 
 				# Perform cleanup
-				if (-not $null -eq $backupUrl) {
-					SbsCleanupBackups -SqlInstance $sqlInstance -Url $Url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime -WhatIf $true;
+				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
+					SbsCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
 				}
 			}
 			Catch {
 				$retryCount++
 				SbsWriteHost "Retry $($retryCount): Error performing $($backupType) backup for the database $($db) and instance $($instance): $($_.Exception.Message)"
-				if ($retryCount -lt $MaxRetries) {
+				SbsWriteHost "Exception Stack Trace: $($_.Exception.StackTrace)"
+				if ($retryCount -lt $MaxRetries -and $success) {
 					SbsWriteHost "Retrying in $RetryIntervalInSeconds seconds... ($retryCount of $MaxRetries)";
 					Start-Sleep -Seconds $RetryIntervalInSeconds
 				}
 				else {
-					SbsWriteHost "Max retries reached. Aborting.";
+					SbsWriteWarning "Max retries reached. Aborting.";
 				}
 			}
+
+
 		}
 	}
 	

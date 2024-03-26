@@ -22,9 +22,16 @@ function SbsFilteredEventLog {
 
         # Ensure the current log name is not empty
         if (-not [string]::IsNullOrWhiteSpace($LogName)) {
-            $events += (Get-EventLog -LogName $LogName -Source $Source -After $After -Newest 200 | Where-Object {
-                $_.EntryType -le $MinLevel
-            });
+            try {
+                $events += (Get-EventLog -LogName $LogName -Source $Source -After $After -Newest 200 | Where-Object {
+                        $_.EntryType -le $MinLevel
+                    });
+            }
+            catch {
+                # Very rare, but there can be errors reading the log (cleared while reading, flooded, etc.)
+                Write-Output "Error retrieving events from log: $LogName";
+                Write-Output $_.Exception.Message;
+            }
         }
     }
 

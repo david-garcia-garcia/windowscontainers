@@ -20,10 +20,13 @@ function SbsCleanupBackups {
         SbsWriteWarning "Invalid backup URL $($Url)";
     }
 
+    # Make sure the credential is updated
+    SbsEnsureCredentialForSasUrl -SqlInstance $SqlInstance -Url $Url;
+
     $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
     $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
     Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
-    $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + $_.Name }
+    $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name }
     
     # Define the cache directory path
     $cacheDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "MSSQLHEADERS\$($backupUrl.storageAccountName)\$($backupUrl.container)";
@@ -35,7 +38,7 @@ function SbsCleanupBackups {
     # Loop through the $blobUrls and check if the metadata is already present in the cache
     $cachedFiles = @{}
     foreach ($blobUrl in $blobUrls) {
-        $blobName = $blobUrl -replace $backupUrl.baseUrl, '';
+        $blobName = ($blobUrl -replace $backupUrl.baseUrl, '').TrimStart('/');
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
@@ -48,9 +51,10 @@ function SbsCleanupBackups {
 
     # Fetch the missing files using Get-DbaBackupInformation
     if ($filesToFetch.Count -gt 0) {
+        Write-Host "Fetching backup metadata for $($filesToFetch.Count) files"
         $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch;
         foreach ($file in $files) {
-            $blobName = $file.Path[0] -replace $backupUrl.baseUrl, ''
+            $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart('/');
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
             $file | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
@@ -157,8 +161,8 @@ function SbsCleanupBackups {
         }
         else {
             # Full uri is not supported, we need the blob name
-            $blobName = $file.Path[0] -replace $backupUrl.baseUrl, '';
-            Write-Host "Deleting $($file.Path)"
+            $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart("/");
+            SbsWriteHost "Deleting backup blob '$($blobName)'"
             Remove-AzStorageBlob -Container $backupUrl.container -Context $ctx -Blob $blobName;
         }
     }

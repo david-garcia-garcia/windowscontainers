@@ -1,5 +1,6 @@
 function SbsParseSasUrl {
     param (
+        [parameter(Mandatory = $true)]
         [string]$Url
     )
 
@@ -13,15 +14,15 @@ function SbsParseSasUrl {
     $containerName = $pathSegments[0];
     $prefix = if ($pathSegments.Length -gt 1) { ($pathSegments | Select-Object -Skip 1) -join "/" } else { "" }
     $sasToken = $uri.Query.TrimStart('?')
-    $baseUrl = "$($uri.Scheme)://$($uri.Host)/$containerName/"
+    $baseUrl = "$($uri.Scheme)://$($uri.Host)/$containerName"
 
     return @{
         storageAccountName = $storageAccountName
-        url            = $Url
-        container      = $containerName
-        credentialName = $credentialName
-        baseUrl        = $baseUrl
-        sasToken       = $sasToken
-        prefix         = $prefix
+        url                = $Url
+        container          = $containerName
+        baseUrl            = $baseUrl
+        baseUrlWithPrefix  = "$($baseUrl)/$($prefix)"
+        sasToken           = $sasToken
+        prefix             = $prefix
     }
 }

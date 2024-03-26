@@ -37,11 +37,10 @@ if ($null -eq $tempDir) {
     $tempDir = "c:\windows\temp";
 }
 
-$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
-
-if ($backupUrl) {
-    SbsWriteHost "SAS URL for backup found: $($backupUrl.baseUrl)"
-    SbsEnsureSqlCredential -SqlInstance $sqlInstance -CredentialName $backupUrl.baseUrl -SasToken $backupUrl.sasToken;
+# Make sure the credential is available for the given URL
+if (-not [string]::isNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
+    $backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
+    SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
 }
 
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
@@ -70,8 +69,16 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
     $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
-        Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them.";
-        return;
+        $clearDataPaths = SbsGetEnvBool -Name "MSSQL_CLEARDATAPATHS" -DefaultValue $false;
+        if ($clearDataPaths -and $Env:MSSQL_LIFECYCLE -eq "BACKUP") {
+            SbsWriteWarning "Clearing data and log paths...";
+            Get-ChildItem -Path $dataPath | Remove-Item -Recurse -Force;
+            Get-ChildItem -Path $logPath | Remove-Item -Recurse -Force;
+        }
+        else {
+            Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them. You can use the MSSQL_CLEARDATAPATHS=True in combination with MSSQL_LIFECYCLE=BACKUP to clear the paths automatically.";
+            return;
+        }
     }
 }
 
@@ -164,8 +171,8 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
     if ($null -ne $backupUrl) {
         $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
         $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
-            Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
-        $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + $_.Name } 
+        Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
+        $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name } 
         $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };
     }
     else {
@@ -182,7 +189,7 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
         }
     }
     else {
-        SbsWriteError "No backup files found for database $databaseName.";
+        SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";
     }
 }
 
