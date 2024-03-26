@@ -41,7 +41,7 @@ $backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
 
 if ($backupUrl) {
     SbsWriteHost "SAS URL for backup found: $($backupUrl.baseUrl)"
-    SbsEnsureSqlCredential -SqlInstance $sqlInstance -CredentialName $backupUrl.credentialName -SasToken $backupUrl.sasToken;
+    SbsEnsureSqlCredential -SqlInstance $sqlInstance -CredentialName $backupUrl.baseUrl -SasToken $backupUrl.sasToken;
 }
 
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {

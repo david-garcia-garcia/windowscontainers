@@ -29,6 +29,9 @@ function SbsCleanupBackups {
     $cacheDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "MSSQLHEADERS\$($backupUrl.storageAccountName)\$($backupUrl.container)";
     New-Item -ItemType Directory -Path $cacheDirectory -Force | Out-Null
 
+    # Delete the json files that are older than 1 hour
+    Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddHours(-12) } | Remove-Item -Force;
+
     # Loop through the $blobUrls and check if the metadata is already present in the cache
     $cachedFiles = @{}
     foreach ($blobUrl in $blobUrls) {
@@ -36,9 +39,6 @@ function SbsCleanupBackups {
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
-            if ($cachedFile.GeneratedAt -lt (Get-Date).AddHours(-1)) {
-                continue
-            }
             $cachedFiles[$blobUrl] = $cachedFile
         }
     }
@@ -48,10 +48,7 @@ function SbsCleanupBackups {
 
     # Fetch the missing files using Get-DbaBackupInformation
     if ($filesToFetch.Count -gt 0) {
-        $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch |
-        Select-Object *, @{Name = "GeneratedAt"; Expression = { Get-Date } }
-
-        # Cache the fetched files
+        $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch;
         foreach ($file in $files) {
             $blobName = $file.Path[0] -replace $backupUrl.baseUrl, ''
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"

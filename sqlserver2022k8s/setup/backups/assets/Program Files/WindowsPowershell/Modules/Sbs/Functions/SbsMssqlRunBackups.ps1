@@ -34,6 +34,12 @@ function SbsMssqlRunBackups {
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
 
+	# Use mirror for long term storage only
+	$mirrorUrlDiff = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_DIFF" -DefaultValue $null;
+	$mirrorUrlFull = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_FULL" -DefaultValue $null;
+	$mirrorUrlLog = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_LOG" -DefaultValue $null;
+	$mirrorUrl = $null;
+
 	$instance = "localhost";
 	Test-DbaConnection $instance;
 	$sqlInstance = Connect-DbaInstance $instance;
@@ -52,6 +58,14 @@ function SbsMssqlRunBackups {
 	# Recorremos todas las bases de datos
 	# Check for null and determine count
 	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal');
+
+	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
+		$dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
+		if ($dbs.Count -eq 0) {
+			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($instance)";
+			return;
+		}
+	}
 
 	# Check for null and determine count
 	$dbCount = 0
@@ -129,17 +143,22 @@ function SbsMssqlRunBackups {
 				switch ($solutionBackupType) {
 					"FULL" {
 						$cleanupTime = $cleanupTimeFull;
+						$mirrorUrl = $mirrorUrlFull;
 					}
 					"DIFF" {
 						$cleanupTime = $cleanupTimeDiff;
+						$mirrorUrl = $mirrorUrlDiff;
 					}
 					"LOG" {
 						$cleanupTime = $cleanupTimeLog;
+						$mirrorUrl = $mirrorUrlLog;
 					}
 				}
 
 				if ($solutionBackupType -eq "LOG" -and ($recoveryModel -eq "SIMPLE")) {
 					SbsWriteWarning "LOG backup requested for database $($db.Name) with SIMPLE recovery model.";
+					$success = $true;
+					return;
 				}
 
 				# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
@@ -160,6 +179,10 @@ function SbsMssqlRunBackups {
 					# These are incompatible with the use of URL
 					$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
 					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
+				}
+
+				if (-not $null -eq $mirrorUrl) {
+					$cmd.Parameters.AddWithValue("@MirrorURL", $mirrorUrl) | Out-Null
 				}
 
 				$cmd.Parameters.AddWithValue("@DirectoryStructure", $directoryStructure ) | Out-Null
