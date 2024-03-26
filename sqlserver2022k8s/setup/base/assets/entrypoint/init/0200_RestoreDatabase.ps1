@@ -166,7 +166,7 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
         $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
             Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
         $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + $_.Name } 
-        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };;
+        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };
     }
     else {
         $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
@@ -177,7 +177,7 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
         if ($database) {
             SbsWriteHost "Database $($databaseName) restored successfully."
             $restored = $true;
-            # The teardown scripts buts the backup in readly, and this will be the state after restore
+            # The teardown scripts puts the backup in ReadOnly, and this will be the state after restore
             $database | Set-DbaDbState -ReadWrite -Force;
         }
     }
