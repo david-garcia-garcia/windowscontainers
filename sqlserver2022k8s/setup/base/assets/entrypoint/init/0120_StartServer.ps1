@@ -53,12 +53,12 @@ foreach ($key in $finalSettings.Keys) {
 
 $maxMemory = SbsGetEnvInt -name "MSSQL_MAXMEMORY" -defaultValue $null;
 if (($null -ne $maxMemory)) {
-    if ($maxMemory -gt 256) {
+    if ($maxMemory -gt 280) {
         SbsWriteHost "Setting max memory to $($maxMemory)Mb";
         Set-DbaMaxMemory -SqlInstance $sqlInstance -Max $maxMemory;
     }
     else {
-        SbsWriteHost "Max memory is less than 256MB, not setting."
+        SbsWriteHost "Max memory is less than 280MB, not setting."
     }
 }
 

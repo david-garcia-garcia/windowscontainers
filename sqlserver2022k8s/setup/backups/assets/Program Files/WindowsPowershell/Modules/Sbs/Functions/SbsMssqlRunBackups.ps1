@@ -57,7 +57,9 @@ function SbsMssqlRunBackups {
 
 	# Recorremos todas las bases de datos
 	# Check for null and determine count
-	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal');
+	$excludeUser = $backupType -eq "SYSTEM";
+	$excludeSystem = $backupType -ne "SYSTEM";
+	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal') -ExcludeUser:$excludeUser -ExcludeSystem:$excludeSystem ;
 
 	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
 		$dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
@@ -68,13 +70,12 @@ function SbsMssqlRunBackups {
 	}
 
 	# Check for null and determine count
-	$dbCount = 0
+	$dbCount = 0;
 
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
-	}
-	else {
-		SbsWriteError "Could not obtain databases to backup in instance: $($instance)";
+	} else {
+		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
 
@@ -140,6 +141,8 @@ function SbsMssqlRunBackups {
 					}
 				}
 
+				Write-Host "Backing up database $($db.Name) with recovery model $($recoveryModel) with solutionBackupType $($solutionBackupType)"
+
 				switch ($solutionBackupType) {
 					"FULL" {
 						$cleanupTime = $cleanupTimeFull;
@@ -156,6 +159,7 @@ function SbsMssqlRunBackups {
 				}
 
 				if ($null -ne $mirrorUrl) {
+					Write-Host "Using mirror URL $($mirrorUrl.baseUrlWithPrefix)"
 					SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $mirrorUrl.url;
 				}
 
@@ -178,8 +182,7 @@ function SbsMssqlRunBackups {
 					$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrlWithPrefix) | Out-Null
 					$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
 					$cmd.Parameters.AddWithValue("@BlockSize", 65536) | Out-Null
-				}
-				else {
+				} else {
 					# These are incompatible with the use of URL
 					$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
 					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
@@ -265,12 +268,10 @@ function SbsMssqlRunBackups {
 					SbsWriteWarning "Max retries reached. Aborting.";
 				}
 			}
-
-
 		}
 	}
 	
 	$StopWatch.Stop()
 	$Minutes = $StopWatch.Elapsed.TotalMinutes 
-	SbsWriteHost "$($backupType) backups created successfully in $($Minutes) min"
+	SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
 }
