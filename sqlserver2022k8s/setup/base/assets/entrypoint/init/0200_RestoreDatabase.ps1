@@ -160,8 +160,18 @@ else {
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
-    if ($null -ne $files) {
+    $files = @();
+    if ($null -ne $backupUrl) {
+        $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
+        $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
+            Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
+        $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + $_.Name } 
+        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };;
+    }
+    else {
+        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
+    }
+    if ($null -ne $files -and $files.Count -gt 0) {
         $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -WithReplace -UseDestinationDefaultDirectories -Verbose;
         $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
         if ($database) {
@@ -170,6 +180,9 @@ if (($restored -eq $false) -and ($null -ne $databaseName)) {
             # The teardown scripts buts the backup in readly, and this will be the state after restore
             $database | Set-DbaDbState -ReadWrite -Force;
         }
+    }
+    else {
+        SbsWriteError "No backup files found for database $databaseName.";
     }
 }
 

@@ -7,18 +7,21 @@ function SbsParseSasUrl {
         return $null
     }
 
-    $uriParts = $Url -split '\?'
-    $baseUrl = $uriParts[0]
-    $sasToken = $uriParts[1]
-    $storageAccount = ($baseUrl -split '://')[1].Split('.')[0]
-    $container = ($baseUrl -split '/')[3]
-    $credentialName = "https://$storageAccount.blob.core.windows.net/$container"
+    $uri = New-Object System.Uri($Url)
+    $storageAccountName = $uri.Host.Split('.')[0];
+    $pathSegments = $uri.AbsolutePath.Trim('/').Split('/');
+    $containerName = $pathSegments[0];
+    $prefix = if ($pathSegments.Length -gt 1) { ($pathSegments | Select-Object -Skip 1) -join "/" } else { "" }
+    $sasToken = $uri.Query.TrimStart('?')
+    $baseUrl = "$($uri.Scheme)://$($uri.Host)/$containerName/"
 
     return @{
+        storageAccountName = $storageAccountName
         url            = $Url
-        container      = $container
+        container      = $containerName
         credentialName = $credentialName
         baseUrl        = $baseUrl
         sasToken       = $sasToken
+        prefix         = $prefix
     }
 }
