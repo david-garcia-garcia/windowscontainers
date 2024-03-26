@@ -1,6 +1,8 @@
 function SbsParseSasUrl {
     param (
         [parameter(Mandatory = $true)]
+        [AllowNull()]
+        [AllowEmptyString]
         [string]$Url
     )
 
