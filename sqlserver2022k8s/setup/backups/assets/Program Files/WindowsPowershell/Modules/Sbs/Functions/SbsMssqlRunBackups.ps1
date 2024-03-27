@@ -269,7 +269,7 @@ function SbsMssqlRunBackups {
 	if ($exceptions.Count -gt 1) {
 		throw (New-Object System.AggregateException -ArgumentList $exceptions)
 	}
-	else {
+	elseif ($exceptions.Count -gt 0) { {
 		throw $exceptions[0];
 	}
 
