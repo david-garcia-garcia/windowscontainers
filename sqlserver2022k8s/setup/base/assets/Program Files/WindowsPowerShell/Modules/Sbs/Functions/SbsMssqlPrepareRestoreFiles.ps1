@@ -2,7 +2,11 @@
 function SbsMssqlPrepareRestoreFiles {
     [OutputType([array])]
     param (
+        [Parameter(Mandatory = $true)]
+        [string]$SqlInstance,
+        [Parameter(Mandatory = $true)]
         [string]$Path,
+        [Parameter(Mandatory = $true)]
         [string]$DatabaseName
     )
 
@@ -17,11 +21,11 @@ function SbsMssqlPrepareRestoreFiles {
         Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
         if ($blobs -and $blobs.Count -gt 0) {
             $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name } 
-            $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $DatabaseName };
+            $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $DatabaseName };
         }
     }
     else {
-        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $Path | Where-Object { $_.Database -eq $DatabaseName };
+        $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $Path | Where-Object { $_.Database -eq $DatabaseName };
     }
 
     # This is what we have for each $file object

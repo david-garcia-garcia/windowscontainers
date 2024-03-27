@@ -2,7 +2,7 @@
 # con el parámetro -CleanupTime cuando trabajamos con blobs
 # de Azure. Por lo tanto, se ha creado esta función para suplir
 # la carencia.
-function SbsCleanupBackups {
+function SbsMssqlCleanupBackups {
     param(
         [Parameter(Mandatory = $true)]
         [object]$SqlInstance,

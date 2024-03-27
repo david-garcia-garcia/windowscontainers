@@ -6,8 +6,12 @@ function SbsParseSasUrl {
         [string]$Url
     )
 
-    if ([string]::isNullOrWhiteSpace($Url)) {
-        return $null
+    if ([string]::IsNullOrWhiteSpace($Url)) {
+        return $null;
+    }
+
+    if (-not ($Url -match "^http")) {
+        return $null;
     }
 
     $uri = New-Object System.Uri($Url)
