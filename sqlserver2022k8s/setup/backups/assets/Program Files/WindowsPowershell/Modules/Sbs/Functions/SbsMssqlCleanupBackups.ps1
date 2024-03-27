@@ -1,4 +1,4 @@
-# La función de cleanup backups de Hallengren no funcion
+# La función de cleanup backups de Hallengren no funciona
 # con el parámetro -CleanupTime cuando trabajamos con blobs
 # de Azure. Por lo tanto, se ha creado esta función para suplir
 # la carencia.
@@ -16,12 +16,13 @@ function SbsMssqlCleanupBackups {
     )
 
     $backupUrl = SbsParseSasUrl -Url $Url;
+
     if ($null -eq $backupUrl) {
-        SbsWriteWarning "Invalid backup URL $($Url)";
+        SbsWriteWarning "Invalid backup URL. This method is only supported for Azure Blob Storage URLs.";
+        return;
     }
 
-    # Make sure the credential is updated
-    SbsEnsureCredentialForSasUrl -SqlInstance $SqlInstance -Url $Url;
+    SbsEnsureCredentialForSasUrl -SqlInstance $SqlInstance -Url $backupUrl.url;
 
     $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
     $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
