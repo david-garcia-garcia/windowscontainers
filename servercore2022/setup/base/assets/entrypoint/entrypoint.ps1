@@ -212,7 +212,7 @@ try {
             # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance
             # is terrible, taking almost 1 whole CPU once published in an AKS cluster. And it's not the cmdlet going crazy,
             # it's the Event Viewer service after the querying.
-            if (-not [string]::isNullOrWhiteSpace($Env:SBS_GETEVENTLOG) -and ($null -eq $logConf -or $changed -eq $true)) {
+            if (-not [string]::IsNullOrWhiteSpace($Env:SBS_GETEVENTLOG) -and ($null -eq $logConf -or $changed -eq $true)) {
                 try {
                     $logConf = ConvertFrom-Json $Env:SBS_GETEVENTLOG;
                 }

@@ -32,7 +32,7 @@ function SbsPrepareEnv {
     $md5HashString | Set-Content -Path $hashFilePath;
     [System.Environment]::SetEnvironmentVariable("ENVHASH", $md5HashString, [System.EnvironmentVariableTarget]::Process);
 
-    if (-not [String]::isNullOrWhiteSpace($configuration)) {
+    if (-not [String]::IsNullOrWhiteSpace($configuration)) {
         Write-Host "Reading environment from config map."
         $configMap = $configuration | ConvertFrom-Json;
         foreach ($key in $configMap.PSObject.Properties) {
