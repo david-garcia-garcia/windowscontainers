@@ -131,7 +131,7 @@ if (Test-Path -Path $initScriptDirectory) {
             Import-Module Sbs;
             # Get all .ps1 files in the directory
             $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
-            SbsWriteHost "Running init scripts: $($scripts.Count) found."
+            SbsWriteHost "Running $($scripts.count) init scripts $(ConvertTo-Json $scripts)";
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
             Import-Module Sbs;
             foreach ($script in $scripts) {
@@ -153,7 +153,7 @@ if (Test-Path -Path $initScriptDirectory) {
     else {
         SbsWriteHost "Sync Initialization";
         $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
-        SbsWriteHost "Running init scripts synchronously. $($scripts.Count) found."
+        SbsWriteHost "Running $($scripts.count) init scripts $(ConvertTo-Json $scripts)";
         Import-Module Sbs;
         foreach ($script in $scripts) {
             SbsWriteHost "$($script.Name): START";

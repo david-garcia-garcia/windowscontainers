@@ -8,7 +8,7 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 $needsRestart = $false;
 
 Start-Service 'MSSQLSERVER';
-$sqlInstance = Connect-DbaInstance -SqlInstance localhost;
+$sqlInstance = Connect-DbaInstance -SqlInstance "localhost";
 
 # Define default settings
 $defaultSettings = @{
