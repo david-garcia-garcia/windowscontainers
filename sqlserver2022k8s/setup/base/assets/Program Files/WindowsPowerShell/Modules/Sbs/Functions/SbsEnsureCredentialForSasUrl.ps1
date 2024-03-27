@@ -7,10 +7,6 @@ function SbsEnsureCredentialForSasUrl {
         [object] $SqlInstance
     )
 
-    if ([string]::isNullOrWhiteSpace($Url)) {
-        return;
-    }
-
     $parsedUrl = sbsParseSasUrl -Url $Url;
     
     if ($null -eq $parsedUrl) {
