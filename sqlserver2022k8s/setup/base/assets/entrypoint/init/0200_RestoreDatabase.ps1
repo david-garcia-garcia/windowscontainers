@@ -173,7 +173,7 @@ else {
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $files = SbsMssqlPrepareRestoreFiles -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
+    $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
     if ($null -ne $files -and $files.Count -gt 0) {
         $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
         $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
