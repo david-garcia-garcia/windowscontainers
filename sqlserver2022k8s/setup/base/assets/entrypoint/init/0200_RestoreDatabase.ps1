@@ -38,7 +38,7 @@ if ($null -eq $tempDir) {
 }
 
 # Make sure the credential is available for the given URL
-if (-not [string]::isNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
+if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
     $backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
     SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
 }
@@ -173,7 +173,13 @@ else {
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
+    $files = @();
+    if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
+        $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
+    }
+    else {
+        $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $backupPath -DatabaseName $databaseName;
+    }
     if ($null -ne $files -and $files.Count -gt 0) {
         $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
         $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
@@ -197,6 +203,6 @@ if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName
     New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
 }
 
-if (-not [String]::isNullOrWhitespace($databaseName)) {
+if (-not [String]::IsNullOrWhiteSpace($databaseName)) {
     Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false | Out-Null;
 }
