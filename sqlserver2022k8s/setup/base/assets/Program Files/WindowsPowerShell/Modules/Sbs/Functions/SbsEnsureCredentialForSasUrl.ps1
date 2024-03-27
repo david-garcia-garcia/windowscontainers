@@ -26,7 +26,7 @@ function SbsEnsureCredentialForSasUrl {
 
     $expiryThreshold = (Get-Date).AddHours(72)
     if ($null -ne $parsedUrl.signedExpiry -and $parsedUrl.signedExpiry -lt $expiryThreshold) {
-        Write-Warning "The SAS URL for $($parsedUrl.baseUrl) will expire in the next 72 hours."
+        SbsWriteWarning "The SAS URL for $($parsedUrl.baseUrl) will expire in the next 72 hours."
     }
 
     SbsEnsureSqlCredential -SqlInstance $SqlInstance -CredentialName $parsedUrl.baseUrl -SasToken $parsedUrl.sasToken;
