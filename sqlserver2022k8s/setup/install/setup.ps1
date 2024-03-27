@@ -30,6 +30,12 @@ Write-Host "-----------------------------------------`n"
 
 choco install azcopy10 -y --version=10.23.0 --no-progress;
 
+Write-Host "`n---------------------------------------"
+Write-Host " Install Az.Storage"
+Write-Host "-----------------------------------------`n"
+
+Install-Module -Name Az.Storage -Force;
+
 # Cleanup
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;

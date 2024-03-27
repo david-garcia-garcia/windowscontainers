@@ -37,6 +37,12 @@ if ($null -eq $tempDir) {
     $tempDir = "c:\windows\temp";
 }
 
+# Make sure the credential is available for the given URL
+if (-not [string]::isNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
+    $backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
+    SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
+}
+
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 
     SbsWriteHost "Lifecycle attach mode starting up..."
@@ -63,8 +69,22 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
     $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
-        Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them.";
-        return;
+        $clearDataPaths = SbsGetEnvBool -Name "MSSQL_CLEARDATAPATHS" -DefaultValue $false;
+        if ($clearDataPaths -and $Env:MSSQL_LIFECYCLE -eq "BACKUP") {
+            # This is only here because on docker images have state. If we are using BACKUP lifecyle we
+            # are expecting to have NO STATE whatsoever.
+            SbsWriteWarning "######################################";
+            SbsWriteWarning "# Clearing data and log paths. This is only happening because";
+            SbsWriteWarning "# MSSQL_LIFECYCLE=BACKUP and MSSQL_CLEARDATAPATHS=True";
+            SbsWriteWarning "######################################";
+            Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeSystem | Remove-DbaDatabase -Verbose -Confirm:$false;
+            Get-ChildItem -Path $dataPath | Remove-Item -Recurse -Force;
+            Get-ChildItem -Path $logPath | Remove-Item -Recurse -Force;
+        }
+        else {
+            Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them. You can use the MSSQL_CLEARDATAPATHS=True in combination with MSSQL_LIFECYCLE=BACKUP to clear the paths automatically.";
+            return;
+        }
     }
 }
 
@@ -153,24 +173,30 @@ else {
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
-    if ($null -ne $files) {
-        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -WithReplace -UseDestinationDefaultDirectories -Verbose;
+    $files = SbsMssqlPrepareRestoreFiles -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
+    if ($null -ne $files -and $files.Count -gt 0) {
+        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
         $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
         if ($database) {
             SbsWriteHost "Database $($databaseName) restored successfully."
             $restored = $true;
-            # The teardown scripts buts the backup in readly, and this will be the state after restore
+            # The teardown scripts puts the backup in ReadOnly, and this will be the state after restore
             $database | Set-DbaDbState -ReadWrite -Force;
         }
+        else {
+            SbsWriteError "Database $($databaseName) was not restored successfully."
+        }
+    }
+    else {
+        SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";
     }
 }
 
-if (($restored -eq $false) -and ($null -ne $databaseName)) {
+if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     # Create the database
     New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
 }
 
-if ($null -ne $databaseName) {
-    Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false;
+if (-not [String]::isNullOrWhitespace($databaseName)) {
+    Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false | Out-Null;
 }

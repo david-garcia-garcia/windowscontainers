@@ -10,6 +10,8 @@ function SbsMssqlRunBackups {
 		[string]$backupType
 	)
 
+	$backupType = $backupType.ToUpper();
+
 	Import-Module dbatools;
 
 	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
@@ -23,19 +25,29 @@ function SbsMssqlRunBackups {
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
 
-	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 48;
-	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 168;
-	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 168;
+	# ZERO Defaults means keep enough to restore to the most recent consistent backup
+	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
+	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
+	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
 
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
+
+	# Use mirror for long term storage only
+	$mirrorUrlDiff = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_DIFF" -DefaultValue $null;
+	$mirrorUrlFull = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_FULL" -DefaultValue $null;
+	$mirrorUrlLog = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_LOG" -DefaultValue $null;
+	$mirrorUrl = $null;
 
 	$instance = "localhost";
 	Test-DbaConnection $instance;
 	$sqlInstance = Connect-DbaInstance $instance;
 
-	$ErrorActionPreference = "Stop";
-	
+	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
+	if ($null -ne $backupUrl) {
+		SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $backupUrl.url;
+	}
+
 	$MaxRetries = 2;
 	$RetryIntervalInSeconds = 5;
 
@@ -47,16 +59,26 @@ function SbsMssqlRunBackups {
 
 	# Recorremos todas las bases de datos
 	# Check for null and determine count
-	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal');
+	$excludeUser = $backupType -eq "SYSTEM";
+	$excludeSystem = $backupType -ne "SYSTEM";
+	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal') -ExcludeUser:$excludeUser -ExcludeSystem:$excludeSystem ;
+
+	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
+		$dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
+		if ($dbs.Count -eq 0) {
+			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($instance)";
+			return;
+		}
+	}
 
 	# Check for null and determine count
-	$dbCount = 0
+	$dbCount = 0;
 
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
 	}
-	else {
-		SbsWriteError "Could not obtain databases to backup in instance: $($instance)";
+ else {
+		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
 
@@ -78,7 +100,9 @@ function SbsMssqlRunBackups {
 					break;
 				}
 
-				SbsWriteHost "Backup '$db' isSystemDatabase: $($isSystemDb)";
+				$recoveryModel = (Get-DbaDbRecoveryModel -SqlInstance $sqlInstance -Database $db.Name).RecoveryModel;
+
+				SbsWriteHost "Backup '$db' isSystemDatabase '$($isSystemDb)' with recovery model '$($recoveryModel)'";
 
 				# Certificate rotates every year
 				$certificate = $null;
@@ -91,7 +115,7 @@ function SbsMssqlRunBackups {
 					}
 				}
 			
-				# Llamamos al store procedure que genera los backups
+				# Llamamos al stored procedure que genera los backups
 				$SqlConn = New-Object System.Data.SqlClient.SqlConnection("Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;");
 				$SqlConn.Open();
 
@@ -106,11 +130,10 @@ function SbsMssqlRunBackups {
 				if ($backupType -eq "SYSTEM") {
 					$solutionBackupType = "FULL";
 				}
-
+				
 				# LOGNOW is used to FORCE a backup prior to container teardown. Not sure if hallengren solution
 				# will make a diff if a LOG is requested when recovery mode is simple.
 				if ($backupType -eq "LOGNOW") {
-					$recoveryModel = (Get-DbaDbRecoveryModel -SqlInstance $sqlInstance -Database $db.Name).RecoveryModel;
 					switch ($recoveryModel) {
 						"FULL" {  
 							$solutionBackupType = "LOG";
@@ -121,16 +144,32 @@ function SbsMssqlRunBackups {
 					}
 				}
 
+				Write-Host "Backing up database $($db.Name) with recovery model $($recoveryModel) with solutionBackupType $($solutionBackupType)"
+
 				switch ($solutionBackupType) {
 					"FULL" {
 						$cleanupTime = $cleanupTimeFull;
+						$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlFull;
 					}
 					"DIFF" {
 						$cleanupTime = $cleanupTimeDiff;
+						$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlDiff;
 					}
 					"LOG" {
 						$cleanupTime = $cleanupTimeLog;
+						$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlLog;
 					}
+				}
+
+				if ($null -ne $mirrorUrl) {
+					Write-Host "Using mirror URL $($mirrorUrl.baseUrlWithPrefix)"
+					SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $mirrorUrl.url;
+				}
+
+				if ($solutionBackupType -eq "LOG" -and ($recoveryModel -eq "SIMPLE")) {
+					SbsWriteWarning "LOG backup requested for database $($db.Name) with SIMPLE recovery model.";
+					$success = $true;
+					return;
 				}
 
 				# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
@@ -141,14 +180,30 @@ function SbsMssqlRunBackups {
 				# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 				$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 
+				if (-not $null -eq $backupUrl) {
+					Write-Host "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
+					$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrlWithPrefix) | Out-Null
+					$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
+					$cmd.Parameters.AddWithValue("@BlockSize", 65536) | Out-Null
+				}
+				else {
+					# These are incompatible with the use of URL
+					$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
+					$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
+				}
+
+				if (-not $null -eq $mirrorUrl) {
+					$cmd.Parameters.AddWithValue("@MirrorURL", $mirrorUrl.baseUrlWithPrefix) | Out-Null
+				}
+
 				$cmd.Parameters.AddWithValue("@DirectoryStructure", $directoryStructure ) | Out-Null
 				$cmd.Parameters.AddWithValue("@fileName", $fileName ) | Out-Null
 				$cmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
-				$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
+				
 				$cmd.Parameters.AddWithValue("@BackupType", $solutionBackupType) | Out-Null
 				$cmd.Parameters.AddWithValue("@Verify", "N") | Out-Null
 				$cmd.Parameters.AddWithValue("@Compress", "Y") | Out-Null
-				$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
+
 				$cmd.Parameters.AddWithValue("@CheckSum", "N") | Out-Null
 				$cmd.Parameters.AddWithValue("@LogToTable", "Y") | Out-Null
 				
@@ -179,10 +234,13 @@ function SbsMssqlRunBackups {
 				# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
 				$cmd.Parameters.AddWithValue("@ChangeBackupType", $changeBackupType) | Out-Null
 
-				if ($changeBackupType -eq "Y" -and $modificationLeve > 0) {
+				if ($changeBackupType -eq "Y" -and ($modificationLeve -gt 0)) {
 					$cmd.Parameters.AddWithValue("@ModificationLevel", $modificationLevel) | Out-Null
 				}
-				
+
+				# Not sure why i have to add this N explictly here as it is the default value...
+				$cmd.Parameters.AddWithValue("@CopyOnly", "N") | Out-Null
+	
 				if ($backupType -eq "LOG") {
 					$cmd.Parameters.AddWithValue("@LogSizeSinceLastLogBackup", $logSizeSinceLastLogBackup) | Out-Null
 					$cmd.Parameters.AddWithValue("@TimeSinceLastLogBackup", $timeSinceLastLogBackup) | Out-Null
@@ -197,24 +255,32 @@ function SbsMssqlRunBackups {
 				else {
 					SbsWriteError "Error running backup: $($result)";
 				}
-				
+
 				$success = $true;
+
+				# No cleanup for LOGNOW, because it is a forced closeup backup, we need this to be as fast as possible.
+				if ($backupType -ne "LOGNOW") {
+					if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
+						SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+					}
+				}
 			}
 			Catch {
 				$retryCount++
 				SbsWriteHost "Retry $($retryCount): Error performing $($backupType) backup for the database $($db) and instance $($instance): $($_.Exception.Message)"
-				if ($retryCount -lt $MaxRetries) {
+				SbsWriteHost "Exception Stack Trace: $($_.Exception.StackTrace)"
+				if ($retryCount -lt $MaxRetries -and $success) {
 					SbsWriteHost "Retrying in $RetryIntervalInSeconds seconds... ($retryCount of $MaxRetries)";
 					Start-Sleep -Seconds $RetryIntervalInSeconds
 				}
 				else {
-					SbsWriteHost "Max retries reached. Aborting.";
+					SbsWriteWarning "Max retries reached. Aborting.";
 				}
 			}
 		}
 	}
 	
 	$StopWatch.Stop()
-	$Minutes = $StopWatch.Elapsed.TotalMinutes 
-	SbsWriteHost "$($backupType) backups created successfully in $($Minutes) min"
+	$Minutes = $StopWatch.Elapsed.TotalMinutes;
+	SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
 }
