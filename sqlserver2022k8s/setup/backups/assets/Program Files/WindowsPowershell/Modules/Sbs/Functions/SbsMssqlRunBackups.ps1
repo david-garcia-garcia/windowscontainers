@@ -237,7 +237,10 @@ function SbsMssqlRunBackups {
 				if ($changeBackupType -eq "Y" -and ($modificationLeve -gt 0)) {
 					$cmd.Parameters.AddWithValue("@ModificationLevel", $modificationLevel) | Out-Null
 				}
-				
+
+				# Not sure why i have to add this N explictly here as it is the default value...
+				$cmd.Parameters.AddWithValue("@CopyOnly", "N") | Out-Null
+	
 				if ($backupType -eq "LOG") {
 					$cmd.Parameters.AddWithValue("@LogSizeSinceLastLogBackup", $logSizeSinceLastLogBackup) | Out-Null
 					$cmd.Parameters.AddWithValue("@TimeSinceLastLogBackup", $timeSinceLastLogBackup) | Out-Null
@@ -258,7 +261,7 @@ function SbsMssqlRunBackups {
 				# No cleanup for LOGNOW, because it is a forced closeup backup, we need this to be as fast as possible.
 				if ($backupType -ne "LOGNOW") {
 					if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
-						SbsCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+						SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
 					}
 				}
 			}

@@ -173,19 +173,7 @@ else {
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and ($null -ne $databaseName)) {
     SbsWriteHost "Starting database restore...";
-    $files = @();
-    if ($null -ne $backupUrl) {
-        $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
-        $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
-        Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
-        if ($blobs -and $blobs.Count -gt 0) {
-            $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name } 
-            $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $blobUrls | Where-Object { $_.Database -eq $databaseName };
-        }
-    }
-    else {
-        $files = Get-DbaBackupInformation -SqlInstance $sqlInstance -Path $backupPath | Where-Object { $_.Database -eq $databaseName };
-    }
+    $files = SbsMssqlPrepareRestoreFiles -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
     if ($null -ne $files -and $files.Count -gt 0) {
         $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
         $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
