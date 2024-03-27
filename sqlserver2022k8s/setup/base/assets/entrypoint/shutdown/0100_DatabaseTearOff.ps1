@@ -22,8 +22,11 @@ try {
     Disable-ScheduledTask -TaskName "MssqlSystem"
     Disable-ScheduledTask -TaskName "MssqlReleaseMemory"
 
-    # Set all user databases in readonly mode
-    Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeSystem | Set-DbaDbState -ReadOnly -Force;
+    # Disable all remote access, so no new transactions happen before the closing backup
+    # if database is set in READONLY mode, then the last LOG backup will by COPY_ONLY
+    # which will NOT work for a restore secuence chain (it works, but it's more difficult)
+    # to determine the restore sequence.
+    Set-DbaSpConfigure -SqlInstance $sqlInstance -Name 'remote access' -Value 0;
 
     if ($autoBackup -eq $true) {
         SbsWriteHost "Performing shutdown backups...."
