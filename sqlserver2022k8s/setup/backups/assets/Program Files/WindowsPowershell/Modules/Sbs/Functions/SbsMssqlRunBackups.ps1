@@ -48,9 +48,6 @@ function SbsMssqlRunBackups {
 		SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $backupUrl.url;
 	}
 
-	$MaxRetries = 2;
-	$RetryIntervalInSeconds = 5;
-
 	$StopWatch = new-object system.diagnostics.stopwatch
 	$StopWatch.Start();
 		
@@ -269,11 +266,13 @@ function SbsMssqlRunBackups {
 	if ($exceptions.Count -gt 1) {
 		throw (New-Object System.AggregateException -ArgumentList $exceptions)
 	}
-	elseif ($exceptions.Count -gt 0) { {
-		throw $exceptions[0];
-	}
+	elseif ($exceptions.Count -gt 0) {
+		{
+			throw $exceptions[0];
+		}
 
-	$StopWatch.Stop()
-	$Minutes = $StopWatch.Elapsed.TotalMinutes;
-	SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
+		$StopWatch.Stop()
+		$Minutes = $StopWatch.Elapsed.TotalMinutes;
+		SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
+	}
 }

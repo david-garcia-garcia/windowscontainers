@@ -29,7 +29,7 @@ SbsWriteHost "SQL Log Path: $logPath";
 
 $controlPath = $Env:MSSQL_PATH_CONTROL;
 
-$databaseName = SbsGetEnvString -Name "MSSQL_DB_NAME" -DefaultValue "";
+$databaseName = SbsGetEnvString -Name "MSSQL_DB_NAME" -DefaultValue $null;
 $databaseRecoveryModel = SbsGetEnvString -Name "MSSQL_DB_RECOVERYMODEL" -DefaultValue "SIMPLE";
 
 if ($null -eq $tempDir) {
