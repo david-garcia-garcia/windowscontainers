@@ -5,7 +5,7 @@ Describe 'compose-basic.yaml' {
     }
         
     It 'Booted synchronously' {
-        WaitForLog "servercore2022-servercore-1" "Sync Initialization"
+        WaitForLog "servercore2022-servercore-1" "init scripts synchronously"
     }
 
     It 'LogRotate is enabled by default' {
