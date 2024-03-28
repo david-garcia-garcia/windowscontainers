@@ -9,7 +9,7 @@ if (-not $containerRegistry -or -not $containerRegistry.EndsWith("/")) {
     exit
 }
 
-$version = "1.0.18";
+$version = "1.0.19";
 
 $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";
 $Env:IMG_SERVERCORE2022IIS = "$($containerregistry)servercore2022iis:$($version)";
