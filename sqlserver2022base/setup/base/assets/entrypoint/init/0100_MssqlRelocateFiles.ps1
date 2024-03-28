@@ -27,7 +27,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     SbsWriteHost "System Path Override: $($Env:MSSQL_PATH_SYSTEM)";
 
     # Create the directories if they don't exist
-    New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM;
+    New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM | Out-Null;
 
     # Determine the current location of the master database files
     $currentMasterPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg0 -replace '-d', ''
@@ -92,8 +92,8 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
         $newDataPath = "$($Env:MSSQL_PATH_SYSTEM)\$($db.Name)";
         $newLogPath = "$($Env:MSSQL_PATH_SYSTEM)\$($db.Name)";
 
-        New-Item -ItemType Directory -Force -Path $newLogPath;
-        New-Item -ItemType Directory -Force -Path $newDataPath;
+        New-Item -ItemType Directory -Force -Path $newLogPath | Out-Null; ;
+        New-Item -ItemType Directory -Force -Path $newDataPath | Out-Null; ;
 
         foreach ($file in $db.FileGroups.Files) {
             $newFilename = $newDataPath + "\" + $file.Name + ".mdf"
@@ -132,9 +132,9 @@ $backupPath = $dbaDefaultPath.Backup;
 $dataPath = $dbaDefaultPath.Data;
 $logPath = $dbaDefaultPath.Log;
 
-if (-not (Test-Path $backupPath)) { New-Item -ItemType Directory -Path $backupPath; }
-if (-not (Test-Path $dataPath)) { New-Item -ItemType Directory -Path $dataPath; }
-if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath; }
+if (-not (Test-Path $backupPath)) { New-Item -ItemType Directory -Path $backupPath | Out-Null }
+if (-not (Test-Path $dataPath)) { New-Item -ItemType Directory -Path $dataPath | Out-Null }
+if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath | Out-Null }
 
 SbsWriteHost "SQL Backup Path: $backupPath";
 SbsWriteHost "SQL Data Path: $dataPath";

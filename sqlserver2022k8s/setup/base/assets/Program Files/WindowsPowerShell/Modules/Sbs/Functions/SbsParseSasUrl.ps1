@@ -22,6 +22,28 @@ function SbsParseSasUrl {
     $sasToken = $uri.Query.TrimStart('?')
     $baseUrl = "$($uri.Scheme)://$($uri.Host)/$containerName"
 
+    # Parse the query string for additional parameters
+    $queryString = [System.Web.HttpUtility]::ParseQueryString($uri.Query)
+    
+    # Attempt to convert dates from string to DateTime objects
+    $signedExpiry = [DateTime]::MinValue
+    $startTime = [DateTime]::MinValue
+
+    if ($null -ne $queryString["se"]) {
+        [DateTime]::TryParseExact($queryString["se"], "yyyy-MM-ddTHH:mm:ssZ", [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AssumeUniversal, [ref]$signedExpiry) | Out-Null
+    }
+    if ($null -ne $queryString["st"]) {
+        [DateTime]::TryParseExact($queryString["st"], "yyyy-MM-ddTHH:mm:ssZ", [System.Globalization.CultureInfo]::InvariantCulture, [System.Globalization.DateTimeStyles]::AssumeUniversal, [ref]$startTime) | Out-Null
+    }
+
+    if ($signedExpiry -eq [DateTime]::MinValue) {
+        $signedExpiry = $null
+    }
+
+    if ($startTime -eq [DateTime]::MinValue) {
+        $startTime = $null
+    }
+
     return @{
         storageAccountName = $storageAccountName
         url                = $Url
@@ -30,5 +52,11 @@ function SbsParseSasUrl {
         baseUrlWithPrefix  = "$($baseUrl)/$($prefix)"
         sasToken           = $sasToken
         prefix             = $prefix
+        signedExpiry       = $signedExpiry
+        startTime          = $startTime
+        permissions        = $queryString["sp"]
+        signedResource     = $queryString["sr"]
+        signedProtocol     = $queryString["spr"]
+        signedVersion      = $queryString["sv"]
     }
 }

@@ -1,46 +1,12 @@
 $global:ErrorActionPreference = 'Stop'
 
-################################################
-# Deshabilitar DiagHost, DiagTrack, Vss no parece que en un contenedor tenga mucho sentido
-################################################
-Stop-Service DiagHost;
-Set-Service DiagHost -StartupType Disabled;
-Write-Host "Disabled service DiagHost"
-
-Stop-Service DiagTrack;
-Set-Service DiagTrack -StartupType Disabled;
-Write-Host "Disabled service DiagTrack"
-
-# Snapshots, sin sentido en kubernetes
-Stop-Service Vss -Force;
-Set-Service Vss -StartupType Disabled;
-Write-Host "Disabled service Vss"
-
-Stop-Service SWPRV -Force;
-Set-Service SWPRV -StartupType Disabled;
-Write-Host "Disabled service SWPRV"
-
-# Transacciones distribuidas, a evitar.
-Stop-Service MSDTC -Force;
-Set-Service MSDTC -StartupType Disabled;
-Write-Host "Disabled service MSDTC"
-
-# Este servicio NO funciona en contenedores
-Stop-Service LanManServer -Force;
-Set-Service LanManServer -StartupType Disabled;
-Write-Host "Disabled service LanManServer"
-
-# Updates de windows sin sentido en contenedor
-Stop-Service UsoSvc -Force;
-Set-Service UsoSvc -StartupType Disabled;
-Write-Host "Disabled service UsoSvc"
-
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
 
 # Instalar choco
 Write-Host "`n---------------------------------------"
 Write-Host " Installing choco"
 Write-Host "-----------------------------------------`n"
+
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 Write-Host "`n---------------------------------------"
@@ -56,6 +22,13 @@ Write-Host "-----------------------------------------`n"
 
 # Command line editor
 choco upgrade micro -y --version=2.0.11 --ignore-checksums --no-progress;
+
+Write-Host "`n---------------------------------------"
+Write-Host " Open SSH server"
+Write-Host "-----------------------------------------`n"
+
+Add-WindowsCapability -Online -Name OpenSSH.Server
+Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "PasswordAuthentication yes";
 
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.
@@ -106,6 +79,46 @@ Write-Host "-----------------------------------------`n"
 
 $LogonSubcategoryGUID = "{0CCE9226-69AE-11D9-BED3-505054503030}"
 auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
+
+################################################
+# Deshabilitar DiagHost, DiagTrack, Vss no parece que en un contenedor tenga mucho sentido
+################################################
+
+Stop-Service DiagHost;
+Set-Service DiagHost -StartupType Disabled;
+Write-Host "Disabled service DiagHost"
+
+Stop-Service DiagTrack;
+Set-Service DiagTrack -StartupType Disabled;
+Write-Host "Disabled service DiagTrack"
+
+# Snapshots, sin sentido en kubernetes
+Stop-Service Vss -Force;
+Set-Service Vss -StartupType Disabled;
+Write-Host "Disabled service Vss"
+
+Stop-Service SWPRV -Force;
+Set-Service SWPRV -StartupType Disabled;
+Write-Host "Disabled service SWPRV"
+
+# Transacciones distribuidas, a evitar.
+Stop-Service MSDTC -Force;
+Set-Service MSDTC -StartupType Disabled;
+Write-Host "Disabled service MSDTC"
+
+# Este servicio NO funciona en contenedores
+Stop-Service LanManServer -Force;
+Set-Service LanManServer -StartupType Disabled;
+Write-Host "Disabled service LanManServer"
+
+# Updates de windows sin sentido en contenedor
+Stop-Service UsoSvc -Force;
+Set-Service UsoSvc -StartupType Disabled;
+Write-Host "Disabled service UsoSvc"
+
+Stop-Service UsoSvc -Force;
+Set-Service UsoSvc -StartupType Disabled;
+Write-Host "Disabled service sshd"
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

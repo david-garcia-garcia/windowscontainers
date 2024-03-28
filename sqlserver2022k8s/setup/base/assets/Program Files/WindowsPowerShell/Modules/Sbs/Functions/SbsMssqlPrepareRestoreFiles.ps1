@@ -16,6 +16,7 @@ function SbsMssqlPrepareRestoreFiles {
     $files = @();
 
     if ($null -ne $backupUrl) {
+        SbsWriteHost "Checking for backups in $($backupUrl.baseUrlWithPrefix)";
         $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
         $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
         Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
@@ -25,6 +26,7 @@ function SbsMssqlPrepareRestoreFiles {
         }
     }
     else {
+        SbsWriteHost "Checking for backups in $($Path)";
         $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $Path | Where-Object { $_.Database -eq $DatabaseName };
     }
 

@@ -7,14 +7,26 @@ function SbsEnsureCredentialForSasUrl {
         [object] $SqlInstance
     )
 
-    if ([string]::isNullOrWhiteSpace($Url)) {
-        return;
-    }
-
     $parsedUrl = sbsParseSasUrl -Url $Url;
     
     if ($null -eq $parsedUrl) {
-        SbsWriteWarning "Invalid SAS URL";
+        SbsWriteError "Invalid SAS URL";
+        return;
+    }
+
+    if (($null -ne $parsedUrl.signedExpiry) -and ($parsedUrl.signedExpiry -lt (Get-Date))) {
+        SbsWriteError "The SAS URL for $($parsedUrl.baseUrl) expired at $($parsedUrl.signedExpiry)";
+        return;
+    }
+
+    if (($null -ne $parsedUrl.startTime) -and ($parsedUrl.startTime -gt (Get-Date))) {
+        SbsWriteError "The SAS URL for $($parsedUrl.baseUrl) is not valid until $($parsedUrl.startTime)";
+        return;
+    }
+
+    $expiryThreshold = (Get-Date).AddHours(72)
+    if ($null -ne $parsedUrl.signedExpiry -and $parsedUrl.signedExpiry -lt $expiryThreshold) {
+        SbsWriteWarning "The SAS URL for $($parsedUrl.baseUrl) will expire in the next 72 hours."
     }
 
     SbsEnsureSqlCredential -SqlInstance $SqlInstance -CredentialName $parsedUrl.baseUrl -SasToken $parsedUrl.sasToken;
