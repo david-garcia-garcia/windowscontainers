@@ -29,7 +29,7 @@ SbsWriteHost "SQL Log Path: $logPath";
 
 $controlPath = $Env:MSSQL_PATH_CONTROL;
 
-$databaseName = SbsGetEnvString -Name "MSSQL_DB_NAME" -DefaultValue "";
+$databaseName = SbsGetEnvString -Name "MSSQL_DB_NAME" -DefaultValue $null;
 $databaseRecoveryModel = SbsGetEnvString -Name "MSSQL_DB_RECOVERYMODEL" -DefaultValue "SIMPLE";
 
 if ($null -eq $tempDir) {
@@ -171,7 +171,7 @@ else {
 }
 
 # If nothing was restored try from a backup
-if (($restored -eq $false) -and ($null -ne $databaseName)) {
+if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     SbsWriteHost "Starting database restore...";
     $files = @();
     if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
