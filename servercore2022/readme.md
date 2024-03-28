@@ -147,6 +147,12 @@ resource "kubernetes_config_map" "env_config" {
 }
 ```
 
+When the environment configuration is refreshed, all powershell scripts in the refresh folder will be invoked
+
+```
+c:\entrypoint\refreshenv
+```
+
 ## Memory and CPU footprint
 
 Because the entry point to this image is a powershell script, the minimum memory footprint for this image is **about 80Mb** (doing nothing). That is what powershell.exe plus some other windows services will need.
@@ -363,28 +369,29 @@ This will be available for you entry point scripts and inside the container. The
 
 ### Environment variables
 
-| Name                       | Default Value       | Description                                                  |
-| -------------------------- | ------------------- | ------------------------------------------------------------ |
-| SBS_CONTAINERTIMEZONE      | $null               | Container Timezone                                           |
-| SBS_PROMOTE_ENV_REGEX      | $null               | When an environment variable matches this regular expression, it is promoted to system level. Careful with sensitive data. |
-| XXX_PROTECT                | N/A                 | When an environment variable ends in _PROTECT it is encoded with DPAPI at the machine level, and the suffix removed. |
-| SBS_INITASYNC              | $false              | Run initialization scripts in their own JOB.                 |
-| SBS_SHUTDOWNTIMEOUT        | 15                  | Container shutdown timeout in seconds.                       |
-| SBS_ENTRYPOINTERRORACTION  | Stop                | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
-| SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | List of processes that will be terminated when shutdown has completed |
-| NEW_RELIC_LICENSE_KEY      | $null               | New Relic infrastructure license key                         |
-| SBS_SRVENSURE              | $null               | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
-| SBS_SRVSTOP                | $null               | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
-| SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Use this to configure the trigger for a scheduled task that is already present inside the image. |
+| Name                       | Default Value       | Auto refresh/ Reapplied if warm updated | Description                                                  |
+| -------------------------- | ------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| SBS_CONTAINERTIMEZONE      | $null               | Yes                                     | Container Timezone                                           |
+| SBS_PROMOTE_ENV_REGEX      | $null               | Yes                                     | When an environment variable matches this regular expression, it is promoted to system level. Careful with sensitive data. |
+| XXX_PROTECT                | N/A                 | Yes                                     | When an environment variable ends in _PROTECT it is encoded with DPAPI at the machine level, and the suffix removed. |
+| SBS_INITASYNC              | $false              | N/A                                     | Run initialization scripts in their own JOB.                 |
+| SBS_SHUTDOWNTIMEOUT        | 15                  | Yes                                     | Container shutdown timeout in seconds.                       |
+| SBS_ENTRYPOINTERRORACTION  | Stop                | No                                      | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
+| SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | Yes                                     | List of processes that will be terminated when shutdown has completed |
+| NEW_RELIC_LICENSE_KEY      | $null               | No                                      | New Relic infrastructure license key                         |
+| SBS_SRVENSURE              | $null               | No                                      | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
+| SBS_SRVSTOP                | $null               | Yes                                     | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
+| SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Yes                                     | Use this to configure the trigger for a scheduled task that is already present inside the image. |
 
 Relevant locations
 
-| Path                                                     | Usage                                                   |
-| -------------------------------------------------------- | ------------------------------------------------------- |
-| c:\configmap\env.json                                    | Provide environment variables as a json file            |
-| c:\entrypoint\init\                                      | Path for initialization scripts                         |
-| c:\entrypoint\shutdown\                                  | Path for shutdown scripts                               |
-| c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                           |
-| c:\configmap_logmonitor\config.json                     | Default location for the LogMonitor configuration file. |
-| c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions          |
+| Path                                                     | Usage                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| c:\configmap\env.json                                    | Provide environment variables as a json file                 |
+| c:\entrypoint\init\                                      | Path for initialization scripts                              |
+| c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed |
+| c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
+| c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
+| c:\configmap_logmonitor\config.json                      | Default location for the LogMonitor configuration file.      |
+| c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions               |
 

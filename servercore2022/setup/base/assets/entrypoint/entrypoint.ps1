@@ -108,6 +108,7 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 ##########################################################################
 $initScriptDirectory = "C:\entrypoint\init";
 $initAsync = SbsGetEnvBool "SBS_INITASYNC";
+
 SbsRunScriptsInDirectory -Path $initScriptDirectory -Async $initAsync;
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.

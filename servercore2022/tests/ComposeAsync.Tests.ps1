@@ -5,7 +5,7 @@ Describe 'compose-async.yaml' {
     }
 
     It 'Booted asynchronously' {
-        WaitForLog "servercore2022-servercore-1" "Async Initialization"
+        WaitForLog "servercore2022-servercore-1" "init scripts asynchronously"
     }
 
     It 'Executed 0001_SetShutdownTimeout.ps1' {

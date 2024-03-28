@@ -21,7 +21,7 @@ Function SbsRunScriptsInDirectory {
             Import-Module Sbs;
             # Get all .ps1 files in the directory
             $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name;
-            SbsWriteHost "Running $($scripts.count) init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
+            SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
             Import-Module Sbs;
             foreach ($script in $scripts) {
