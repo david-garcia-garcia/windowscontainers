@@ -122,9 +122,11 @@ function SbsDownloadFile {
         }
         else {
             #If the download was terminated, we remove the file.
-            Write-Verbose "Cancelling the download and removing the tmp file.";
+            Write-Warning "Cancelling the download and removing the tmp file.";
             $Downloader.CancelAsync();
-            Remove-Item -Path $TmpFile -Force;
+            if (Test-Path -Path $TmpFile) {
+                Remove-Item -Path $TmpFile -Force;
+            }
         }
 
         $Downloader.Dispose();
