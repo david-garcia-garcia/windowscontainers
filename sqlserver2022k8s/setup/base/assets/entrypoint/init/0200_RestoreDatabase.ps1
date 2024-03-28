@@ -171,7 +171,7 @@ else {
 }
 
 # If nothing was restored try from a backup
-if (($restored -eq $false) -and ($null -ne $databaseName)) {
+if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     SbsWriteHost "Starting database restore...";
     $files = @();
     if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
