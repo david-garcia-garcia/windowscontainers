@@ -10,18 +10,7 @@ $initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 # Setting timezone hardcoded here
 #####################################
 
-$timezone = [Environment]::GetEnvironmentVariable("SBS_CONTAINERTIMEZONE")
-
-# Check if the timezone value was retrieved
-if (-not [string]::IsNullOrWhiteSpace($timezone)) {
-    # Set the timezone
-    Set-TimeZone -Id $timezone;
-    SbsWriteHost "Timezone set to $timezone from SBS_CONTAINERTIMEZONE";
-}
-else {
-    $timeZone = Get-TimeZone;
-    SbsWriteHost "System Timezone: ${$timeZone.Id}";
-}
+. "c:\entrypoint\refreshenv\SetTimeZone.ps1";
 
 #####################################
 # Delete Readyness Probe
@@ -118,53 +107,8 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 # Run entry point scripts
 ##########################################################################
 $initScriptDirectory = "C:\entrypoint\init";
-if (Test-Path -Path $initScriptDirectory) {
-    $initAsync = SbsGetEnvBool "SBS_INITASYNC";
-    if ($initAsync -eq $true) {
-        SbsWriteHost "Async Initialization";
-        # We run this asynchronously for multiple reasons:
-        # * Any PS loaded modules directly in the entrypoint will be LOCKED. This is an issue for debugging/hot replacing.
-        # * Entrypoint init scripts can load huge modules (i.e. dbatools that uses 200MB or memory). If we run them directly in the entrypoint, the memory is not released.
-        # Doing this ASYNC is a little bit slower, but it pays off in some situations.
-        $job = Start-Job -ScriptBlock {
-            param ($iniDir)
-            Import-Module Sbs;
-            # Get all .ps1 files in the directory
-            $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
-            SbsWriteHost "Running $($scripts.count) init scripts $(ConvertTo-Json $scripts)";
-            $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
-            Import-Module Sbs;
-            foreach ($script in $scripts) {
-                SbsWriteHost "$($script.Name): START ";
-                & $script.FullName;
-                SbsWriteHost "$($script.Name): END";
-            }
-        } -ArgumentList $initScriptDirectory
-
-        Receive-Job -Job $job -Wait -AutoRemoveJob;
-
-        # Check if the state is 'Failed' or if there are error records in the results
-        if ($job.State -eq 'Failed') {
-            SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task encountered an error during execution";
-            $host.SetShouldExit(1);
-            throw "Task $jobName failed";
-        }
-    }
-    else {
-        SbsWriteHost "Sync Initialization";
-        $scripts = Get-ChildItem -Path $initScriptDirectory -Filter *.ps1 | Sort-Object Name | Select-Object $_.FullName;
-        SbsWriteHost "Running $($scripts.count) init scripts $(ConvertTo-Json $scripts)";
-        Import-Module Sbs;
-        foreach ($script in $scripts) {
-            SbsWriteHost "$($script.Name): START";
-            & $script.FullName;
-            SbsWriteHost "$($script.Name): END";
-        }
-    }
-}
-else {
-    SbsWriteHost "Init directory does not exist: $initScriptDirectory"
-}
+$initAsync = SbsGetEnvBool "SBS_INITASYNC";
+SbsRunScriptsInDirectory -Path $initScriptDirectory -Async $initAsync;
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
 New-Item -Path 'C:\\ready' -ItemType 'File' -Force | Out-Null;
@@ -181,11 +125,13 @@ $lastCheck = (Get-Date).AddSeconds(-1);
 
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
 
+# Get the parent process name
 $parentProcessIsLogMonitor = $false;
 $parentProcess = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID").ParentProcessId | ForEach-Object {
     $process = Get-CimInstance Win32_Process -Filter "ProcessId = $_";
     $process.Name
 };
+
 if ($parentProcess -eq "LogMonitor.exe") {
     $parentProcessIsLogMonitor = $true;
 }
@@ -207,6 +153,7 @@ try {
 
             if ($true -eq $changed) {
                 SbsWriteHost "Environment refreshed.";
+                SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
             }
 
             # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance

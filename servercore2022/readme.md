@@ -13,6 +13,7 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 * Disable IEEnhancedSecurity through windows reigstry
 * Enabled Session events auditing to Event Viewer
 * Creates a "localadmin" account with a random password
+* OpenSSH server (Windows Implementation)
 
 ## Entry Point and Log Monitor
 
@@ -153,6 +154,18 @@ Because the entry point to this image is a powershell script, the minimum memory
 In terms of CPU usage, the actual consumption might vary depending on the type of CPU. On a [Standard_D2S_V3](https://learn.microsoft.com/es-es/azure/virtual-machines/dv3-dsv3-series) which has one of the most basic CPU available on Azure (after the Burstable Series), you get about 30 milli-VCpu when Event Log forwarding is enabled from within Powershell (SBS_GETEVENTLOG), or 5 milli-VCPU if no log forwarding is in place.
 
 To avoid the INIT scripts impacting the entry point memory footprint, you can make the initialization logic run asynchronously  (SBS_INITASYNC). It can happen that these initialization scripts will load libraries like dbatools that have a noticeable memory footprint, if run synchronously this memory is not freed and retained by the entry point.
+
+## OpenSSH
+
+The image comes with the OpenSSH server Windows Feature enabled and configured to use passwords. The service is disabled **by default** and should only be enabled for diagnostics or troubleshooting.
+
+To access your container using SSH
+
+```powershell
+Set-Service -Name sshd -StartupType Manual;
+Start-Service -Name sshd;
+net user localadmin MYLOCALADMINPASSWORD
+```
 
 ## Log rotation
 
