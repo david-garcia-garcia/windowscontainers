@@ -5,5 +5,5 @@
 ## after a i.e. restore you would need to
 ## manually add the newrelic user again
 Import-Module Sbs;
-SbsDeployDbBackupInfo;
+SbsDeployDbBackupInfo "localhost";
 SbsAddNriMonitor "localhost";
