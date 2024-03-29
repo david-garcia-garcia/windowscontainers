@@ -116,9 +116,13 @@ Stop-Service UsoSvc -Force;
 Set-Service UsoSvc -StartupType Disabled;
 Write-Host "Disabled service UsoSvc"
 
-Stop-Service UsoSvc -Force;
-Set-Service UsoSvc -StartupType Disabled;
+Stop-Service sshd -Force;
+Set-Service sshd -StartupType Disabled;
 Write-Host "Disabled service sshd"
+
+Stop-Service ssh-agent -Force;
+Set-Service ssh-agent -StartupType Disabled;
+Write-Host "Disabled service ssh-agent"
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
