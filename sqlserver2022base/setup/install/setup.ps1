@@ -19,10 +19,9 @@ $installUrl = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-
 SbsDownloadFile -Url $installUrl -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
 
 # Download CU12
-New-Item -Path C:\MSSQLUPDATES -ItemType Directory;
+New-Item -Path "C:\MSSQLUPDATES" -ItemType Directory;
 $cuUrl = "https://download.microsoft.com/download/9/6/8/96819b0c-c8fb-4b44-91b5-c97015bbda9f/SQLServer2022-KB5033663-x64.exe";
 SbsDownloadFile -Url $cuUrl -Path "C:\MSSQLUPDATES\SQLServer2022-CU.exe";
-
 
 # Use 7z to extract the ISO contents
 New-Item -Path C:\SQLServerISO -ItemType Directory;
