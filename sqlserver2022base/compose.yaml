@@ -16,6 +16,9 @@ services:
       container_default:
         ipv4_address: 172.18.8.8
     environment:
+      - MSSQLINSTALL_ISO=${MSSQLINSTALL_ISO}
+      - MSSQLINSTALL_CU=${MSSQLINSTALL_CU}
+      - MSSQLINSTALL_CUPATCH=${MSSQLINSTALL_CUPATCH}
       - MSSQL_ADMIN_USERNAME=sa
       - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_PATH_DATA=d:\data

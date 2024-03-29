@@ -2,7 +2,18 @@ $global:ErrorActionPreference = 'Stop'
 
 Import-Module Sbs;
 
-# Download SQL Server ISO
+# Install missing binaries that make the CU12 install work
+# https://github.com/microsoft/mssql-docker/issues/540
+$cuFixPath = "c:\setup\assembly_CU12.7z";
+New-Item -Path "c:\setup" -ItemType Directory -Force;
+if (-not (Test-Path $cuFixPath)) {
+    # Just in case
+    # $cuFixUrl = "https://yourblob.blob.core.windows.net/instaladorsql/assembly_CU12.7z";
+    SbsDownloadFile -Url $cuFixUrl -Path $cuFixPath;
+}
+
+7z x -y -o"C:\" "$cuFixPath"
+
 # Download SQL Server ISO
 $installUrl = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso";
 SbsDownloadFile -Url $installUrl -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
