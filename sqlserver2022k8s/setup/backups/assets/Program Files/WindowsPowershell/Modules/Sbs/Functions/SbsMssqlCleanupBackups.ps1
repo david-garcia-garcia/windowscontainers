@@ -26,15 +26,21 @@ function SbsMssqlCleanupBackups {
 
     $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
     $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
-    Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
+        Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
+
+    if ($blobs.Count -eq 0) {
+        SbsWriteWarning "Found $($blobs.Count) blobs in container $($backupUrl.baseUrl)";
+        return;
+    }
+    
     $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name }
     
     # Define the cache directory path
     $cacheDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "MSSQLHEADERS\$($backupUrl.storageAccountName)\$($backupUrl.container)";
     New-Item -ItemType Directory -Path $cacheDirectory -Force | Out-Null
 
-    # Delete the json files that are older than 1 hour
-    Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddHours(-12) } | Remove-Item -Force;
+    # Delete the json files that are older than 24 hours
+    Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddHours(-24) } | Remove-Item -Force;
 
     # Loop through the $blobUrls and check if the metadata is already present in the cache
     $cachedFiles = @{}
@@ -118,8 +124,7 @@ function SbsMssqlCleanupBackups {
                 Write-Host "The following backups depend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
-        }
-        elseif ($file.Type -eq $diffType) {
+        } elseif ($file.Type -eq $diffType) {
 
             # Any new diff
             $newerBackup = $files | Where-Object {
@@ -142,8 +147,7 @@ function SbsMssqlCleanupBackups {
                 Write-Host "The following backups dpend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
-        }
-        elseif ($file.Type -eq $logType) {
+        } elseif ($file.Type -eq $logType) {
             # Only delete LOG if there is a newer full or diff
             $newerBackup = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $fullType)) -and
@@ -159,8 +163,7 @@ function SbsMssqlCleanupBackups {
         # Perform cleanup for the file
         if ($WhatIf) {
             Write-Host "Would delete blob $($file.Path)"
-        }
-        else {
+        } else {
             # Full uri is not supported, we need the blob name
             $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart("/");
             SbsWriteHost "Deleting backup blob '$($blobName)'"

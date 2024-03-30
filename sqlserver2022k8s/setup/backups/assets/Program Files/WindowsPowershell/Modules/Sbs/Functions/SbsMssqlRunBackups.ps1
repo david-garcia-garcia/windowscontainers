@@ -73,8 +73,7 @@ function SbsMssqlRunBackups {
 
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
-	}
- else {
+	} else {
 		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
