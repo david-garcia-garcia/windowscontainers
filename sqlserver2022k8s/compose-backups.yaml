@@ -59,6 +59,7 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
       - MSSQL_PATH_CONTROL=d:\control
+      - MSSQL_CLEARDATAPATHS=True
       # Database info
       - MSSQL_DB_NAME=mytestdatabase
       - MSSQL_DB_RECOVERYMODEL=FULL
@@ -69,6 +70,7 @@ services:
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
+      - MSSQL_MAXMEMORY=300
 networks:
   container_default:
     external: true

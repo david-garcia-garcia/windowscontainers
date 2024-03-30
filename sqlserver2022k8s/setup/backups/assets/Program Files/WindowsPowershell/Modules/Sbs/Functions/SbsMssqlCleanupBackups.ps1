@@ -32,6 +32,10 @@ function SbsMssqlCleanupBackups {
         SbsWriteWarning "Found $($blobs.Count) blobs in container $($backupUrl.baseUrl)";
         return;
     }
+
+    if ($blobs.Count -gt 100) {
+        SbsWriteWarning "Found $($blobs.Count) blobs in container $($backupUrl.baseUrl). Reading backup headers for remote files is slow and will not scale. Keep LTS storage separate from active backups."
+    }
     
     $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name }
     
@@ -40,8 +44,8 @@ function SbsMssqlCleanupBackups {
     New-Item -ItemType Directory -Path $cacheDirectory -Force | Out-Null
     Write-Host "Cache directory: $cacheDirectory"
 
-    # Delete the json files that are older than 24 hours
-    Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddHours(-24) } | Remove-Item -Force;
+    # Get rid of old cached items
+    Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-7) } | Remove-Item -Force;
 
     # Loop through the $blobUrls and check if the metadata is already present in the cache
     $cachedFiles = @{}
@@ -99,6 +103,7 @@ function SbsMssqlCleanupBackups {
         $_.Type -eq $filterType -and
         $_.Start -lt (Get-Date).AddHours(-$CleanupTime)
     } | Sort-Object -Property Start;
+
 
     if ($filteredFiles.Count -eq 0) {
         Write-Host "No backups found for database $databaseName that are older than $CleanupTime hours"
