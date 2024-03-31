@@ -30,12 +30,15 @@ services:
       - MSSQL_ADMIN_USERNAME=sa
       - MSSQL_ADMIN_PWD_PROTECT=sapwd
       - MSSQL_DATABASE=mydatabase
+      - MSSQL_DB_RECOVERYMODEL=FULL
       - MSSQL_LIFECYCLE=ATTACH
       - MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1;
       - MSSQL_SPCONFIGURERESTART=0
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=e:\backup
+      - MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups?sv=xx
       - MSSQL_PATH_CONTROL=c:\SQLControl
       - MSSQL_INSTANCENAME=myinstance
       - MSSQL_MAXMEMORY=286
@@ -45,6 +48,7 @@ services:
       - SBS_SRVENSURE=SQLSERVERAGENT;newrelic-infra
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_INITASYNC=True
       # Monitor from event viewer
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
