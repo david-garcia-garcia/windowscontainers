@@ -2,6 +2,7 @@
 # Set ADMIN account
 ########################################
 SbsWriteHost "Configuring admin account";
+Add-Type -AssemblyName System.Security;
 $password = [Convert]::FromBase64String($Env:MSSQL_ADMIN_PWD);
 $password = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect($password, $null, 'LocalMachine'));
 $securePassword = ConvertTo-SecureString $password -AsPlainText -Force;

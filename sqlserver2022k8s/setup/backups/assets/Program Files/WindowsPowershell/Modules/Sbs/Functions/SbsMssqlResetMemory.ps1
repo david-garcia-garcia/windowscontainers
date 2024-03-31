@@ -17,31 +17,33 @@ FROM sys.dm_os_sys_memory
         return Invoke-DbaQuery -SqlInstance $SqlInstance -Query $query;
     }
 
+    SbsWriteHost "MSSQL Memory reset start";
+
     $sqlInstance = "localhost";
     $sqlServer = Connect-DbaInstance -SqlInstance $sqlInstance;
 
     $initialMemoryUsage = Get-MemoryUsage -SqlInstance $sqlServer
 
     # Get the current max server memory setting
-    $currentMaxMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MaxMemory;
-    $currentMinMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MinMemory;
+    $currentMaxMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MaxValue;
+    $currentMinMemory = 512;
 
     $reducedMaxMemory = [Math]::Max(($currentMaxMemory * 0.75), $currentMinMemory);
 
     Set-DbaMaxMemory -SqlInstance $sqlServer -Max $reducedMaxMemory;
 
+    # Output original and temporary max memory settings for verification
+    SbsWriteHost "Original Max Memory: $currentMaxMemory MB"
+    SbsWriteHost "Temporary Reduced Max Memory: $reducedMaxMemory MB"
+
     Write-Host "Waiting...";
-    Start-Sleep -Seconds 10;
+    Start-Sleep -Seconds 30;
     $finalMemoryUsage = Get-MemoryUsage -SqlInstance $sqlServer;
 
     # Restore the original max server memory setting
     Set-DbaMaxMemory -SqlInstance $sqlServer -Max $currentMaxMemory;
 
-    # Output original and temporary max memory settings for verification
-    Write-Host "Original Max Memory: $currentMaxMemory MB"
-    Write-Host "Temporary Reduced Max Memory: $reducedMaxMemory MB"
-
     # Output memory usage before and after the change
-    Write-Host "Initial Memory Usage: $($initialMemoryUsage | Out-String)"
-    Write-Host "Final Memory Usage: $($finalMemoryUsage | Out-String)"
+    SbsWriteHost "Initial Memory Usage: $($initialMemoryUsage | Out-String)"
+    SbsWriteHost "Final Memory Usage: $($finalMemoryUsage | Out-String)"
 }

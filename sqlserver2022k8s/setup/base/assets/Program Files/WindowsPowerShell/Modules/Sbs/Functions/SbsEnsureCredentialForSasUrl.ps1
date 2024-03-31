@@ -15,12 +15,12 @@ function SbsEnsureCredentialForSasUrl {
     }
 
     if (($null -ne $parsedUrl.signedExpiry) -and ($parsedUrl.signedExpiry -lt (Get-Date))) {
-        SbsWriteError "The SAS URL for $($parsedUrl.baseUrl) expired at $($parsedUrl.signedExpiry)";
+        SbsWriteWarning "The SAS URL for $($parsedUrl.baseUrl) expired at $($parsedUrl.signedExpiry)";
         return;
     }
 
     if (($null -ne $parsedUrl.startTime) -and ($parsedUrl.startTime -gt (Get-Date))) {
-        SbsWriteError "The SAS URL for $($parsedUrl.baseUrl) is not valid until $($parsedUrl.startTime)";
+        SbsWriteWarning "The SAS URL for $($parsedUrl.baseUrl) is not valid until $($parsedUrl.startTime)";
         return;
     }
 

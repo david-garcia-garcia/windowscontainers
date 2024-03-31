@@ -24,7 +24,13 @@ function SbsSetTaskTrigger {
                 $value = [System.Threading.Timeout]::InfiniteTimeSpan;
             }
             else {
-                $value = [TimeSpan]::ParseExact($param.Value, "hh\:mm\:ss", $null);
+                [Timespan]$parsedTimespan = [System.Threading.Timeout]::InfiniteTimeSpan;
+                if ([TimeSpan]::TryParseExact($param.Value, "hh\:mm\:ss", $null, [ref]$parsedTimespan)) {
+                    $value = $parsedTimespan;
+                } else {
+                    SbsWriteError "Failed to parse task $($taskName) TimeSpan value: $($param.Value). Use the format 'hh:mm:ss' or 'Timeout.InfiniteTimeSpan'";
+                    return;
+                }
             }
         }
         elseif ($param.Name -eq "DaysOfWeek") {

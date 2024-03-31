@@ -18,28 +18,3 @@ logs:
       environment: prod
     winlog:
       channel: System
-  - name: windows-pshell
-    attributes:
-      environment: prod
-    winlog:
-      channel: Windows Powershell
-  - name: scom
-    attributes:
-      environment: prod
-    winlog:
-      channel: Operations Manager
-  - name: windows-defender
-    attributes:
-      environment: prod
-    winlog:
-      channel: Microsoft-Windows-Windows Defender/Operational
-  - name: windows-clustering
-    attributes:
-      environment: prod
-    winlog:
-      channel: Microsoft-Windows-FailoverClustering/Operational
-  - name: task-scheduler
-    attributes:
-      environment: prod
-    winlog:
-      channel: Microsoft-Windows-TaskScheduler/Operational

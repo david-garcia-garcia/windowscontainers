@@ -26,6 +26,7 @@ try {
     # if database is set in READONLY mode, then the last LOG backup will by COPY_ONLY
     # which will NOT work for a restore secuence chain (it works, but it's more difficult)
     # to determine the restore sequence.
+    SbsWriteHost "Disabling remote access...."
     Set-DbaSpConfigure -SqlInstance $sqlInstance -Name 'remote access' -Value 0;
 
     if ($autoBackup -eq $true) {

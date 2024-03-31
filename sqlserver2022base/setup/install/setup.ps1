@@ -2,13 +2,29 @@ $global:ErrorActionPreference = 'Stop'
 
 Import-Module Sbs;
 
-# Download SQL Server ISO
-SbsDownloadFile -Url "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso" -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
+# Install missing binaries that make the CU12 install work
+# https://github.com/microsoft/mssql-docker/issues/540
+$cuFixPath = "c:\setup\assembly_CU12.7z";
+New-Item -Path "c:\setup" -ItemType Directory -Force;
+if (-not (Test-Path $cuFixPath)) {
+    # Just in case
+    # $cuFixUrl = "https://yourblob.blob.core.windows.net/instaladorsql/assembly_CU12.7z";
+    SbsDownloadFile -Url $cuFixUrl -Path $cuFixPath;
+}
 
-# Create a directory to extract the ISO contents
-New-Item -Path C:\SQLServerISO -ItemType Directory;
+7z x -y -o"C:\" "$cuFixPath"
+
+# Download SQL Server ISO
+$installUrl = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso";
+SbsDownloadFile -Url $installUrl -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
+
+# Download CU12
+New-Item -Path "C:\MSSQLUPDATES" -ItemType Directory;
+$cuUrl = "https://download.microsoft.com/download/9/6/8/96819b0c-c8fb-4b44-91b5-c97015bbda9f/SQLServer2022-KB5033663-x64.exe";
+SbsDownloadFile -Url $cuUrl -Path "C:\MSSQLUPDATES\SQLServer2022-CU.exe";
 
 # Use 7z to extract the ISO contents
+New-Item -Path C:\SQLServerISO -ItemType Directory;
 7z x C:\SQLServer2022-x64-ENU-Dev.iso -oC:\SQLServerISO;
 
 # Define directory paths
@@ -23,33 +39,12 @@ $installDir = 'C:\Program Files\Microsoft SQL Server';
 New-Item -Path $systemDbDir, $systemDbLogDir, $userDbDir, $userDbLogDir, $backupDir, $installDir -ItemType Directory -Force;
 
 # Install SQL Server from the extracted files
-$process = Start-Process -Wait -NoNewWindow -FilePath "C:\SQLServerISO\setup.exe" -ArgumentList "/Q",
-    "/ACTION=install",
-    "/SUPPRESSPRIVACYSTATEMENTNOTICE",
-    "/INSTANCEID=MSSQLSERVER",
-    "/INSTANCENAME=MSSQLSERVER",
-    "/FEATURES=SqlEngine,FullText",
-    "/INSTALLSQLDATADIR=`"$installDir`"",
-    "/SQLUSERDBDIR=`"$userDbDir`"",
-    "/SQLUSERDBLOGDIR=`"$userDbLogDir`"",
-    "/SQLTEMPDBDIR=`"$systemDbDir`"",
-    "/SQLTEMPDBLOGDIR=`"$systemDbLogDir`"",
-    "/SQLBACKUPDIR=`"$backupDir`"",
-    "/UpdateEnabled=0",
-    "/TCPENABLED=1", 
-    "/NPENABLED=0",
-    "/IACCEPTSQLSERVERLICENSETERMS",
-    "/SQLSYSADMINACCOUNTS=ContainerAdministrator" -PassThru;
-
-# Check the exit code
-if ($process.ExitCode -ne 0) {
-    Write-Error "SQL Server installation failed with exit code $($process.ExitCode)."
-    exit $process.ExitCode
-}
+. "C:\SQLServerISO\setup.exe" "/Q" "/ACTION=install" "/SUPPRESSPRIVACYSTATEMENTNOTICE" "/INSTANCEID=MSSQLSERVER" "/INSTANCENAME=MSSQLSERVER" "/FEATURES=SqlEngine,FullText" "/INSTALLSQLDATADIR=`"$installDir`"" "/SQLUSERDBDIR=`"$userDbDir`"" "/SQLUSERDBLOGDIR=`"$userDbLogDir`"" "/SQLTEMPDBDIR=`"$systemDbDir`"" "/SQLTEMPDBLOGDIR=`"$systemDbLogDir`"" "/SQLBACKUPDIR=`"$backupDir`"" "/UpdateEnabled=1" "/UseMicrosoftUpdate=0" "/TCPENABLED=1" "/NPENABLED=0" "/IACCEPTSQLSERVERLICENSETERMS" "/UPDATESOURCE=`"C:\MSSQLUPDATES`"" "/SQLSYSADMINACCOUNTS=ContainerAdministrator"
 
 # Cleanup: Remove the ISO and extracted files
-Remove-Item -Path C:\SQLServer2022-x64-ENU-Dev.iso -Force; `
+Remove-Item -Path C:\SQLServer2022-x64-ENU-Dev.iso -Force;
 Remove-Item -Path C:\SQLServerISO -Recurse -Force;
+Remove-Item -Path C:\MSSQLUPDATES -Recurse -Force;
 
 # Install DBA tools
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
