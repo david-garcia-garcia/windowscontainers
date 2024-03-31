@@ -71,33 +71,10 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 }
 
 ###############################
-# SERVERNAME
-###############################
-
-$mssqlServerName = $Env:COMPUTERNAME;
-if ($null -ne $Env:MSSQL_SERVERNAME) {
-    $mssqlServerName = $Env:MSSQL_SERVERNAME;
-}
-
-# I did not find a better way to do this... it's a shame we need this double restart of the service :(
-Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Microsoft SQL Server\$version\Machines" -Name "OriginalMachineName" -Value "$($mssqlServerName)"
-
-
-###############################
 # START THE SERVER
 ###############################
 SbsWriteHost "MSSQLSERVER Service Starting...";
-
 Start-Service 'MSSQLSERVER';
-$sqlInstance = Connect-DbaInstance -SqlInstance localhost;
-$currentServerName = (Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS 'ServerName'").ServerName;
-if ($currentServerName -ne $mssqlServerName) {
-    Invoke-DbaQuery -SqlInstance $sqlInstance -Query "EXEC sp_dropserver '$currentServerName';"
-    Invoke-DbaQuery -SqlInstance $sqlInstance -Query "EXEC sp_addserver '$mssqlServerName', local;"
-    SbsWriteHost "Server name changed from '$currentServerName' to '$mssqlServerName', restarting service...";
-    Restart-Service 'MSSQLSERVER';
-}
-
 SbsWriteHost "MSSQLSERVER Service started";
 
 $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
