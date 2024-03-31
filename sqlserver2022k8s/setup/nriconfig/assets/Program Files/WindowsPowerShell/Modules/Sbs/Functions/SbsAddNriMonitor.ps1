@@ -56,9 +56,6 @@ function SbsAddNriMonitor {
     # Grant db_datareader in master
     Invoke-DbaQuery -SqlInstance $instance -Query "USE [master]; EXEC sp_addrolemember 'db_datareader', '$loginName'"
 	
-    # ***************************************
-    # Add a table and information about backup status
-    # ***************************************
     $configPath = "c:\program files\new relic\newrelic-infra\integrations.d\mssql-config.yml";
     $template = Get-Content -Path $configPath | ConvertFrom-Yaml
 
