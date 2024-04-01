@@ -49,6 +49,27 @@ function SbsPrepareEnv {
     }
 
     ##########################################################################
+    # We can have runtime replacements in environment variable values. Why?
+    # i.e. we need info that is only available once the pod/container is running
+    # such as the hostname assigned by K8S
+    ##########################################################################
+    $processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);
+    Write-Host "Initiating ENV replacements";
+    foreach ($key in $processEnvironmentVariables.Keys) {
+        $variableName = $key.ToString();
+        $variableValue = $processEnvironmentVariables[$key];
+        if ($variableValue -match "{Env:(.*)}") {
+            $envVariableNames = $variableValue | Select-String -Pattern "{Env:(.*)}" -AllMatches | ForEach-Object { $_.Matches.Groups[1].Value }
+            foreach ($envVariableName in $envVariableNames) {
+                Write-Host "Replacing $envVariableName in $variableName";
+                $envVariableValue = [System.Environment]::GetEnvironmentVariable($envVariableName, [System.EnvironmentVariableTarget]::Process);
+                $newVariableValue = $variableValue -replace "{Env:$envVariableName}", $envVariableValue;
+                [System.Environment]::SetEnvironmentVariable($variableName, $newVariableValue, [System.EnvironmentVariableTarget]::Process);
+            }
+        }
+    }
+
+    ##########################################################################
     # Protect environment variables using DPAPI
     ##########################################################################
     $processEnvironmentVariables = [System.Environment]::GetEnvironmentVariables([System.EnvironmentVariableTarget]::Process);

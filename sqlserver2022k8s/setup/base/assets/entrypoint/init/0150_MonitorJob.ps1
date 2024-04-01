@@ -7,6 +7,10 @@
 # AVOID USING DBATOOLS TO REDUCE MEMORY FOOTPRINT FOR PROCESS
 ########################################################
 
+# This script does not work in async startup mode anyways,
+# because the parent process is killed, and this one dies with it.
+return;
+
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
 # SQL query to monitor backup and restore operations
@@ -39,6 +43,7 @@ $database = "master";
 Start-Job -ScriptBlock {
     param($sqlInstanceName, $database, $sqlQuery)
     while ($true) {
+        #SbsWriteHost "Monitoring backup and restore operations $PID";
         $connectionString = "Server=$sqlInstanceName;Database=$database;Integrated Security=True;TrustServerCertificate=True"
         $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString);
         try {

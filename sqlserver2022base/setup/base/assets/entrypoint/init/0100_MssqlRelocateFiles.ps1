@@ -1,10 +1,19 @@
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
+###############################
+# LOGIN MODE AND CONNECTION
+###############################
+
 $id = "MSSQL16.MSSQLSERVER";
-Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver\supersocketnetlib\tcp\ipall') -name tcpdynamicports -value '' ;
+$version = "160";
+
 Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver\supersocketnetlib\tcp\ipall') -name tcpdynamicports -value '' ;
 Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver\supersocketnetlib\tcp\ipall') -name tcpport -value 1433 ;
 Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver') -name LoginMode -value 2;
+
+###############################
+# FILE PATHS
+###############################
 
 if ($null -ne $Env:MSSQL_PATH_DATA) {
     New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_DATA;
