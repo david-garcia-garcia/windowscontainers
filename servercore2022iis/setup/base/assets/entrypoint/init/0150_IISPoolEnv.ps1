@@ -41,7 +41,7 @@ if ([string]::IsNullOrWhiteSpace($SBS_IISENV)) {
             if ($propagatedEnv -gt 0) {
                 # Invoke the cmdlet with the hashtable if there are any variables to propagate
                 Invoke-IISChefPoolEnvUpsert -Pool $matchingPool.Name -Env $envVars
-                SbsWriteHost "Propagated $($envVars) environment variable(s) to pool $($matchingPool.Name)."
+                SbsWriteHost "Propagated $($envVars | ConvertTo-Json -Depth 4 -Compress) environment variable(s) to pool $($matchingPool.Name)."
             } else {
                 SbsWriteHost "No environment variables were propagated to pool $($matchingPool.Name)."
             }
