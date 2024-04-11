@@ -5,8 +5,10 @@ $SBS_SRVENSURE = [System.Environment]::GetEnvironmentVariable("SBS_SRVENSURE");
 if (-not [string]::IsNullOrWhiteSpace($SBS_SRVENSURE)) {
     $services = ($SBS_SRVENSURE).Split(';');
     foreach ($service in $services) {
-        SbsWriteHost "Starting Service $($service)";
-        Set-Service -Name $service -StartupType Automatic;
-        Start-Service -Name $service;
+        if (-not [string]::IsNullOrWhiteSpace($service)) {
+            SbsWriteHost "Starting Service $($service)";
+            Set-Service -Name $service -StartupType Automatic;
+            Start-Service -Name $service;
+        }
     }
 }
