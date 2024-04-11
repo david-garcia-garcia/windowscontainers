@@ -18,6 +18,10 @@ $dataPath = $dbaDefaultPath.Data;
 $logPath = $dbaDefaultPath.Log;
 $tempDir = $Env:SBS_TEMPORARY;
 
+if ($null -eq $tempDir) {
+    $tempDir = $Env:TMP;
+}
+
 if (-not (Test-Path $backupPath)) { New-Item -ItemType Directory -Path $backupPath; }
 if (-not (Test-Path $dataPath)) { New-Item -ItemType Directory -Path $dataPath; }
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath; }
