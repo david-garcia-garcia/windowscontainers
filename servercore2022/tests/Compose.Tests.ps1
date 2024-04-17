@@ -42,6 +42,23 @@ Describe 'compose.yaml' {
         docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
     }
 
+    #It 'Can SSH to container' {
+    #    docker exec servercore2022-servercore-1 powershell "Set-Service -Name sshd -StartupType Manual; Start-Service -Name sshd; net user localadmin ""@MyP@assw0rd"";"
+    #    # Define the SSH parameters
+    #    $Server = "172.18.8.8"
+    #    $UserName = "localadmin"
+    #    $Password = "@MyP@assw0rd" | ConvertTo-SecureString -AsPlainText -Force
+    #    $Credential = New-Object System.Management.Automation.PSCredential ($UserName, $Password)
+    #    Import-Module Posh-SSH
+    #    # Create SSH session
+    #    try {
+    #        $Session = New-SSHSession -ComputerName $Server -Credential $Credential -AcceptKey
+    #        Write-Host "SSH session created successfully."
+    #    } catch {
+    #        Write-Host "Failed to create SSH session: $_"
+    #    }
+    #}
+
     AfterAll {
         docker compose -f servercore2022/compose.yaml down;
     }

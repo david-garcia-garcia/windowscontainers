@@ -168,9 +168,11 @@ The image comes with the OpenSSH server Windows Feature enabled and configured t
 To access your container using SSH
 
 ```powershell
+Set-Service -Name ssh-agent -StartupType Manual;
+Start-Service -Name ssh-agent;
 Set-Service -Name sshd -StartupType Manual;
 Start-Service -Name sshd;
-net user localadmin MYLOCALADMINPASSWORD
+net user localadmin @MyP@ssw0rd
 ```
 
 ## Log rotation

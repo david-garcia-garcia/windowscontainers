@@ -2,7 +2,7 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 
 Import-Module Sbs;
 
-SbsPrepareEnv;
+SbsPrepareEnv | Out-Null;
 
 $initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
@@ -18,8 +18,9 @@ $initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
 if (Test-Path("c:\ready")) {
     SbsWriteHost "Deleting readyness probe.";
-    Remove-Item -Path 'C:\ready' -Force;
+    Remove-Item -Path 'C:\ready' -Force | Out-Null;
 }
+
 
 ##########################################################################
 # Setup shutdown listeners. For docker. In K8S use LifeCycleHooks
@@ -86,7 +87,7 @@ Add-Type -TypeDefinition $code -ReferencedAssemblies @("System.Runtime.InteropSe
 $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandler+HandlerRoutine], [ConsoleCtrlHandler], "ConsoleCtrlCheck");
 
 # Register the handler
-[ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true);
+[ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true) | Out-Null;
 
 ##########################################################################
 # Adjust the ENTRY POINT error preference.

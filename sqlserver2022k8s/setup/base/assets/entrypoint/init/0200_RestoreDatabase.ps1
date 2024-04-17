@@ -18,6 +18,10 @@ $dataPath = $dbaDefaultPath.Data;
 $logPath = $dbaDefaultPath.Log;
 $tempDir = $Env:SBS_TEMPORARY;
 
+if ($null -eq $tempDir) {
+    $tempDir = $Env:TMP;
+}
+
 if (-not (Test-Path $backupPath)) { New-Item -ItemType Directory -Path $backupPath; }
 if (-not (Test-Path $dataPath)) { New-Item -ItemType Directory -Path $dataPath; }
 if (-not (Test-Path $logPath)) { New-Item -ItemType Directory -Path $logPath; }
@@ -66,7 +70,7 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
     }
 }
 
-if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
+if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:MSSQL_LIFECYCLE -ne 'PERSISTENT')) {
     $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
         $clearDataPaths = SbsGetEnvBool -Name "MSSQL_CLEARDATAPATHS" -DefaultValue $false;

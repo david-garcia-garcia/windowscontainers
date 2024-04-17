@@ -1,12 +1,12 @@
-Describe 'compose-backups.yaml' {
+Describe 'compose-persistent.yaml' {
     BeforeAll {
         # Set environment variable for connection string
-        $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;Database=mytestdatabase;";
+        $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
         New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup" -Force
         Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
-        docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
+        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 15
     }
 
     It 'Can connect to the SQL Server' {
@@ -14,6 +14,8 @@ Describe 'compose-backups.yaml' {
     }
 
     It 'Database exists' {
+        # Create the mytestdatabase
+        New-DbaDatabase -SqlInstance $Env:connectionString -Name mytestdatabase
         (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -Be "mytestdatabase"
     }
 
@@ -29,28 +31,18 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
-    It 'Tear down makes backups' {
-        # Decommission the docker
-        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
-        WaitForLog $Env:instanceName "Performing shutdown backups" -TimeoutSeconds 30;
-        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 30;
-        docker compose -f sqlserver2022k8s/compose-backups.yaml down
+    It 'Can tear down' {
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml down;
     }
 
-    It 'Has exactly one .bak file in c:/datavolume/backups (recursive)' {
-        # Because there is no backup history, we start with exactly one full backup file
-        $backupFiles = Get-ChildItem -Path "c:\datavolume\backup" -Recurse -Filter "*.bak"
-        $backupFiles.Count | Should -Be 1
+    It 'Can start' {
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d;
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 25;
     }
 
-    It 'Backups are recovered' {
-        # Start the container again
-        docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 30;
-
+    It 'State is preserved' {
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
             
-        # Insert a record into TestTablef
         $insertQuery = @"
     INSERT INTO dbo.TestTable (TestData)
     VALUES ('New Record')
@@ -59,16 +51,15 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
     }
 
-    It 'Tear down makes backups' {
+    It 'Tear down works' {
         # This shutdown adds 1 trn file
-        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
-        WaitForLog $Env:instanceName "Performing shutdown backups" -TimeoutSeconds 30;
-        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 30;
-        docker compose -f sqlserver2022k8s/compose-backups.yaml down
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml stop
+        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 15;
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml down
 
         # This cycle adds an additional trn file
-        docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30;
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
+        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 25;
 
         $insertQuery = @"
         INSERT INTO dbo.TestTable (TestData)
@@ -80,37 +71,21 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 2").TestData | Should -Be "New Record 2"
 
-        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
-        WaitForLog $Env:instanceName "Performing shutdown backups" -TimeoutSeconds 30;
-        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 30;
-        docker compose -f sqlserver2022k8s/compose-backups.yaml down
-    }
-
-    It 'Has exactly two .trn files in c:/datavolume/backups (recursive)' {
-        # The second shutdown, there should be one .bak and one .trn file
-        $backupFiles = Get-ChildItem -Path "c:\datavolume\backup" -Recurse -Filter "*.trn"
-        $backupFiles.Count | Should -Be 2
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml stop
+        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 15;
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml down
     }
 
     It 'Information is recovered after several cycles of backups and restores' {
-        docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
         WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 25;
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 2").TestData | Should -Be "New Record 2"
-        docker compose -f sqlserver2022k8s/compose-backups.yaml down
-    }
-
-    It 'Can make a diff backup' {
-        docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 30;
-        docker exec $Env:instanceName powershell "SbsMssqlRunBackups DIFF";
-        WaitForLog $Env:instanceName "Backup completed" -TimeoutSeconds 30;
-        $backupFiles = Get-ChildItem -Path "c:\datavolume\backup\mytestdatabase\DIFF" -Recurse -Filter "*.bak"
-        $backupFiles.Count | Should -Be 1
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml down
     }
 
     AfterAll {
-        docker compose -f sqlserver2022k8s/compose-backups.yaml down;
+        docker compose -f sqlserver2022k8s/compose-persistent.yaml down;
         Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
     }
 }

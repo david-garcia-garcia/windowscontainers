@@ -14,6 +14,8 @@ function SbsParseSasUrl {
         return $null;
     }
 
+    Add-Type -AssemblyName System.Web;
+
     $uri = New-Object System.Uri($Url)
     $storageAccountName = $uri.Host.Split('.')[0];
     $pathSegments = $uri.AbsolutePath.Trim('/').Split('/');

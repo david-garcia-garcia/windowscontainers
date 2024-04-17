@@ -48,7 +48,7 @@ Remove-Item -Path C:\MSSQLUPDATES -Recurse -Force;
 
 # Install DBA tools
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-choco install dbatools -y --version=2.1.11 --no-progress;
+choco install dbatools -y --version=2.1.14 --no-progress;
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
