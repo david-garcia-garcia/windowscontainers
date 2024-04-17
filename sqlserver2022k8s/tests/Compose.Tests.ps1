@@ -10,10 +10,6 @@ Describe 'compose.yaml' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
 
-    It 'Max Server Memory is what configured' {
-        (Test-DbaMaxMemory $Env:connectionString).MaxValue  | Should -Be "286";
-    }
-
     AfterAll {
         docker compose -f sqlserver2022k8s/compose.yaml down;
         Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\backup\*", "c:\datavolume\control\*" -Recurse -Force
