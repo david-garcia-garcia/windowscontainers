@@ -70,7 +70,7 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
     }
 }
 
-if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH')) {
+if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:MSSQL_LIFECYCLE -ne 'PERSISTENT')) {
     $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
         $clearDataPaths = SbsGetEnvBool -Name "MSSQL_CLEARDATAPATHS" -DefaultValue $false;
