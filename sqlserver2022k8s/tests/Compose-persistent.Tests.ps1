@@ -1,7 +1,7 @@
 Describe 'compose-persistent.yaml' {
     BeforeAll {
         # Set environment variable for connection string
-        $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;Database=mytestdatabase;";
+        $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
         New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup" -Force
         Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
