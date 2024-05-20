@@ -56,6 +56,7 @@ function SbsParseSasUrl {
         prefix             = $prefix
         signedExpiry       = $signedExpiry
         startTime          = $startTime
+        query              = $uri.Query
         permissions        = $queryString["sp"]
         signedResource     = $queryString["sr"]
         signedProtocol     = $queryString["spr"]

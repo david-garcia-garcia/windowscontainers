@@ -33,10 +33,11 @@ function SbsMssqlRunBackups {
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
 
-	# Use mirror for long term storage only
+	# Mirroring DOES not work with IMMUTABLE STORAGE, so it is not good for Long Term Retention
 	$mirrorUrlDiff = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_DIFF" -DefaultValue $null;
 	$mirrorUrlFull = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_FULL" -DefaultValue $null;
 	$mirrorUrlLog = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_LOG" -DefaultValue $null;
+
 	$mirrorUrl = $null;
 
 	$instance = "localhost";
@@ -241,11 +242,18 @@ function SbsMssqlRunBackups {
 			$result = $cmd.ExecuteScalar();
 			$SqlConn.Close();
 
+			$backupCompleted = $false;
+
 			if ($null -eq $result) {
 				SbsWriteHost "Backup completed succesfully.";
+				$backupCompleted = $true;
 			}
 			else {
 				SbsWriteError "Error running backup: $($result)";
+			}
+
+			if ($backupCompleted) {
+		        SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl;
 			}
 
 			# No cleanup for LOGNOW, because it is a forced closeup backup, we need this to be as fast as possible.
