@@ -1,3 +1,30 @@
+<#
+.SYNOPSIS
+This methods uses AZCOPY to copy blob-to-blob an existing backup, it can be used
+to copy regular backups to an immutable blob storage.
+
+.DESCRIPTION
+Long description
+
+.PARAMETER SqlInstance
+The sql server instance
+
+.PARAMETER Database
+The database name
+
+.PARAMETER OriginalBackupUrl
+The original backup URL, that MUST include the SAS token
+
+.PARAMETER BackupType
+The backup type to look for, if not specified, it will attempt to copy
+the last backup file (be it diff, log or full)
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function SbsMssqlAzCopyLastBackupOfType {
 
 	param(
@@ -14,7 +41,7 @@ function SbsMssqlAzCopyLastBackupOfType {
         [string]$OriginalBackupUrl,
         # Backup type to copy to remote location, or
         # EMPTY to use the most recent backup type
-		[ValidateSet('FULL', 'DIFF', 'LOG')]
+		[ValidateSet('Full', 'Differential', 'Log')]
 		[string]$BackupType
 	)
 
@@ -30,7 +57,7 @@ function SbsMssqlAzCopyLastBackupOfType {
 
     $backupHistory = Get-DbaDbBackupHistory -SqlInstance $SqlInstance -Database $Database -Last -Force;
     if ($BackupType) {
-        $backupHistory = $backupHistory | Where-Object { $.Type -eq  $BackupType};
+        $backupHistory = $backupHistory | Where-Object { $_.Type -eq  $BackupType};
     }
 
     $lastBackup = $backupHistory | Sort-Object -Property FirstLsn -Descending | Select-Object -First 1;
@@ -49,7 +76,7 @@ function SbsMssqlAzCopyLastBackupOfType {
         "Full" {
             $azCopyUrl = $azCopyUrlFull;
         }
-        "Diff" {
+        "Differential" {
             $azCopyUrl = $azCopyUrlDiff;
         }
         "Log" {
@@ -79,6 +106,11 @@ function SbsMssqlAzCopyLastBackupOfType {
 
         $finalSource = $backupUrl.baseUrlWithPrefix + $sourceUrl.query;
         $finalDestination = $destinationUrl.baseUrlWithPrefix + $backupSubPath + $destinationUrl.query;
+
+        $finalSourceParsed = SbsParseSasUrl -Url $finalSource;
+        $finalDestinationParsed = SbsParseSasUrl -Url $finalDestination;
+
+        SbsWriteHost "LTS Copying $($finalSourceParsed.baseUrlWithPrefix) to $($finalDestinationParsed.baseUrlWithPrefix)"
 
         $azCopyCommand = "azcopy copy `"$finalSource`" `"$finalDestination`" --overwrite=false"
         Invoke-Expression $azCopyCommand

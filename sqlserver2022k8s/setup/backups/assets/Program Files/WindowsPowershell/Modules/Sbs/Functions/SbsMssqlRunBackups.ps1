@@ -252,14 +252,15 @@ function SbsMssqlRunBackups {
 				SbsWriteError "Error running backup: $($result)";
 			}
 
-			if ($backupCompleted) {
-		        SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl;
-			}
-
-			# No cleanup for LOGNOW, because it is a forced closeup backup, we need this to be as fast as possible.
+			# LOGNOW is used to shutdown the container, the less actions we take here, the better,
+			# so no file cleanup or AZCOPY to LTS.
 			if ($backupType -ne "LOGNOW") {
 				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
 					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+				}
+
+				if ($backupCompleted) {
+					SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
 				}
 			}
 		}
