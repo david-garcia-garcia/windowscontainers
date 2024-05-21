@@ -62,10 +62,10 @@ services:
       - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_CLEARDATAPATHS=True
       #- MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_PATH_BACKUPURL=https://controlstorageaccount.blob.core.windows.net/exchange/testbackups/prepowebidemo?sv=2020-02-10&st=2024-04-16T16%3A42%3A16Z&se=2024-06-17T16%3A42%3A00Z&sr=d&sp=racwdlop&sig=WcrWMse4uI%2BHq%2BPcn75M%2FgDtBV2L9W%2BNRsdVyru%2Bba4%3D&sdd=1
-      - MSSQL_BACKUP_AZCOPY_LOG=https://controlstorageaccount.blob.core.windows.net/exchange/testbackups/prepowebidemo/lts/log?sv=2020-02-10&st=2024-04-16T16%3A42%3A16Z&se=2024-06-17T16%3A42%3A00Z&sr=d&sp=racwdlop&sig=WcrWMse4uI%2BHq%2BPcn75M%2FgDtBV2L9W%2BNRsdVyru%2Bba4%3D&sdd=1
-      - MSSQL_BACKUP_AZCOPY_DIFF=https://controlstorageaccount.blob.core.windows.net/exchange/testbackups/prepowebidemo/lts/diff?sv=2020-02-10&st=2024-04-16T16%3A42%3A16Z&se=2024-06-17T16%3A42%3A00Z&sr=d&sp=racwdlop&sig=WcrWMse4uI%2BHq%2BPcn75M%2FgDtBV2L9W%2BNRsdVyru%2Bba4%3D&sdd=1
-      - MSSQL_BACKUP_AZCOPY_FULL=https://controlstorageaccount.blob.core.windows.net/exchange/testbackups/prepowebidemo/lts/full?sv=2020-02-10&st=2024-04-16T16%3A42%3A16Z&se=2024-06-17T16%3A42%3A00Z&sr=d&sp=racwdlop&sig=WcrWMse4uI%2BHq%2BPcn75M%2FgDtBV2L9W%2BNRsdVyru%2Bba4%3D&sdd=1
+      - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPY_LOG=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPY_DIFF=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPY_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
       # Database info
       - MSSQL_DB_NAME=mytestdatabase
       - MSSQL_DB_RECOVERYMODEL=FULL
