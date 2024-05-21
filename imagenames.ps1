@@ -9,7 +9,7 @@ if (-not $containerRegistry -or -not $containerRegistry.EndsWith("/")) {
     exit
 }
 
-$version = "1.0.28";
+$version = "1.0.31";
 
 # To install MSSQL we need the ISO file, the latest CU
 $Env:MSSQLINSTALL_ISO = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso";

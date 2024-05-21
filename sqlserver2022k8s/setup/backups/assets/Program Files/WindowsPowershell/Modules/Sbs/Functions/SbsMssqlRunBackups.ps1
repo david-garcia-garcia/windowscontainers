@@ -46,13 +46,14 @@ function SbsMssqlRunBackups {
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
 	if ($null -ne $backupUrl) {
+		SbsWriteDebug "Loading environment MSSQL_PATH_BACKUPURL";
 		SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $backupUrl.url;
 	}
 
 	$StopWatch = new-object system.diagnostics.stopwatch
 	$StopWatch.Start();
 		
-	SbsWriteHost "Starting $($backupType) backup generation $($instance)"
+	SbsWriteHost "Starting '$($backupType)' backup generation for '$($instance)'"
 	$systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
 
 	# Recorremos todas las bases de datos
@@ -74,7 +75,8 @@ function SbsMssqlRunBackups {
 
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
-	} else {
+	}
+	else {
 		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
@@ -207,6 +209,7 @@ function SbsMssqlRunBackups {
 			}
 				
 			if (($backupType -eq "FULL") -and ($isSystemDb -eq $false)) {
+				SbsWriteDebug "Running Index Optimize Before Full Backup";
 				# Index optimize before the full
 				$indexCmd = $SqlConn.CreateCommand()
 				$indexCmd.CommandType = 'StoredProcedure'
@@ -254,16 +257,19 @@ function SbsMssqlRunBackups {
 
 			# LOGNOW is used to shutdown the container, the less actions we take here, the better,
 			# so no file cleanup or AZCOPY to LTS.
-			if ($backupType -ne "LOGNOW") {
+			if (($backupType -ne "LOGNOW") -and ($backupCompleted -eq $true)) {
 				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
+					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType and cleanupTime=$cleanupTime";
 					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
 				}
-
-				if ($backupCompleted) {
-					SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
-				}
+#
+				SbsWriteDebug "Calling database AZCOPY";
+				SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
 			}
-		}
+			else {
+				SbsWriteDebug "Skipping post-backup operations due to backup type being '$backupType' or backup not completed with success.";
+			}
+		} 
 		Catch {
 			$exceptions += $_.Exception
 			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($instance): $($_.Exception.Message)"
@@ -275,12 +281,10 @@ function SbsMssqlRunBackups {
 		throw (New-Object System.AggregateException -ArgumentList $exceptions)
 	}
 	elseif ($exceptions.Count -gt 0) {
-		{
-			throw $exceptions[0];
-		}
-
-		$StopWatch.Stop()
-		$Minutes = $StopWatch.Elapsed.TotalMinutes;
-		SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
+		throw $exceptions[0];
 	}
+
+	$StopWatch.Stop()
+	$Minutes = $StopWatch.Elapsed.TotalMinutes;
+	SbsWriteHost "$($backupType) backups finished in $($Minutes) min";
 }
