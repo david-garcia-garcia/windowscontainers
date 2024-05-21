@@ -5,6 +5,7 @@ Write-Host " Registering Backup Scheduled Tasks"
 Write-Host "-----------------------------------------`n"
 
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlDifferential.xml" -Raw) -TaskName "MssqlDifferential";
+Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlDifferential2.xml" -Raw) -TaskName "MssqlDifferential2";
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlFull.xml" -Raw) -TaskName "MssqlFull";
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlLog.xml" -Raw) -TaskName "MssqlLog";
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlReleaseMemory.xml" -Raw) -TaskName "MssqlReleaseMemory";
