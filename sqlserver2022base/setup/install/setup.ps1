@@ -2,16 +2,10 @@ $global:ErrorActionPreference = 'Stop'
 
 Import-Module Sbs;
 
-# To install MSSQL we need 3 things
-
-# (A) URL to the ISO
 $mssqlIsoUrl = $Env:MSSQLINSTALL_ISO_URL;
-
-# (B) URL to the CU
-$mssqlCuUrl = $Env:MMSSQLINSTALL_CU_URL;
-
+$mssqlCuUrl = $Env:MSSQLINSTALL_CU_URL;
 # (C) URL to the CU manual patch (https://github.com/microsoft/mssql-docker/issues/540)
-$mssqlCuFixUrl = $Env:MMSSQLINSTALL_CUFIX_URL;
+$mssqlCuFixUrl = $Env:MSSQLINSTALL_CUFIX_URL;
 
 # Download and extract the CU fix
 $cuFixPath = "c:\setup\assembly_CU12.7z";

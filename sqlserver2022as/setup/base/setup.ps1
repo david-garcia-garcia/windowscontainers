@@ -2,31 +2,25 @@ $global:ErrorActionPreference = 'Stop'
 
 Import-Module Sbs;
 
-# Install missing binaries that make the CU12 install work
-# https://github.com/microsoft/mssql-docker/issues/540
-$cuFixPath = "c:\setup\assembly_CU12.7z";
-New-Item -Path "c:\setup" -ItemType Directory -Force;
-if (-not (Test-Path $cuFixPath)) {
-    # Just in case
-    # $cuFixUrl = "https://yourblob.blob.core.windows.net/instaladorsql/assembly_CU12.7z";
-    SbsDownloadFile -Url $cuFixUrl -Path $cuFixPath;
-}
+$mssqlIsoUrl = $Env:MSSQLINSTALL_ISO_URL;
+$mssqlCuUrl = $Env:MSSQLINSTALL_CU_URL;
+# (C) URL to the CU manual patch (https://github.com/microsoft/mssql-docker/issues/540)
+$mssqlCuFixUrl = $Env:MSSQLINSTALL_CUFIX_URL;
 
+# Download and extract the CU fix
+$cuFixPath = "c:\setup\assembly_CU12.7z";
+SbsDownloadFile -Url $mssqlCuFixUrl -Path $cuFixPath;
 7z x -y -o"C:\" "$cuFixPath"
 
+# Download CU
+New-Item -Path "C:\MSSQLUPDATES" -ItemType Directory;
+SbsDownloadFile -Url $mssqlCuUrl  -Path "C:\MSSQLUPDATES\SQLServer2022-CU.exe";
+
 # Download SQL Server ISO
-$installUrl = "https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso";
-SbsDownloadFile -Url $installUrl -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
-
-# Install CU
-New-Item -Path C:\MSSQLUPDATES -ItemType Directory;
-$cuUrl = "https://download.microsoft.com/download/9/6/8/96819b0c-c8fb-4b44-91b5-c97015bbda9f/SQLServer2022-KB5033663-x64.exe";
-SbsDownloadFile -Url $cuUrl -Path "C:\MSSQLUPDATES\SQLServer2022-CU.exe";
-
-# Create a directory to extract the ISO contents
-New-Item -Path C:\SQLServerISO -ItemType Directory;
+SbsDownloadFile -Url $mssqlIsoUrl -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
 
 # Use 7z to extract the ISO contents
+New-Item -Path C:\SQLServerISO -ItemType Directory;
 7z x C:\SQLServer2022-x64-ENU-Dev.iso -oC:\SQLServerISO;
 
 # Define directory paths
