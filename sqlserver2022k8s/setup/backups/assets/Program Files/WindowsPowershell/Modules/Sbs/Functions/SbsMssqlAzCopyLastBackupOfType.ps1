@@ -96,7 +96,14 @@ function SbsMssqlAzCopyLastBackupOfType {
 
     # We need to ensure that backup URL is contained in the source URL
     if (-not $backupUrl.baseUrlWithPrefix.StartsWith($sourceUrl.baseUrlWithPrefix)) {
-        SbsWriteWarning "Backup URL $($backupUrl.baseUrlWithPrefix) is not a subpath of the provided sourceURL $($sourceUrl.baseUrlWithPrefix)";
+        SbsWriteError "Backup URL $($backupUrl.baseUrlWithPrefix) is not a subpath of the provided sourceURL $($sourceUrl.baseUrlWithPrefix)";
+        return;
+    }
+
+    # We need to ensure that the LTS URL is not contained in the SOURCE URL, to avoid duplication of backups
+    if ($destinationUrl.baseUrlWithPrefix.StartsWith($sourceUrl.baseUrlWithPrefix)) {
+        SbsWriteError "LTS URL $($destinationUrl.baseUrlWithPrefix) should not be a subpatch of $($sourceUrl.baseUrlWithPrefix)";
+        return;
     }
 
     $backupSubPath = $backupUrl.baseUrlWithPrefix.Replace($sourceUrl.baseUrlWithPrefix, "");

@@ -7,7 +7,7 @@ This image has configurable behavior based on two concepts:
 
 ## Instance Startup Configuration
 
-Use MSSQL_SPCONFIGURE to run SPCONFIGURE on boot, if any of the changes requires a restart, the script will detect it and restart.
+Use MSSQL_SPCONFIGURE to run SPCONFIGURE on boot, if any of the changes requires a restart, the script will detect it and take care of it.
 
 ```yaml
 MSSQL_SPCONFIGURE=max degree of parallelism:1;backup compression default:1
@@ -53,7 +53,40 @@ You can define backup cleanup times for each type of backup (retention). If you 
 
 **Why are backups embedded into the container itself, and not part of a sidecar container or external utility?**
 
-Because it makes it easier to *tightly couple the backup rules to the lifecycle of the container*. One of the backup strategies you can setup with this container will issue log backups periodically, and will do - and hold the container in the meanwhile - a final log backup, coordinating this closing external connections to the database.
+Because it makes it easier to *tightly couple the backup rules to the lifecycle of the container*. One of the backup strategies you can setup with this container will issue log backups periodically, and will do - and hold the container in the meanwhile - a final log backup, coordinating this closing external connections to the database and making consistent backups.
+
+## Azure Recommended Backup Settings
+
+Use the following configuration to fully backup your data for a 5min RPO with enhanced behavior that takes backups more often (2min) if at least 50MB of log size has been generated.
+
+```bash
+# Backup schedules: WEEKLY FULL
+- 'SBS_CRON_MssqlFull={"Weekly":true,"At":"2023-01-01T02:00:00", "RandomDelay": "00:30:00", "DaysOfWeek": ["Saturday"]}'
+
+# Backup schedules: DAILY DIFFERENTIAL
+- 'SBS_CRON_MssqlDifferential={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+
+# Backup schedule: LOG Every 2 minutes
+- 'SBS_CRON_MssqlLog={"Once":true,"At":"2023-01-01T00:00:00","RepetitionInterval": "00:02:00", "RepetitionDuration": "Timeout.InfiniteTimeSpan"}'
+
+# Only do transaction log backup if tx log is 50MB or 600s have passed since last backup.
+- MSSQL_BACKUP_LOGSIZESINCELASTBACKUP=50
+- MSSQL_BACKUP_TIMESINCELASTLOGBACKUP=300
+
+# Backup to URL
+- MSSQL_PATH_BACKUPURL=https://mystorage.blob.core.windows.net/exchange/?sv=xx
+
+# Retention for primary backups
+- MSSQL_BACKUP_CLEANUPTIME_LOG=24 # 24 Hours of tx logs
+- MSSQL_BACKUP_CLEANUPTIME_DIFF=72 # 72 hours of differentials
+- MSSQL_BACKUP_CLEANUPTIME_FULL=128 # 1 week of fulls
+
+# LTR (Long term storage, you can use IMMUTABLE blobs here), overhead for this is very small because it uses AZCOPY blob-to-blob direct copy so it's ultra fast
+- MSSQL_BACKUP_AZCOPY_DIFF=https://immutable.blob.core.windows.net/lts/?sv=xx
+- MSSQL_BACKUP_AZCOPY_FULL=https://immutable.blob.core.windows.net/lts/?sv=xx
+```
+
+All of these settings can be adjusted with **live reload** in the container, just make sure you are using kubernetes configmaps as described in the documentation of the base image.
 
 ## Master key
 
@@ -146,6 +179,18 @@ Focusing on the minimum ENV setup needed for this:
 ```
 
 All SQL  paths (MSSQL_PATH_*) have been moved to persistent volume store. This ensures that master, model and everything you setup in this MSSQL instance is retained and stored in persistent storage. The pod can move between nodes in K8S and will recover it's previous state with a minimum downtime. For a zero downtime pod we need to rely on replication/mirroring (pending).
+
+### **Backup**
+
+The idea behind the backup lifecycle is very simple: backups are bound to the container lifecycle, so that no data is lost. 
+
+* When the container starts, it will automatically restore from backup.
+* During operation, full, differential and frequent transaction logs are taken.
+* During teardown, database is locked in read-only mode and a final transaction log backup is made before finally releasing the container.
+
+This is **not a high availability setup**, but it is **robust**, **very cheap to operate** and you can get reliable low RPO with frequent transaction log backups. If you actually setup the proper VM and storage types, you could move a MSSQL database pod that hosts a 100GB database between nodes in about **4 minutes** (see the Benchmarks chapter for additional details). 
+
+
 
 ## Memory usage and footpring
 
