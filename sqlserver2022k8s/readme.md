@@ -19,12 +19,13 @@ The image comes with a well known backup solution already installed:
 
 [SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html)
 
-You need to configure backups, the image comes with the following scheduled tasks:
+If you need to configure backups, the image comes with the following scheduled tasks:
 
 - **MssqlDifferential**: run differential backup on all user databases. Differential is promoted to FULL according to MSSQL_BACKUP_MODIFICATIONLEVEL and MSSQL_BACKUP_CHANGEBACKUPTYPE.
+- **MssqlDifferential2**: a second differential backup schedule, so you can have up to two differential backups daily. Differential is promoted to FULL according to MSSQL_BACKUP_MODIFICATIONLEVEL and MSSQL_BACKUP_CHANGEBACKUPTYPE.
 - **MssqlFull**: run full backup on all user databases.
 - **MssqlLog**: run log backup on all user databases.
-- **MssqlSystem**: run full backups on all system databases
+- **MssqlSystem**: run full backups on all system databases.
 
 You can schedule these tasks using environment variables:
 
@@ -42,13 +43,17 @@ You can schedule these tasks using environment variables:
 - 'SBS_CRON_MssqlSystem={"Daily":true,"At":"2023-01-01T22:00:00","DaysInterval":1}'
 ```
 
-You can define backup cleanup times for each type of backup (retention)
+You can define backup cleanup times for each type of backup (retention). If you are using Backup To Url (Azure Blob SAS) the image contains custom logic to deal with cleanup, compensating for the lack of support for CleanupTime in the native Hallengren backup solution, the code for this cleanup code is [here](setup/backups/assets/Program Files/WindowsPowershell/Modules/Sbs/Functions/SbsMssqlCleanupBackups.ps1). Note, like the original backup solution, the cleanup logic ensure that a viable full restore can be made, even if you misconfigure retention times.
 
 ```yaml
 - MSSQL_BACKUP_CLEANUPTIME_LOG=48
 - MSSQL_BACKUP_CLEANUPTIME_DIFF=72
 - MSSQL_BACKUP_CLEANUPTIME_FULL=128
 ```
+
+**Why are backups embedded into the container itself, and not part of a sidecar container or external utility?**
+
+Because it makes it easier to *tightly couple the backup rules to the lifecycle of the container*. One of the backup strategies you can setup with this container will issue log backups periodically, and will do - and hold the container in the meanwhile - a final log backup, coordinating this closing external connections to the database.
 
 ## Master key
 
@@ -115,11 +120,11 @@ Full text search services are installed and enabled in the image.
 
 ## Lifecycle
 
-The lifecycle determines "how" the image intends to treat persistent data and configuration. I.E. you might totally want to have a configuration-free MSSQL setup where the only persistent thing are the data files themselves. On the other hand, you might want to have total control on the SQL Instance and have any config change you make to it persisted.
+The lifecycle determines "how" the image intends to treat persistent data and configuration. I.E. you might totally want to have a configuration-free MSSQL setup where the only persistent things are the data files themselves. On the other hand, you might want to have total control on the SQL Instance and have any config change you make to it persisted.
 
 ### **Persistent**
 
-This is the most simple lifecycle possible, it mostly leaves the base image behavior untouched.
+This is the most **simple** lifecycle possible, it mostly leaves the base image behavior untouched.
 
 Focusing on the minimum ENV setup needed for this:
 
