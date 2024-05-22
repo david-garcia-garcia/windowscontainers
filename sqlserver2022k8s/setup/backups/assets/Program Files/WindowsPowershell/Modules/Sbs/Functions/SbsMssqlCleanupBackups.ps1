@@ -42,7 +42,7 @@ function SbsMssqlCleanupBackups {
     # Define the cache directory path
     $cacheDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "MSSQLHEADERS\$($backupUrl.storageAccountName)\$($backupUrl.container)";
     New-Item -ItemType Directory -Path $cacheDirectory -Force | Out-Null
-    Write-Host "Cache directory: $cacheDirectory"
+    SbsWriteDebug "Cache directory: $cacheDirectory"
 
     # Get rid of old cached items
     Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-7) } | Remove-Item -Force;
@@ -54,16 +54,17 @@ function SbsMssqlCleanupBackups {
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
+            SbsWriteDebug "$blobUrl -> $cachedFile"
             $cachedFiles[$blobUrl] = $cachedFile
         }
     }
 
     # Get the files that are not present in the cache
     $filesToFetch = $blobUrls | Where-Object { -not $cachedFiles.ContainsKey($_) }
+    SbsWriteDebug "Fetching backup metadata for $($filesToFetch.Count) files";
 
     # Fetch the missing files using Get-DbaBackupInformation
     if ($filesToFetch.Count -gt 0) {
-        Write-Host "Fetching backup metadata for $($filesToFetch.Count) files"
         $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch;
         foreach ($file in $files) {
             $blobUrl = $file.Path[0];
@@ -71,13 +72,14 @@ function SbsMssqlCleanupBackups {
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
             $file | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
+            SbsWriteDebug "$blobUrl -> $cachedFile"
         }
     }
 
     $files = $cachedFiles.Values | Where-Object { $_.Database -eq $databaseName }
 
     if ($files.Count -eq 0) {
-        Write-Host "No backups found for database $databaseName"
+        SbsWriteDebug "No backups found for database $databaseName"
         return;
     }
     $fullType = "Database";
@@ -106,15 +108,15 @@ function SbsMssqlCleanupBackups {
 
 
     if ($filteredFiles.Count -eq 0) {
-        Write-Host "No backups found for database $databaseName that are older than $CleanupTime hours"
-        Write-Host $files | Format-List;
+        SbsWriteDebug "No backups found for database $databaseName that are older than $CleanupTime hours"
+        SbsWriteDebug $files | Format-List;
         return;
     }
 
     # Loop through the sorted files
     foreach ($file in $filteredFiles) {
         $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart("/");
-        Write-Host "Processing '$($file.Type)' backup deletion candidate '$($blobName)'";
+        SbsWriteDebug "Processing '$($file.Type)' backup deletion candidate '$($blobName)'";
         if ($file.Type -eq $fullType) {
 
             # Any new full backup
@@ -124,7 +126,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($null -eq $newerBackup) {
-                Write-Host "No newer full backup found"
+                SbsWriteDebug "No newer full backup found"
                 continue
             }
 
@@ -135,7 +137,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($dependentBackups.Count -gt 0) {
-                Write-Host "The following backups depend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
+                SbsWriteDebug "The following backups depend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
         } elseif ($file.Type -eq $diffType) {
@@ -147,7 +149,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($null -eq $newerBackup) {
-                Write-Host "No newer full backup found."
+                SbsWriteDebug "No newer full backup found."
                 continue
             }
 
@@ -158,7 +160,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($dependentBackups.Count -gt 0) {
-                Write-Host "The following backups dpend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
+                SbsWriteDebug "The following backups dpend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
         } elseif ($file.Type -eq $logType) {
@@ -169,17 +171,16 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($newerBackup.Count -eq 0) {
-                Write-Host "No newer full or diff backup found."
+                SbsWriteDebug "No newer full or diff backup found."
                 continue;
             }
         }
 
         # Perform cleanup for the file
         if ($WhatIf) {
-            Write-Host "Would delete blob $($file.Path)"
+            SbsWriteDebug "Would delete blob $($file.Path)"
         } else {
             # Full uri is not supported, we need the blob name
-            
             SbsWriteHost "Deleting backup blob '$($blobName)'"
             Remove-AzStorageBlob -Container $backupUrl.container -Context $ctx -Blob $blobName;
         }
