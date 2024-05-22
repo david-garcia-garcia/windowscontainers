@@ -6,7 +6,7 @@ function SbsWriteDebug {
         [string]$LogName = "Application"
     )
 
-    if (SbsGetEnvBool "SBS_DEBUG" -eq $false) {
+    if ((SbsGetEnvBool "SBS_DEBUG") -eq $false) {
         return;
     }
 

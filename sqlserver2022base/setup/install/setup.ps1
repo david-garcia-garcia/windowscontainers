@@ -11,17 +11,17 @@ $mssqlCuFixUrl = $Env:MSSQLINSTALL_CUFIX_URL;
 $cuFixPath = "c:\setup\assembly_CU12.7z";
 SbsDownloadFile -Url $mssqlCuFixUrl -Path $cuFixPath;
 7z x -y -o"C:\" "$cuFixPath"
+Remove-Item -Path $cuFixPath -Force;
 
 # Download CU
 New-Item -Path "C:\MSSQLUPDATES" -ItemType Directory;
 SbsDownloadFile -Url $mssqlCuUrl  -Path "C:\MSSQLUPDATES\SQLServer2022-CU.exe";
 
-# Download SQL Server ISO
+# Download SQL Server ISO and extract
 SbsDownloadFile -Url $mssqlIsoUrl -Path "C:\SQLServer2022-x64-ENU-Dev.iso";
-
-# Use 7z to extract the ISO contents
 New-Item -Path C:\SQLServerISO -ItemType Directory;
 7z x C:\SQLServer2022-x64-ENU-Dev.iso -oC:\SQLServerISO;
+Remove-Item -Path C:\SQLServer2022-x64-ENU-Dev.iso -Force;
 
 # Define directory paths
 $systemDbDir = 'C:\SQLSystemDB\Data';
@@ -38,7 +38,7 @@ New-Item -Path $systemDbDir, $systemDbLogDir, $userDbDir, $userDbLogDir, $backup
 . "C:\SQLServerISO\setup.exe" "/Q" "/ACTION=install" "/SUPPRESSPRIVACYSTATEMENTNOTICE" "/INSTANCEID=MSSQLSERVER" "/INSTANCENAME=MSSQLSERVER" "/FEATURES=SqlEngine,FullText" "/INSTALLSQLDATADIR=`"$installDir`"" "/SQLUSERDBDIR=`"$userDbDir`"" "/SQLUSERDBLOGDIR=`"$userDbLogDir`"" "/SQLTEMPDBDIR=`"$systemDbDir`"" "/SQLTEMPDBLOGDIR=`"$systemDbLogDir`"" "/SQLBACKUPDIR=`"$backupDir`"" "/UpdateEnabled=1" "/UseMicrosoftUpdate=0" "/TCPENABLED=1" "/NPENABLED=0" "/IACCEPTSQLSERVERLICENSETERMS" "/UPDATESOURCE=`"C:\MSSQLUPDATES`"" "/SQLSYSADMINACCOUNTS=ContainerAdministrator"
 
 # Cleanup: Remove the ISO and extracted files
-Remove-Item -Path C:\SQLServer2022-x64-ENU-Dev.iso -Force;
+
 Remove-Item -Path C:\SQLServerISO -Recurse -Force;
 Remove-Item -Path C:\MSSQLUPDATES -Recurse -Force;
 

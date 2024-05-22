@@ -258,9 +258,16 @@ function SbsMssqlRunBackups {
 			# LOGNOW is used to shutdown the container, the less actions we take here, the better,
 			# so no file cleanup or AZCOPY to LTS.
 			if (($backupType -ne "LOGNOW") -and ($backupCompleted -eq $true)) {
-				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
+				# Cleanup only makes sense if:
+				# * we have a backup URL (because otherwise it is already taken care of by Hallengren Backup Solution)
+				# * cleanup time is not null
+				# * requested backup type is NOT log, because LOG backups will never result in a cleanup needed
+				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime) -and ($solutionBackupType -ne "LOG")) {
 					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType and cleanupTime=$cleanupTime";
 					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+				}
+				else {
+					SbsWriteDebug "Skipped cleanup.";
 				}
 #
 				SbsWriteDebug "Calling database AZCOPY";
