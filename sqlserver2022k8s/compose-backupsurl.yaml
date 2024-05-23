@@ -37,6 +37,7 @@ services:
       # restores take 4 min for 70GB backups. With smaller databases, timings become
       # much more reasonable.
       - MSSQL_LIFECYCLE=BACKUP
+      - SBS_INITASYNC=true
       # We need to configure backup schedules
       - 'SBS_CRON_MssqlFull={"Weekly":true,"At":"2023-01-01T02:00:00", "RandomDelay": "00:30:00", "DaysOfWeek": ["Saturday"]}'
       - 'SBS_CRON_MssqlDifferential={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
@@ -60,13 +61,16 @@ services:
       - MSSQL_PATH_BACKUP=d:\backup
       - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_CLEARDATAPATHS=True
-      - MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups/6?sv=xx
+      #- MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPY_LOG=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPY_DIFF=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPY_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
       # Database info
       - MSSQL_DB_NAME=mytestdatabase
       - MSSQL_DB_RECOVERYMODEL=FULL
       - SBS_TEMPORARY=d:\temp
-      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_ENTRYPOINTERRORACTION=Continue
       # Output in the entrypoint loop
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]

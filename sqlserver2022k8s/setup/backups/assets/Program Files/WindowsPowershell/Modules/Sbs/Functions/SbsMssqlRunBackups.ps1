@@ -11,7 +11,9 @@ function SbsMssqlRunBackups {
 	)
 
 	$backupType = $backupType.ToUpper();
-
+	
+	# Workaround for https://github.com/dataplat/dbatools/issues/9335
+	Import-Module Az.Accounts, Az.Storage
 	Import-Module dbatools;
 
 	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
@@ -25,18 +27,14 @@ function SbsMssqlRunBackups {
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
 
-	# ZERO Defaults means keep enough to restore to the most recent consistent backup
-	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
-	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
-	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
-
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
 
-	# Use mirror for long term storage only
+	# Mirroring DOES not work with IMMUTABLE STORAGE, so it is not good for Long Term Retention
 	$mirrorUrlDiff = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_DIFF" -DefaultValue $null;
 	$mirrorUrlFull = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_FULL" -DefaultValue $null;
 	$mirrorUrlLog = SbsGetEnvString -Name "MSSQL_PATH_BACKUPMIRRORURL_LOG" -DefaultValue $null;
+
 	$mirrorUrl = $null;
 
 	$instance = "localhost";
@@ -45,13 +43,14 @@ function SbsMssqlRunBackups {
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
 	if ($null -ne $backupUrl) {
+		SbsWriteDebug "Loading environment MSSQL_PATH_BACKUPURL";
 		SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $backupUrl.url;
 	}
 
 	$StopWatch = new-object system.diagnostics.stopwatch
 	$StopWatch.Start();
 		
-	SbsWriteHost "Starting $($backupType) backup generation $($instance)"
+	SbsWriteHost "Starting '$($backupType)' backup generation for '$($instance)'"
 	$systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
 
 	# Recorremos todas las bases de datos
@@ -73,7 +72,8 @@ function SbsMssqlRunBackups {
 
 	if ($null -ne $dbs) {
 		$dbCount = $dbs.Count;
-	} else {
+	}
+	else {
 		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
 		return;
 	}
@@ -206,6 +206,7 @@ function SbsMssqlRunBackups {
 			}
 				
 			if (($backupType -eq "FULL") -and ($isSystemDb -eq $false)) {
+				SbsWriteDebug "Running Index Optimize Before Full Backup";
 				# Index optimize before the full
 				$indexCmd = $SqlConn.CreateCommand()
 				$indexCmd.CommandType = 'StoredProcedure'
@@ -241,20 +242,38 @@ function SbsMssqlRunBackups {
 			$result = $cmd.ExecuteScalar();
 			$SqlConn.Close();
 
+			$backupCompleted = $false;
+
 			if ($null -eq $result) {
 				SbsWriteHost "Backup completed succesfully.";
+				$backupCompleted = $true;
 			}
 			else {
 				SbsWriteError "Error running backup: $($result)";
 			}
 
-			# No cleanup for LOGNOW, because it is a forced closeup backup, we need this to be as fast as possible.
-			if ($backupType -ne "LOGNOW") {
-				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime)) {
-					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+			# LOGNOW is used to shutdown the container, the less actions we take here, the better,
+			# so no file cleanup or AZCOPY to LTS.
+			if (($backupType -ne "LOGNOW") -and ($backupCompleted -eq $true)) {
+				# Cleanup only makes sense if:
+				# * we have a backup URL (because otherwise it is already taken care of by Hallengren Backup Solution)
+				# * cleanup time is not null
+				# * requested backup type is NOT log, because LOG backups will never result in a cleanup needed
+				if ((-not $null -eq $backupUrl) -and ($solutionBackupType -ne "LOG")) {
+					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType";
+					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -DatabaseName  $db.Name;
 				}
+				else {
+					SbsWriteDebug "Skipped cleanup.";
+				}
+#
+				SbsWriteDebug "Calling LTS using AzCopy";
+				SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
 			}
-		}
+			else {
+				SbsWriteDebug "Skipping post-backup operations due to backup type being '$backupType' or backup not completed with success.";
+			}
+		} 
 		Catch {
 			$exceptions += $_.Exception
 			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($instance): $($_.Exception.Message)"
@@ -266,12 +285,10 @@ function SbsMssqlRunBackups {
 		throw (New-Object System.AggregateException -ArgumentList $exceptions)
 	}
 	elseif ($exceptions.Count -gt 0) {
-		{
-			throw $exceptions[0];
-		}
-
-		$StopWatch.Stop()
-		$Minutes = $StopWatch.Elapsed.TotalMinutes;
-		SbsWriteHost "$($backupType) backups finished in $($Minutes) min"
+		throw $exceptions[0];
 	}
+
+	$StopWatch.Stop()
+	$Minutes = $StopWatch.Elapsed.TotalMinutes;
+	SbsWriteHost "$($backupType) backups finished in $($Minutes) min";
 }

@@ -34,7 +34,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
 Write-Host "-----------------------------------------`n"
 
-Install-Module -Name Az.Storage -RequiredVersion 6.1.3 -Force;
+Install-Module -Name Az.Storage -RequiredVersion 6.2.0 -Force;
 
 # Cleanup
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

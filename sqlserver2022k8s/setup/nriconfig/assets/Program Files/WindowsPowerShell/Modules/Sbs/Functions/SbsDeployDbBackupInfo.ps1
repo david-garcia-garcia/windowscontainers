@@ -27,7 +27,8 @@ BEGIN
         recovery_model NVARCHAR(50),
         last_full_backup_size_MB NVARCHAR(50),
         last_diff_backup_size_MB NVARCHAR(50),
-        total_db_size_MB NVARCHAR(50)
+        total_db_size_MB NVARCHAR(50),
+        updated NVARCHAR(50)
     );
 
     DECLARE @DatabaseName NVARCHAR(128),
@@ -79,8 +80,8 @@ WHERE database_name = ' + QUOTENAME(@DatabaseName, N'''') + N';
 
         EXEC sp_executesql @DynamicSQL, N'@sinceFull NVARCHAR(50) OUTPUT, @sinceDiff NVARCHAR(50) OUTPUT, @sinceLog NVARCHAR(50) OUTPUT, @modPages NVARCHAR(50) OUTPUT, @modified NVARCHAR(50) OUTPUT, @hours_since_last_backup NVARCHAR(50) OUTPUT, @recovery_model NVARCHAR(50) OUTPUT, @last_full_backup_size_MB NVARCHAR(50) OUTPUT, @last_diff_backup_size_MB NVARCHAR(50) OUTPUT, @total_db_size_MB NVARCHAR(50) OUTPUT', @sinceFull OUTPUT, @sinceDiff OUTPUT, @sinceLog OUTPUT,@modPages OUTPUT, @modified OUTPUT, @hours_since_last_backup OUTPUT, @recovery_model OUTPUT, @last_full_backup_size_MB OUTPUT, @last_diff_backup_size_MB OUTPUT, @total_db_size_MB OUTPUT;
 
-        INSERT INTO @DatabaseInfo (db_Database, backupByDb_sinceFull, backupByDb_sinceDiff, backupByDb_sinceLog, backupByDb_modPages, backupByDb_modified, hours_since_last_backup, recovery_model, last_full_backup_size_MB, last_diff_backup_size_MB, total_db_size_MB)
-        VALUES (@DatabaseName, @sinceFull, @sinceDiff, @sinceLog, @modPages, @modified, @hours_since_last_backup, @recovery_model, @last_full_backup_size_MB, @last_diff_backup_size_MB, @total_db_size_MB);
+        INSERT INTO @DatabaseInfo (db_Database, backupByDb_sinceFull, backupByDb_sinceDiff, backupByDb_sinceLog, backupByDb_modPages, backupByDb_modified, hours_since_last_backup, recovery_model, last_full_backup_size_MB, last_diff_backup_size_MB, total_db_size_MB, updated)
+        VALUES (@DatabaseName, @sinceFull, @sinceDiff, @sinceLog, @modPages, @modified, @hours_since_last_backup, @recovery_model, @last_full_backup_size_MB, @last_diff_backup_size_MB, @total_db_size_MB, FORMAT(GETUTCDATE(), 'yyyy-MM-ddTHH:mm:ssZ'));
 
         FETCH NEXT FROM DatabaseCursor INTO @DatabaseName;
     END
@@ -108,7 +109,8 @@ CREATE TABLE SbsDatabaseBackupInfo
         recovery_model NVARCHAR(50),
         last_full_backup_size_MB NVARCHAR(50),
         last_diff_backup_size_MB NVARCHAR(50),
-        total_db_size_MB NVARCHAR(50)
+        total_db_size_MB NVARCHAR(50),
+        updated NVARCHAR(50)
 );
 "@
 

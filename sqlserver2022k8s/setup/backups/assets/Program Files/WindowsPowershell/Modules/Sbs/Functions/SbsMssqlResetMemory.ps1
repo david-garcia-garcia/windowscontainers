@@ -2,6 +2,11 @@ function SbsMssqlResetMemory {
 
     Import-Module dbatools;
 
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$reduceTo
+    )
+
     # Function to get memory usage
     function Get-MemoryUsage {
         param ($SqlInstance)
@@ -26,9 +31,11 @@ FROM sys.dm_os_sys_memory
 
     # Get the current max server memory setting
     $currentMaxMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MaxValue;
-    $currentMinMemory = 512;
 
-    $reducedMaxMemory = [Math]::Max(($currentMaxMemory * 0.75), $currentMinMemory);
+    if ($reduceTo -le $currentMaxMemory) {
+        SbsWriteHost "Memory reduction requested $reduceTo is lower than currently max memory of $currentMaxMemory";
+        return;
+    }
 
     Set-DbaMaxMemory -SqlInstance $sqlServer -Max $reducedMaxMemory;
 

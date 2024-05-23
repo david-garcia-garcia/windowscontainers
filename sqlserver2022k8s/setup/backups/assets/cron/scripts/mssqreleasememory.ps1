@@ -1,2 +1,3 @@
 Import-Module Sbs;
-SbsMssqlResetMemory;
+$reduceTo = SbsGetEnvInt -Name "MSSQL_BACKUP_RELEASEMEMORY" -DefaultValue $null;
+SbsMssqlResetMemory -reduceTo $reduceTo;

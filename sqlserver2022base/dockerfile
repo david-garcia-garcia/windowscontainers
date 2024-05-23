@@ -3,6 +3,14 @@
 ARG IMG_SERVERCORE2022
 FROM ${IMG_SERVERCORE2022}
 
+ARG MSSQLINSTALL_ISO_URL
+ARG MSSQLINSTALL_CU_URL
+ARG MSSQLINSTALL_CUFIX_URL
+
+ENV MSSQLINSTALL_ISO_URL=$MSSQLINSTALL_ISO_URL
+ENV MSSQLINSTALL_CU_URL=$MSSQLINSTALL_CU_URL
+ENV MSSQLINSTALL_CUFIX_URL=$MSSQLINSTALL_CUFIX_URL
+
 SHELL ["powershell.exe"]
 
 # https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#ProperUse

@@ -34,6 +34,7 @@ services:
       - MSSQL_PATH_BACKUP=d:\backup
       - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_PATH_SYSTEM=d:\system
+      - MSSQL_BACKUP_RELEASEMEMORY=400
       - SBS_TEMPORARY=d:\temp
       - SBS_ENTRYPOINTERRORACTION=Stop
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
