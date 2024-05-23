@@ -8,12 +8,25 @@ function SbsMssqlCleanupBackups {
         [object]$SqlInstance,
         [Parameter(Mandatory = $true)]
         [string]$Url,
-        [ValidateSet('FULL', 'DIFF', 'LOG')]
-        [string] $Type,
+        [Parameter(Mandatory = $true)]
         [string] $DatabaseName,
-        [int] $CleanupTime,
-        [bool] $WhatIf
+        [int] $CleanupTimeFull = $null,
+        [int] $CleanupTimeDiff = $null,
+        [int] $CleanupTimeLog = $null,
+        [bool] $WhatIf = $false
     )
+
+    if ($null -eq $cleanupTimeLog) {
+	    $cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
+    }
+
+    if ($null -eq $cleanupTimeDiff) {
+	    $cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
+    }
+
+    if ($null -eq $cleanupTimeFull) {
+	    $cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
+    }
 
     $backupUrl = SbsParseSasUrl -Url $Url;
 
@@ -24,7 +37,10 @@ function SbsMssqlCleanupBackups {
 
     SbsEnsureCredentialForSasUrl -SqlInstance $SqlInstance -Url $backupUrl.url;
 
+    SbsWriteDebug "Connecting to storage account $($backupUrl.baseUrlWithPrefix) to search for stale backups.";
     $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
+
+    SbsWriteDebug "Retrieving backup information from storage account $($backupUrl.baseUrlWithPrefix) to search for stale backups.";
     $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
         Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
 
@@ -54,7 +70,7 @@ function SbsMssqlCleanupBackups {
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
-            SbsWriteDebug "$blobUrl -> $cachedFile"
+            SbsWriteDebug "$backupUrl <- $cacheFilePath"
             $cachedFiles[$blobUrl] = $cachedFile
         }
     }
@@ -72,7 +88,7 @@ function SbsMssqlCleanupBackups {
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
             $file | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
-            SbsWriteDebug "$blobUrl -> $cachedFile"
+            SbsWriteDebug "$blobUrl <- $cacheFilePath"
         }
     }
 
@@ -82,30 +98,17 @@ function SbsMssqlCleanupBackups {
         SbsWriteDebug "No backups found for database $databaseName"
         return;
     }
+
     $fullType = "Database";
     $diffType = "Database Differential";
     $logType = "Transaction Log";
 
-    $filterType = $null;
-
-    switch ($Type) {
-        'FULL' {
-            $filterType = $fullType;
-        }
-        'DIFF' {
-            $filterType = $diffType;
-        }
-        'LOG' {
-            $filterType = $logType;
-        }
-    }
-
     # Get candidates for deletion
     $filteredFiles = $files | Where-Object {
-        $_.Type -eq $filterType -and
-        $_.Start -lt (Get-Date).AddHours(-$CleanupTime)
-    } | Sort-Object -Property Start;
-
+        ($_.Type -eq $fullType -and $_.Start -lt (Get-Date).AddHours(-$CleanupTimeFull)) -or
+        ($_.Type -eq $diffType -and $_.Start -lt (Get-Date).AddHours(-$CleanupTimeDiff)) -or
+        ($_.Type -eq $logType -and $_.Start -lt (Get-Date).AddHours(-$CleanupTimeLog))
+    } | Sort-Object -Property LastLSN;
 
     if ($filteredFiles.Count -eq 0) {
         SbsWriteDebug "No backups found for database $databaseName that are older than $CleanupTime hours"
@@ -160,7 +163,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($dependentBackups.Count -gt 0) {
-                SbsWriteDebug "The following backups dpend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
+                SbsWriteDebug "The following backups dpend on the diff backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
         } elseif ($file.Type -eq $logType) {

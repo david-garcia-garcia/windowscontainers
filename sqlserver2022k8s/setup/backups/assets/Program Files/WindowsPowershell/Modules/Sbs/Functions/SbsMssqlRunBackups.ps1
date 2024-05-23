@@ -11,7 +11,9 @@ function SbsMssqlRunBackups {
 	)
 
 	$backupType = $backupType.ToUpper();
-
+	
+	# Workaround for https://github.com/dataplat/dbatools/issues/9335
+	Import-Module Az.Accounts, Az.Storage
 	Import-Module dbatools;
 
 	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
@@ -24,11 +26,6 @@ function SbsMssqlRunBackups {
 	# Default to 10min or 100Mb whatever comes first
 	$logSizeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" -DefaultValue 100;
 	$timeSinceLastLogBackup = SbsGetEnvInt -Name "MSSQL_BACKUP_TIMESINCELASTLOGBACKUP" -DefaultValue 600;
-
-	# ZERO Defaults means keep enough to restore to the most recent consistent backup
-	$cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
-	$cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
-	$cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
 
 	$modificationLevel = SbsGetEnvInt -Name "MSSQL_BACKUP_MODIFICATIONLEVEL" -DefaultValue 30;
 	$changeBackupType = SbsGetEnvString -Name "MSSQL_BACKUP_CHANGEBACKUPTYPE" -DefaultValue "Y";
@@ -262,15 +259,15 @@ function SbsMssqlRunBackups {
 				# * we have a backup URL (because otherwise it is already taken care of by Hallengren Backup Solution)
 				# * cleanup time is not null
 				# * requested backup type is NOT log, because LOG backups will never result in a cleanup needed
-				if ((-not $null -eq $backupUrl) -and ($null -ne $cleanupTime) -and ($solutionBackupType -ne "LOG")) {
-					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType and cleanupTime=$cleanupTime";
-					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -Type $solutionBackupType -DatabaseName  $db.Name -CleanupTime $cleanupTime;
+				if ((-not $null -eq $backupUrl) -and ($solutionBackupType -ne "LOG")) {
+					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType";
+					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -DatabaseName  $db.Name;
 				}
 				else {
 					SbsWriteDebug "Skipped cleanup.";
 				}
 #
-				SbsWriteDebug "Calling database AZCOPY";
+				SbsWriteDebug "Calling LTS using AzCopy";
 				SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
 			}
 			else {
