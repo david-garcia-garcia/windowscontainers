@@ -1,7 +1,7 @@
 # Function to check and create or update the credential
 function SbsEnsureSqlCredential {
     param (
-        [string]$SqlInstance,
+        [DbaInstanceParameter]$SqlInstance,
         [string]$CredentialName,
         [string]$SasToken
     )

@@ -19,16 +19,21 @@ There is a script to build and push all of the images to a private repository in
 Make sure to replace the URL to your private repository in the script, and that you are authenticated to push images:
 
 ```powershell
-# Installation media for MSSQL, Cumulative updates and patch (see https://github.com/microsoft/mssql-docker/issues/540)
+# Rename envsettings.ps1.template to envsettings.ps1 and complete build params
 $Env:MSSQLINSTALL_ISO_URL = "https://xx.blob.core.windows.net/software/mssql.iso";
 $Env:MSSQLINSTALL_CU_URL = "https://xx.blob.core.windows.net/software/cu.exe";
 $Env:MSSQLINSTALL_CUFIX_URL = "https://xx.blob.core.windows.net/software/cufix.7z";
+$ENV:REGISTRY_PATH = "myregistry.azurecr.io/core/"
+$ENV:IMAGE_VERSION = "1.0.32";
 
-# Set the image names in ENV using the imagenames script
-.\imagenames.ps1 "myregistry.azurecr.io/core/"
+# Build the images
+.\buildall.ps1
 
-# Example usage with pushing the images (must end in slash)
-.\buildall.ps1 -push $true
+# Build and push to the registry
+.\buildall.ps1 -Push $true
+
+# Build and run tests
+.\buildall.ps1 -Test $true
 ```
 
 ## Image List

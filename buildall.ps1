@@ -8,6 +8,8 @@ param (
     [string]$Images = ".*"
 )
 
+.\imagenames.ps1
+
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'

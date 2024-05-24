@@ -1,20 +1,29 @@
 # USE THIS TO SET THE IMAGE NAMES FOR THE BUILD
 
-param (
-    [string]$containerRegistry
+param ()
+
+.\envsettings.ps1
+
+# Define the array of environment variable names to check
+$envVarsToCheck = @(
+    "MSSQLINSTALL_ISO_URL",
+    "MSSQLINSTALL_CU_URL",
+    "MSSQLINSTALL_CUFIX_URL",
+    "REGISTRY_PATH",
+    "IMAGE_VERSION"
 )
 
-if (-not $containerRegistry -or -not $containerRegistry.EndsWith("/")) {
-    Write-Error "The containerRegistry parameter is either empty or does not end with a slash."
-    exit
+# Check each environment variable
+foreach ($envVarName in $envVarsToCheck) {
+    $envVarValue = [System.Environment]::GetEnvironmentVariable($envVarName)
+    
+    if ([string]::IsNullOrWhiteSpace($envVarValue)) {
+        throw "Environment variable '$envVarName' is empty or not set. Rename envsettings.ps1.template to envsettings.ps1 and complete the environment variables."
+    }
 }
 
-$version = "1.0.32";
-
-# Installation media for MSSQL
-$Env:MSSQLINSTALL_ISO_URL = "";
-$Env:MSSQLINSTALL_CU_URL = "";
-$Env:MSSQLINSTALL_CUFIX_URL = "";
+$version = $ENV:IMAGE_VERSION;
+$containerregistry = $ENV:REGISTRY_PATH;
 
 # Image names
 $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";

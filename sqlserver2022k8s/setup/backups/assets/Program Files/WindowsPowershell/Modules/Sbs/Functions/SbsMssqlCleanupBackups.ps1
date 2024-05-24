@@ -5,15 +5,25 @@
 function SbsMssqlCleanupBackups {
     param(
         [Parameter(Mandatory = $true)]
-        [object]$SqlInstance,
+        [object]
+        $SqlInstance,
         [Parameter(Mandatory = $true)]
-        [string]$Url,
+        [string]
+        $Url,
         [Parameter(Mandatory = $true)]
-        [string] $DatabaseName,
-        [int] $CleanupTimeFull = $null,
-        [int] $CleanupTimeDiff = $null,
-        [int] $CleanupTimeLog = $null,
-        [bool] $WhatIf = $false
+        [string] 
+        $DatabaseName,
+        [AllowNull()]
+        [Nullable[System.Int32]]
+        $CleanupTimeFull = $null,
+        [AllowNull()]
+        [Nullable[System.Int32]]
+        $CleanupTimeDiff = $null,
+        [AllowNull()]
+        [Nullable[System.Int32]]
+        $CleanupTimeLog = $null,
+        [bool] 
+        $WhatIf = $false
     )
 
     if ($null -eq $cleanupTimeLog) {
@@ -27,6 +37,10 @@ function SbsMssqlCleanupBackups {
     if ($null -eq $cleanupTimeFull) {
 	    $cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
     }
+
+    SbsWriteDebug "Blob Cleanup Time for LOG: $($cleanupTimeLog)H";
+    SbsWriteDebug "Blob Cleanup Time for DIFF: $($cleanupTimeDiff)H";
+    SbsWriteDebug "Blob Cleanup Time for FULL: $($cleanupTimeFull)H";
 
     $backupUrl = SbsParseSasUrl -Url $Url;
 
@@ -70,7 +84,20 @@ function SbsMssqlCleanupBackups {
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
-            SbsWriteDebug "$backupUrl <- $cacheFilePath"
+            
+            $hashTable = @{}
+            $cachedFile.PSObject.Properties | ForEach-Object {
+                $hashTable[$_.Name] = $_.Value;
+            }
+
+            # Workaround for BigInt not serializing properly!
+            # https://github.com/PowerShell/PowerShell/pull/21000
+            $hashTable['LastLsn'] = [bigint]::Parse($hashTable['LastLsn']);
+            $hashTable['FirstLsn'] = [bigint]::Parse($hashTable['FirstLsn']);
+            $hashTable['DatabaseBackupLsn'] = [bigint]::Parse($hashTable['DatabaseBackupLsn']);
+            $hashTable['CheckpointLsn'] = [bigint]::Parse($hashTable['CheckpointLsn']);
+            
+            #SbsWriteDebug "$blobUrl <- $cacheFilePath"
             $cachedFiles[$blobUrl] = $cachedFile
         }
     }
@@ -83,12 +110,27 @@ function SbsMssqlCleanupBackups {
     if ($filesToFetch.Count -gt 0) {
         $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch;
         foreach ($file in $files) {
+         
             $blobUrl = $file.Path[0];
             $blobName = ($blobUrl -replace $backupUrl.baseUrl, '').TrimStart('/');
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
-            $file | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
+
+            # Workaround for BigInt not serializing properly!
+            # https://github.com/PowerShell/PowerShell/pull/21000
+            $hashTable = @{}
+            $file.PSObject.Properties | ForEach-Object {
+                $hashTable[$_.Name] = $_.Value;
+            }
+
+            $hashTable['LastLsn'] = $hashTable['LastLsn'].ToString();
+            $hashTable['FirstLsn'] = $hashTable['FirstLsn'].ToString();
+            $hashTable['DatabaseBackupLsn'] = $hashTable['DatabaseBackupLsn'].ToString();
+            $hashTable['CheckpointLsn'] = $hashTable['CheckpointLsn'].ToString();
+
+            $hashTable | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
+            
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
-            SbsWriteDebug "$blobUrl <- $cacheFilePath"
+            #SbsWriteDebug "$blobUrl <- $cacheFilePath"
         }
     }
 
@@ -111,8 +153,7 @@ function SbsMssqlCleanupBackups {
     } | Sort-Object -Property LastLSN;
 
     if ($filteredFiles.Count -eq 0) {
-        SbsWriteDebug "No backups found for database $databaseName that are older than $CleanupTime hours"
-        SbsWriteDebug $files | Format-List;
+        SbsWriteHost "No backup files found for database '$($databaseName)' that meet the staleness criteria."
         return;
     }
 
@@ -120,23 +161,24 @@ function SbsMssqlCleanupBackups {
     foreach ($file in $filteredFiles) {
         $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart("/");
         SbsWriteDebug "Processing '$($file.Type)' backup deletion candidate '$($blobName)'";
+        SbsWriteDebug "Backup from $($file.FirstLSN) to $($file.LastLSN)";
         if ($file.Type -eq $fullType) {
 
             # Any new full backup
             $newerBackup = $files | Where-Object {
                 $_.Type -eq $fullType -and
-                $_.Start -gt $file.Start
+                $_.FirstLsn -gt $file.FirstLsn
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer full backup found"
-                continue
+                SbsWriteDebug "No newer full backup found";
+                continue;
             }
 
             # Check if there are any DIFF or LOG backups that depend on this full backup
             $dependentBackups = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $logType)) -and
-                $_.LastLSN -eq $file.FirstLSN
+                $_.FirstLsn -eq $file.LastLsn
             }
 
             if ($dependentBackups.Count -gt 0) {
@@ -147,19 +189,19 @@ function SbsMssqlCleanupBackups {
 
             # Any new diff
             $newerBackup = $files | Where-Object {
-                $_.Type -eq $diffType -and
-                $_.Start -gt $file.Start
+                (($_.Type -eq $diffType) -or ($_.Type -eq $fullType)) -and
+                $_.FirstLsn -gt $file.LastLsn
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer full backup found."
+                SbsWriteDebug "No newer diff of full backup found."
                 continue
             }
 
             # Check if there are any LOG backups that depend on this diff backup
             $dependentBackups = $files | Where-Object {
                 ($_.Type -eq $logType) -and
-                $_.FirstLSN -eq $file.LastLSN
+                $_.FirstLsn -eq $file.LastLsn
             }
 
             if ($dependentBackups.Count -gt 0) {
@@ -170,7 +212,7 @@ function SbsMssqlCleanupBackups {
             # Only delete LOG if there is a newer full or diff
             $newerBackup = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $fullType)) -and
-                ($_.Start -gt $file.Start)
+                ($_.FirstLsn -gt $file.LastLsn)
             }
 
             if ($newerBackup.Count -eq 0) {
