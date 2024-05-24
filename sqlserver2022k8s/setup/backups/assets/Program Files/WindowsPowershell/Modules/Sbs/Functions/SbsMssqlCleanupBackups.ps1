@@ -5,15 +5,25 @@
 function SbsMssqlCleanupBackups {
     param(
         [Parameter(Mandatory = $true)]
-        [object]$SqlInstance,
+        [object]
+        $SqlInstance,
         [Parameter(Mandatory = $true)]
-        [string]$Url,
+        [string]
+        $Url,
         [Parameter(Mandatory = $true)]
-        [string] $DatabaseName,
-        [int] $CleanupTimeFull = $null,
-        [int] $CleanupTimeDiff = $null,
-        [int] $CleanupTimeLog = $null,
-        [bool] $WhatIf = $false
+        [string] 
+        $DatabaseName,
+        [AllowNull()]
+        [Nullable[System.Int32]]
+        $CleanupTimeFull = $null,
+        [AllowNull()]
+        [Nullable[System.Int32]]
+        $CleanupTimeDiff = $null,
+        [AllowNull()]
+        [Nullable[System.Int32]]
+        $CleanupTimeLog = $null,
+        [bool] 
+        $WhatIf = $false
     )
 
     if ($null -eq $cleanupTimeLog) {
@@ -27,6 +37,10 @@ function SbsMssqlCleanupBackups {
     if ($null -eq $cleanupTimeFull) {
 	    $cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
     }
+
+    SbsWriteDebug "Blob Cleanup Time for LOG: $($cleanupTimeLog)H";
+    SbsWriteDebug "Blob Cleanup Time for DIFF: $($cleanupTimeDiff)H";
+    SbsWriteDebug "Blob Cleanup Time for FULL: $($cleanupTimeFull)H";
 
     $backupUrl = SbsParseSasUrl -Url $Url;
 
@@ -83,7 +97,7 @@ function SbsMssqlCleanupBackups {
             $hashTable['DatabaseBackupLsn'] = [bigint]::Parse($hashTable['DatabaseBackupLsn']);
             $hashTable['CheckpointLsn'] = [bigint]::Parse($hashTable['CheckpointLsn']);
             
-            SbsWriteDebug "$backupUrl <- $cacheFilePath"
+            #SbsWriteDebug "$blobUrl <- $cacheFilePath"
             $cachedFiles[$blobUrl] = $cachedFile
         }
     }
@@ -116,7 +130,7 @@ function SbsMssqlCleanupBackups {
             $hashTable | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
             
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
-            SbsWriteDebug "$blobUrl <- $cacheFilePath"
+            #SbsWriteDebug "$blobUrl <- $cacheFilePath"
         }
     }
 
@@ -139,8 +153,7 @@ function SbsMssqlCleanupBackups {
     } | Sort-Object -Property LastLSN;
 
     if ($filteredFiles.Count -eq 0) {
-        SbsWriteDebug "No backups found for database $databaseName that are older than $CleanupTime hours"
-        SbsWriteDebug $files | Format-List;
+        SbsWriteHost "No backup files found for database '$($databaseName)' that meet the staleness criteria."
         return;
     }
 

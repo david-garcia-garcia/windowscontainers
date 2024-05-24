@@ -140,21 +140,23 @@ function SbsMssqlRunBackups {
 
 			switch ($solutionBackupType) {
 				"FULL" {
-					$cleanupTime = $cleanupTimeFull;
+					$cleanupTime = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
 					$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlFull;
 				}
 				"DIFF" {
-					$cleanupTime = $cleanupTimeDiff;
+					$cleanupTime = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
 					$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlDiff;
 				}
 				"LOG" {
-					$cleanupTime = $cleanupTimeLog;
+					$cleanupTime = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
 					$mirrorUrl = SbsParseSasUrl -Url $mirrorUrlLog;
 				}
 			}
 
+			SbsWriteDebug "Solution Cleanup Time: $($cleanupTime)H";
+
 			if ($null -ne $mirrorUrl) {
-				Write-Host "Using mirror URL $($mirrorUrl.baseUrlWithPrefix)"
+				SbsWriteDebug "Using mirror URL $($mirrorUrl.baseUrlWithPrefix)"
 				SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $mirrorUrl.url;
 			}
 
@@ -166,7 +168,8 @@ function SbsMssqlRunBackups {
 			# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
 			# we could have an APP name?
 			# $directoryStructure = "{ServerName}{$InstanceName}{DirectorySeparator}{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
-			$directoryStructure = "{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
+			# $directoryStructure = "{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
+			$directoryStructure = "{DatabaseName}";
 
 			# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 			$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
@@ -210,6 +213,7 @@ function SbsMssqlRunBackups {
 			if (($backupType -eq "FULL") -and ($isSystemDb -eq $false)) {
 				# SbsWriteDebug "Running Index Optimize Before Full Backup";
 				# Index optimize before the full
+				SbsWriteHost "Starting IndexOptimize before full backup";
 				$parameters2 = @{}
 				$parameters2["@Databases"] = $db.Name;
 				$parameters2["@FragmentationLevel1"] = 30;
@@ -221,6 +225,7 @@ function SbsMssqlRunBackups {
 				$parameters2["@TimeLimit"] = 600;
 				$parameters2["@LogToTable"] = 'Y';
 				Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1200 -Database "master" -Query "IndexOptimize" -SqlParameter $parameters2 -CommandType StoredProcedure -EnableException;
+				SbsWriteHost "Finished IndexOptimize before full backup";
 			}
 				
 			# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
@@ -265,8 +270,13 @@ function SbsMssqlRunBackups {
 					SbsWriteDebug "Skipped cleanup.";
 				}
 
-				SbsWriteDebug "Calling LTS using AzCopy";
-				SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
+				if ((-not $null -eq $backupUrl)) {
+					SbsWriteDebug "Calling LTS using AzCopy";
+					SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
+				}
+				else {
+					SbsWriteDebug "LTS AzCopy skipped because not backing up to URL.";
+				}
 			}
 			else {
 				SbsWriteDebug "Skipping post-backup operations due to backup type being '$backupType' or backup not completed with success.";
