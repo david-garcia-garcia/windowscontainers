@@ -70,12 +70,18 @@ function SbsMssqlCleanupBackups {
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
+            
+            $hashTable = @{}
+            $cachedFile.PSObject.Properties | ForEach-Object {
+                $hashTable[$_.Name] = $_.Value;
+            }
 
             # Workaround for BigInt not serializing properly!
             # https://github.com/PowerShell/PowerShell/pull/21000
-            $cachedFile['LastLSN'] = [bigint]::Parse($cachedFile['LastLSN']);
-            $cachedFile['FirstLSN'] = [bigint]::Parse($cachedFile['FirstLSN']);
-            $cachedFile['DatabaseBackupLsn'] = [bigint]::Parse($cachedFile['DatabaseBackupLsn']);
+            $hashTable['LastLsn'] = [bigint]::Parse($hashTable['LastLsn']);
+            $hashTable['FirstLsn'] = [bigint]::Parse($hashTable['FirstLsn']);
+            $hashTable['DatabaseBackupLsn'] = [bigint]::Parse($hashTable['DatabaseBackupLsn']);
+            $hashTable['CheckpointLsn'] = [bigint]::Parse($hashTable['CheckpointLsn']);
             
             SbsWriteDebug "$backupUrl <- $cacheFilePath"
             $cachedFiles[$blobUrl] = $cachedFile
@@ -102,10 +108,11 @@ function SbsMssqlCleanupBackups {
                 $hashTable[$_.Name] = $_.Value;
             }
 
-            $hashTable['LastLSN'] = $hashTable['LastLSN'].ToString();
-            $hashTable['FirstLSN'] = $hashTable['FirstLSN'].ToString();
+            $hashTable['LastLsn'] = $hashTable['LastLsn'].ToString();
+            $hashTable['FirstLsn'] = $hashTable['FirstLsn'].ToString();
             $hashTable['DatabaseBackupLsn'] = $hashTable['DatabaseBackupLsn'].ToString();
-            
+            $hashTable['CheckpointLsn'] = $hashTable['CheckpointLsn'].ToString();
+
             $hashTable | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
             
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
@@ -147,7 +154,7 @@ function SbsMssqlCleanupBackups {
             # Any new full backup
             $newerBackup = $files | Where-Object {
                 $_.Type -eq $fullType -and
-                $_.FirstLSN -gt $file.FirstLSN
+                $_.FirstLsn -gt $file.FirstLsn
             }
 
             if ($null -eq $newerBackup) {
@@ -158,7 +165,7 @@ function SbsMssqlCleanupBackups {
             # Check if there are any DIFF or LOG backups that depend on this full backup
             $dependentBackups = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $logType)) -and
-                $_.FirstLSN -eq $file.LastLSN
+                $_.FirstLsn -eq $file.LastLsn
             }
 
             if ($dependentBackups.Count -gt 0) {
@@ -170,7 +177,7 @@ function SbsMssqlCleanupBackups {
             # Any new diff
             $newerBackup = $files | Where-Object {
                 $_.Type -eq $diffType -and
-                $_.FirstLSN -gt $file.LastLSN
+                $_.FirstLsn -gt $file.LastLsn
             }
 
             if ($null -eq $newerBackup) {
@@ -181,7 +188,7 @@ function SbsMssqlCleanupBackups {
             # Check if there are any LOG backups that depend on this diff backup
             $dependentBackups = $files | Where-Object {
                 ($_.Type -eq $logType) -and
-                $_.FirstLSN -eq $file.LastLSN
+                $_.FirstLsn -eq $file.LastLsn
             }
 
             if ($dependentBackups.Count -gt 0) {
@@ -192,7 +199,7 @@ function SbsMssqlCleanupBackups {
             # Only delete LOG if there is a newer full or diff
             $newerBackup = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $fullType)) -and
-                ($_.FirstLSN -gt $file.LastLSN)
+                ($_.FirstLsn -gt $file.LastLsn)
             }
 
             if ($newerBackup.Count -eq 0) {
