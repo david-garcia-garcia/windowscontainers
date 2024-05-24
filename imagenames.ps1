@@ -11,6 +11,8 @@ if (-not $containerRegistry -or -not $containerRegistry.EndsWith("/")) {
 
 $version = "1.0.32";
 
+.\envsettings.ps1
+
 # Image names
 $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";
 $Env:IMG_SERVERCORE2022IIS = "$($containerregistry)servercore2022iis:$($version)";
