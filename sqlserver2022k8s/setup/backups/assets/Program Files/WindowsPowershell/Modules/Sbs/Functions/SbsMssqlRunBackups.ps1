@@ -1,13 +1,17 @@
 function SbsMssqlRunBackups {
 
 	param(
-		[Parameter(Mandatory = $true)]
 		# FULL = FULL backup
 		# DIFF = DIFF backup, will be promoted to FULL according to MSSQL_BACKUP_CHANGEBACKUPTYPE+MSSQL_BACKUP_MODIFICATIONLEVEL
 		# LOG = LOG backup, only taken if MSSQL_BACKUP_LOGSIZESINCELASTBACKUP/MSSQL_BACKUP_TIMESINCELASTLOGBACKUP
 		# LOGNOW = Run a log backup immediately
+		[Parameter(Mandatory = $true)]
 		[ValidateSet('FULL', 'DIFF', 'LOG', 'SYSTEM', 'LOGNOW')]
-		[string]$backupType
+		[string]$backupType,
+
+		# The database instance, default to localhost
+		[Object]
+		$sqlInstance = $null
 	)
 
 	$backupType = $backupType.ToUpper();
@@ -37,9 +41,14 @@ function SbsMssqlRunBackups {
 
 	$mirrorUrl = $null;
 
-	$instance = "localhost";
-	Test-DbaConnection $instance;
-	$sqlInstance = Connect-DbaInstance $instance;
+	if (($null -eq $sqlInstance) -or ($sqlInstance -eq "")) {
+	  # "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
+	  $sqlInstance = "localhost";
+	  $sqlInstance = Connect-DbaInstance $sqlInstance;
+	}
+
+	$serverName = Invoke-DbaQuery -SqlInstance $connection -Query "SELECT @@SERVERNAME AS name" -EnableException;
+	SbsWriteDebug "Server name: $($serverName['name'])";
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
 	if ($null -ne $backupUrl) {
@@ -50,7 +59,7 @@ function SbsMssqlRunBackups {
 	$StopWatch = new-object system.diagnostics.stopwatch
 	$StopWatch.Start();
 		
-	SbsWriteHost "Starting '$($backupType)' backup generation for '$($instance)'"
+	SbsWriteHost "Starting '$($backupType)' backup generation for '$($instanceFriendlyName)'"
 	$systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
 
 	# Recorremos todas las bases de datos
@@ -62,7 +71,7 @@ function SbsMssqlRunBackups {
 	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
 		$dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
 		if ($dbs.Count -eq 0) {
-			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($instance)";
+			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($instanceFriendlyName)";
 			return;
 		}
 	}
@@ -74,7 +83,7 @@ function SbsMssqlRunBackups {
 		$dbCount = $dbs.Count;
 	}
 	else {
-		SbsWriteWarning "Could not obtain databases to backup in instance: $($instance)";
+		SbsWriteWarning "Could not obtain databases to backup in instance: $($instanceFriendlyName)";
 		return;
 	}
 
@@ -108,16 +117,6 @@ function SbsMssqlRunBackups {
 				}
 			}
 			
-			# Llamamos al stored procedure que genera los backups
-			$SqlConn = New-Object System.Data.SqlClient.SqlConnection("Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;");
-			$SqlConn.Open();
-
-			$cmd = $SqlConn.CreateCommand();
-			$cmd.CommandType = 'StoredProcedure';
-			$cmd.CommandText = 'dbo.DatabaseBackup';
-					
-			$cmd.CommandTimeout = 1200;
-
 			$solutionBackupType = $backupType;
 
 			if ($backupType -eq "SYSTEM") {
@@ -172,75 +171,76 @@ function SbsMssqlRunBackups {
 			# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 			$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 
+			$parameters = @{}
+
 			if (-not $null -eq $backupUrl) {
 				Write-Host "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
-				$cmd.Parameters.AddWithValue("@Url", $backupUrl.baseUrlWithPrefix) | Out-Null
-				$cmd.Parameters.AddWithValue("@MaxTransferSize", 4194304) | Out-Null
-				$cmd.Parameters.AddWithValue("@BlockSize", 65536) | Out-Null
+				$parameters["@Url"] = $backupUrl.baseUrlWithPrefix;
+				$parameters["@MaxTransferSize"] = 4194304;
+				$parameters["@BlockSize"] = 65536;
 			}
 			else {
 				# These are incompatible with the use of URL
-				$cmd.Parameters.AddWithValue("@Directory", $databaseBackupDirectory) | Out-Null
-				$cmd.Parameters.AddWithValue("@CleanupTime", "$cleanupTime") | Out-Null
+				$parameters["@Directory"] = $databaseBackupDirectory;
+				$parameters["@CleanupTime"] = "$cleanupTime";
 			}
 
 			if (-not $null -eq $mirrorUrl) {
-				$cmd.Parameters.AddWithValue("@MirrorURL", $mirrorUrl.baseUrlWithPrefix) | Out-Null
+				$parameters["@MirrorURL"] = $mirrorUrl.baseUrlWithPrefix;
 			}
 
-			$cmd.Parameters.AddWithValue("@DirectoryStructure", $directoryStructure ) | Out-Null
-			$cmd.Parameters.AddWithValue("@fileName", $fileName ) | Out-Null
-			$cmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
+			$parameters["@DirectoryStructure"] = $directoryStructure;
+			$parameters["@fileName"] = $fileName;
+			$parameters["@Databases"] = $db.Name;
 				
-			$cmd.Parameters.AddWithValue("@BackupType", $solutionBackupType) | Out-Null
-			$cmd.Parameters.AddWithValue("@Verify", "N") | Out-Null
-			$cmd.Parameters.AddWithValue("@Compress", "Y") | Out-Null
+			$parameters["@BackupType"] = $solutionBackupType;
+			$parameters["@Verify"] = "N";
+			$parameters["@Compress"] = "Y";
 
-			$cmd.Parameters.AddWithValue("@CheckSum", "N") | Out-Null
-			$cmd.Parameters.AddWithValue("@LogToTable", "Y") | Out-Null
+			$parameters["@CheckSum"] = "N";
+			$parameters["@LogToTable"] = "Y";
 				
 			if (($isSystemDb -eq $false) -and (-not [String]::IsNullOrWhitespace($certificate))) {
-				$cmd.Parameters.AddWithValue("@Encrypt", "Y") | Out-Null
-				$cmd.Parameters.AddWithValue("@EncryptionAlgorithm", "AES_256") | Out-Null
-				$cmd.Parameters.AddWithValue("@ServerCertificate", $certificate) | Out-Null
+				$parameters["@Encrypt"] = "Y";
+				$parameters["@EncryptionAlgorithm"] = "AES_256";
+				$parameters["@ServerCertificate"] = $certificate;
 			}
 				
 			if (($backupType -eq "FULL") -and ($isSystemDb -eq $false)) {
-				SbsWriteDebug "Running Index Optimize Before Full Backup";
+				# SbsWriteDebug "Running Index Optimize Before Full Backup";
 				# Index optimize before the full
-				$indexCmd = $SqlConn.CreateCommand()
-				$indexCmd.CommandType = 'StoredProcedure'
-				$indexCmd.CommandText = 'dbo.IndexOptimize'
-				$indexCmd.CommandTimeout = 1200
-				$indexCmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
-				$indexCmd.Parameters.AddWithValue("@FragmentationLevel1", 30) | Out-Null
-				$indexCmd.Parameters.AddWithValue("@FragmentationLevel2", 50) | Out-Null
-				$indexCmd.Parameters.AddWithValue("@FragmentationLow", $null) | Out-Null
-				$indexCmd.Parameters.AddWithValue("@FragmentationMedium", 'INDEX_REORGANIZE') | Out-Null
-				$indexCmd.Parameters.AddWithValue("@FragmentationHigh", 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE') | Out-Null
-				$indexCmd.Parameters.AddWithValue("@MinNumberOfPages", 1000) | Out-Null
-				$indexCmd.Parameters.AddWithValue("@TimeLimit", 600) | Out-Null
-				$indexCmd.Parameters.AddWithValue("@LogToTable", 'Y') | Out-Null
-				$indexCmd.ExecuteScalar();
+				#$indexCmd = $SqlConn.CreateCommand()
+				#$indexCmd.CommandType = 'StoredProcedure'
+				#$indexCmd.CommandText = 'dbo.IndexOptimize'
+				#$indexCmd.CommandTimeout = 1200
+				#$indexCmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@FragmentationLevel1", 30) | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@FragmentationLevel2", 50) | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@FragmentationLow", $null) | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@FragmentationMedium", 'INDEX_REORGANIZE') | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@FragmentationHigh", 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE') | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@MinNumberOfPages", 1000) | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@TimeLimit", 600) | Out-Null
+				#$indexCmd.Parameters.AddWithValue("@LogToTable", 'Y') | Out-Null
+				#$indexCmd.ExecuteScalar();
 			}
 				
 			# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
-			$cmd.Parameters.AddWithValue("@ChangeBackupType", $changeBackupType) | Out-Null
+			$parameters["@ChangeBackupType"] = $changeBackupType;
 
 			if ($changeBackupType -eq "Y" -and ($modificationLeve -gt 0)) {
-				$cmd.Parameters.AddWithValue("@ModificationLevel", $modificationLevel) | Out-Null
+				$parameters["@ModificationLevel"] = $modificationLevel;
 			}
 
 			# Not sure why i have to add this N explictly here as it is the default value...
-			$cmd.Parameters.AddWithValue("@CopyOnly", "N") | Out-Null
-	
+			$parameters["@CopyOnly"] = "N";
+
 			if ($backupType -eq "LOG") {
-				$cmd.Parameters.AddWithValue("@LogSizeSinceLastLogBackup", $logSizeSinceLastLogBackup) | Out-Null
-				$cmd.Parameters.AddWithValue("@TimeSinceLastLogBackup", $timeSinceLastLogBackup) | Out-Null
+				$parameters["@LogSizeSinceLastLogBackup"] = $logSizeSinceLastLogBackup;
+				$parameters["@TimeSinceLastLogBackup"] = $timeSinceLastLogBackup;
 			}
 
-			$result = $cmd.ExecuteScalar();
-			$SqlConn.Close();
+			$result = Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "dbo.DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
 
 			$backupCompleted = $false;
 
@@ -266,7 +266,7 @@ function SbsMssqlRunBackups {
 				else {
 					SbsWriteDebug "Skipped cleanup.";
 				}
-#
+
 				SbsWriteDebug "Calling LTS using AzCopy";
 				SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
 			}
@@ -276,7 +276,7 @@ function SbsMssqlRunBackups {
 		} 
 		Catch {
 			$exceptions += $_.Exception
-			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($instance): $($_.Exception.Message)"
+			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($instanceFriendlyName): $($_.Exception.Message)"
 			SbsWriteWarning "Exception Stack Trace: $($_.Exception.StackTrace)"
 		}
 	}

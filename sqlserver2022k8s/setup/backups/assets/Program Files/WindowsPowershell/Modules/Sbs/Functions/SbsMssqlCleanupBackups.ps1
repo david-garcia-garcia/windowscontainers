@@ -83,6 +83,7 @@ function SbsMssqlCleanupBackups {
     if ($filesToFetch.Count -gt 0) {
         $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $filesToFetch;
         foreach ($file in $files) {
+         
             $blobUrl = $file.Path[0];
             $blobName = ($blobUrl -replace $backupUrl.baseUrl, '').TrimStart('/');
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
@@ -120,23 +121,24 @@ function SbsMssqlCleanupBackups {
     foreach ($file in $filteredFiles) {
         $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart("/");
         SbsWriteDebug "Processing '$($file.Type)' backup deletion candidate '$($blobName)'";
+        SbsWriteDebug "Backup from $($file.FirstLSN) to $($file.LastLSN)";
         if ($file.Type -eq $fullType) {
 
             # Any new full backup
             $newerBackup = $files | Where-Object {
                 $_.Type -eq $fullType -and
-                $_.Start -gt $file.Start
+                $_.FirstLSN -gt $file.FirstLSN
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer full backup found"
-                continue
+                SbsWriteDebug "No newer full backup found";
+                continue;
             }
 
             # Check if there are any DIFF or LOG backups that depend on this full backup
             $dependentBackups = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $logType)) -and
-                $_.LastLSN -eq $file.FirstLSN
+                $_.FirstLSN -eq $file.LastLSN
             }
 
             if ($dependentBackups.Count -gt 0) {
@@ -148,11 +150,11 @@ function SbsMssqlCleanupBackups {
             # Any new diff
             $newerBackup = $files | Where-Object {
                 $_.Type -eq $diffType -and
-                $_.Start -gt $file.Start
+                $_.FirstLSN -gt $file.LastLSN
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer full backup found."
+                SbsWriteDebug "No newer diff backup found."
                 continue
             }
 
@@ -170,7 +172,7 @@ function SbsMssqlCleanupBackups {
             # Only delete LOG if there is a newer full or diff
             $newerBackup = $files | Where-Object {
                 (($_.Type -eq $diffType) -or ($_.Type -eq $fullType)) -and
-                ($_.Start -gt $file.Start)
+                ($_.FirstLSN -gt $file.LastLSN)
             }
 
             if ($newerBackup.Count -eq 0) {
