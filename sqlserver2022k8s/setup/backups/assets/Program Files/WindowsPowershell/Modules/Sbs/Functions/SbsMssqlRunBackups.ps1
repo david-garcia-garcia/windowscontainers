@@ -210,20 +210,17 @@ function SbsMssqlRunBackups {
 			if (($backupType -eq "FULL") -and ($isSystemDb -eq $false)) {
 				# SbsWriteDebug "Running Index Optimize Before Full Backup";
 				# Index optimize before the full
-				#$indexCmd = $SqlConn.CreateCommand()
-				#$indexCmd.CommandType = 'StoredProcedure'
-				#$indexCmd.CommandText = 'dbo.IndexOptimize'
-				#$indexCmd.CommandTimeout = 1200
-				#$indexCmd.Parameters.AddWithValue("@Databases", $db.Name) | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@FragmentationLevel1", 30) | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@FragmentationLevel2", 50) | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@FragmentationLow", $null) | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@FragmentationMedium", 'INDEX_REORGANIZE') | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@FragmentationHigh", 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE') | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@MinNumberOfPages", 1000) | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@TimeLimit", 600) | Out-Null
-				#$indexCmd.Parameters.AddWithValue("@LogToTable", 'Y') | Out-Null
-				#$indexCmd.ExecuteScalar();
+				$parameters2 = @{}
+				$parameters2["@Databases"] = $db.Name;
+				$parameters2["@FragmentationLevel1"] = 30;
+				$parameters2["@FragmentationLevel2"] = 50;
+				$parameters2["@FragmentationLow"] = $null;
+				$parameters2["@FragmentationMedium"] = 'INDEX_REORGANIZE';
+				$parameters2["@FragmentationHigh"] = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE';
+				$parameters2["@MinNumberOfPages"] = 1000;
+				$parameters2["@TimeLimit"] = 600;
+				$parameters2["@LogToTable"] = 'Y';
+				Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1200 -Database "master" -Query "IndexOptimize" -SqlParameter $parameters2 -CommandType StoredProcedure -EnableException;
 			}
 				
 			# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
