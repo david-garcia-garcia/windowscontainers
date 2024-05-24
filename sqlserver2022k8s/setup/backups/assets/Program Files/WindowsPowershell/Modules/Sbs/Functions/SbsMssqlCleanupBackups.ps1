@@ -176,12 +176,12 @@ function SbsMssqlCleanupBackups {
 
             # Any new diff
             $newerBackup = $files | Where-Object {
-                $_.Type -eq $diffType -and
+                (($_.Type -eq $diffType) -or ($_.Type -eq $fullType)) -and
                 $_.FirstLsn -gt $file.LastLsn
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer diff backup found."
+                SbsWriteDebug "No newer diff of full backup found."
                 continue
             }
 
