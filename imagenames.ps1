@@ -23,6 +23,7 @@ foreach ($envVarName in $envVarsToCheck) {
 }
 
 $version = $ENV:IMAGE_VERSION;
+$containerregistry = $ENV:REGISTRY_PATH;
 
 # Image names
 $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";
