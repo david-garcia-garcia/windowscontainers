@@ -174,13 +174,14 @@ function SbsMssqlRunBackups {
 			$parameters = @{}
 
 			if (-not $null -eq $backupUrl) {
-				Write-Host "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
+				SbsWriteDebug "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
 				$parameters["@Url"] = $backupUrl.baseUrlWithPrefix;
 				$parameters["@MaxTransferSize"] = 4194304;
 				$parameters["@BlockSize"] = 65536;
 			}
 			else {
 				# These are incompatible with the use of URL
+				SbsWriteDebug "No backup url defined, backing up to database backup directory: $databaseBackupDirectory (if NULL, default configured location will be used)";
 				$parameters["@Directory"] = $databaseBackupDirectory;
 				$parameters["@CleanupTime"] = "$cleanupTime";
 			}
@@ -240,7 +241,7 @@ function SbsMssqlRunBackups {
 				$parameters["@TimeSinceLastLogBackup"] = $timeSinceLastLogBackup;
 			}
 
-			$result = Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "dbo.DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
+			$result = Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
 
 			$backupCompleted = $false;
 

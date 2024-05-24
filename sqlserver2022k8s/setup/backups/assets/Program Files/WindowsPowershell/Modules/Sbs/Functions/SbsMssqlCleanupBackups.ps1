@@ -70,6 +70,13 @@ function SbsMssqlCleanupBackups {
         $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
         if (Test-Path -Path $cacheFilePath) {
             $cachedFile = Get-Content -Path $cacheFilePath | ConvertFrom-Json
+
+            # Workaround for BigInt not serializing properly!
+            # https://github.com/PowerShell/PowerShell/pull/21000
+            $cachedFile['LastLSN'] = [bigint]::Parse($cachedFile['LastLSN']);
+            $cachedFile['FirstLSN'] = [bigint]::Parse($cachedFile['FirstLSN']);
+            $cachedFile['DatabaseBackupLsn'] = [bigint]::Parse($cachedFile['DatabaseBackupLsn']);
+            
             SbsWriteDebug "$backupUrl <- $cacheFilePath"
             $cachedFiles[$blobUrl] = $cachedFile
         }
@@ -87,7 +94,20 @@ function SbsMssqlCleanupBackups {
             $blobUrl = $file.Path[0];
             $blobName = ($blobUrl -replace $backupUrl.baseUrl, '').TrimStart('/');
             $cacheFilePath = (Join-Path -Path $cacheDirectory -ChildPath ($blobName -replace '[/:]', '_')) + ".json"
-            $file | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
+
+            # Workaround for BigInt not serializing properly!
+            # https://github.com/PowerShell/PowerShell/pull/21000
+            $hashTable = @{}
+            $file.PSObject.Properties | ForEach-Object {
+                $hashTable[$_.Name] = $_.Value;
+            }
+
+            $hashTable['LastLSN'] = $hashTable['LastLSN'].ToString();
+            $hashTable['FirstLSN'] = $hashTable['FirstLSN'].ToString();
+            $hashTable['DatabaseBackupLsn'] = $hashTable['DatabaseBackupLsn'].ToString();
+            
+            $hashTable | ConvertTo-Json -Depth 100 | Set-Content -Path $cacheFilePath
+            
             $cachedFiles[$blobUrl] = Get-Content -Path $cacheFilePath | ConvertFrom-Json
             SbsWriteDebug "$blobUrl <- $cacheFilePath"
         }
