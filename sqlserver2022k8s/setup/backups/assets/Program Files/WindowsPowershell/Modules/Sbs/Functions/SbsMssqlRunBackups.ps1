@@ -43,11 +43,11 @@ function SbsMssqlRunBackups {
 
 	if (($null -eq $sqlInstance) -or ($sqlInstance -eq "")) {
 	  # "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
-	  $sqlInstance = "localhost";
-	  $sqlInstance = Connect-DbaInstance $sqlInstance;
+	  $sqlInstance = Connect-DbaInstance "localhost";
+	  SbsWriteDebug "Defaulting to LOCALHOST as database.";
 	}
 
-	$serverName = Invoke-DbaQuery -SqlInstance $connection -Query "SELECT @@SERVERNAME AS name" -EnableException;
+	$serverName = Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name" -EnableException;
 	SbsWriteDebug "Server name: $($serverName['name'])";
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
