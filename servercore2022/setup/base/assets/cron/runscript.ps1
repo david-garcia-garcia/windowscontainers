@@ -16,11 +16,13 @@ function Write-ErrorLog {
 		$exception.Flatten().InnerExceptions | ForEach-Object {
 			$message = "Error running cron " + $baseName + ": " + $_.Message;
 			SbsWriteError $message;
+			SbsWriteDebug $_.StackTrace;
 		}
 	}
 	else {
 		$message = "Error running cron " + $baseName + ": " + $exception.Message;
 		SbsWriteError $message;
+		SbsWriteDebug $exception.StackTrace;
 	}
 }
 

@@ -48,6 +48,12 @@ function SbsMssqlRunBackups {
 	}
 
 	$serverName = Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name" -EnableException;
+
+	if ($null -eq $serverName) {
+		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
+		return;
+	}
+
 	SbsWriteDebug "Server name: $($serverName['name'])";
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
@@ -172,13 +178,14 @@ function SbsMssqlRunBackups {
 			$directoryStructure = "{DatabaseName}";
 
 			# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
-			$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
+			$fileName = "{DatabaseName}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{BackupType}_{Partial}_{CopyOnly}_{FileNumber}.{FileExtension}";
 
 			$parameters = @{}
 
 			if (-not $null -eq $backupUrl) {
 				SbsWriteDebug "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
 				$parameters["@Url"] = $backupUrl.baseUrlWithPrefix;
+				# Recommended MS settings for blob storage
 				$parameters["@MaxTransferSize"] = 4194304;
 				$parameters["@BlockSize"] = 65536;
 			}
@@ -243,6 +250,7 @@ function SbsMssqlRunBackups {
 				$parameters["@TimeSinceLastLogBackup"] = $timeSinceLastLogBackup;
 			}
 
+			SbsWriteDebug "Calling backup solution with arguments $(ConvertTo-Json $parameters -Depth 3)";
 			$result = Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
 
 			$backupCompleted = $false;
