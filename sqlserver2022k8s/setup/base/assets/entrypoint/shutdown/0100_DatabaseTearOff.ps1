@@ -8,20 +8,23 @@ $dataPath = $dbaDefaultPath.Data;
 [bool]$autoBackup = SbsGetEnvBool -Name "MSSQL_AUTOBACKUP";
 
 try {
-
+    $taskNames = @(
+        "MssqlDifferential",
+        "MssqlDifferential2",
+        "MssqlFull",
+        "MssqlLog",
+        "MssqlSystem",
+        "MssqlReleaseMemory",
+        "MssqlCleanupBackups",
+        "MssqlBackupLtsAzCopy"
+    )
+    
     # Stop all backup tasks
-    Stop-ScheduledTask -TaskName "MssqlDifferential";
-    Stop-ScheduledTask -TaskName "MssqlFull";
-    Stop-ScheduledTask -TaskName "MssqlLog";
-    Stop-ScheduledTask -TaskName "MssqlSystem";
-    Stop-ScheduledTask -TaskName "MssqlReleaseMemory";
-
-    Disable-ScheduledTask -TaskName "MssqlDifferential"
-    Disable-ScheduledTask -TaskName "MssqlFull"
-    Disable-ScheduledTask -TaskName "MssqlLog"
-    Disable-ScheduledTask -TaskName "MssqlSystem"
-    Disable-ScheduledTask -TaskName "MssqlReleaseMemory"
-
+    foreach ($taskName in $taskNames) {
+        Stop-ScheduledTask -TaskName $taskName;
+        Disable-ScheduledTask -TaskName $taskName;
+    }
+    
     # Disable all remote access, so no new transactions happen before the closing backup
     # if database is set in READONLY mode, then the last LOG backup will by COPY_ONLY
     # which will NOT work for a restore secuence chain (it works, but it's more difficult)

@@ -10,6 +10,8 @@ Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlFull.xml" -Raw) -Ta
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlLog.xml" -Raw) -TaskName "MssqlLog";
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlReleaseMemory.xml" -Raw) -TaskName "MssqlReleaseMemory";
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlSystem.xml" -Raw) -TaskName "MssqlSystem";
+Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlBackupLtsAzCopy.xml" -Raw) -TaskName "MssqlBackupLtsAzCopy";
+Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlCleanupBackups.xml" -Raw) -TaskName "MssqlCleanupBackups";
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

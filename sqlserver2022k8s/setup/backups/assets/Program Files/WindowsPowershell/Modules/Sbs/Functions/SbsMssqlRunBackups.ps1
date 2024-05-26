@@ -17,8 +17,13 @@ function SbsMssqlRunBackups {
 	$backupType = $backupType.ToUpper();
 	
 	# Workaround for https://github.com/dataplat/dbatools/issues/9335
-	Import-Module Az.Accounts, Az.Storage
+	# Import-Module Az.Accounts, Az.Storage
 	Import-Module dbatools;
+
+	Set-DbatoolsConfig -FullName logging.errorlogenabled -Value $false
+	Set-DbatoolsConfig -FullName logging.errorlogfileenabled -Value $false
+	Set-DbatoolsConfig -FullName logging.messagelogenabled -Value $false
+	Set-DbatoolsConfig -FullName logging.messagelogfileenabled -Value $false
 
 	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
 	Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register 
@@ -245,50 +250,14 @@ function SbsMssqlRunBackups {
 			# Not sure why i have to add this N explictly here as it is the default value...
 			$parameters["@CopyOnly"] = "N";
 
+			# In LOGNOW these parameters are not applied!
 			if ($backupType -eq "LOG") {
 				$parameters["@LogSizeSinceLastLogBackup"] = $logSizeSinceLastLogBackup;
 				$parameters["@TimeSinceLastLogBackup"] = $timeSinceLastLogBackup;
 			}
 
 			SbsWriteDebug "Calling backup solution with arguments $(ConvertTo-Json $parameters -Depth 3)";
-			$result = Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
-
-			$backupCompleted = $false;
-
-			if ($null -eq $result) {
-				SbsWriteHost "Backup completed succesfully.";
-				$backupCompleted = $true;
-			}
-			else {
-				SbsWriteError "Error running backup: $($result)";
-			}
-
-			# LOGNOW is used to shutdown the container, the less actions we take here, the better,
-			# so no file cleanup or AZCOPY to LTS.
-			if (($backupType -ne "LOGNOW") -and ($backupCompleted -eq $true)) {
-				# Cleanup only makes sense if:
-				# * we have a backup URL (because otherwise it is already taken care of by Hallengren Backup Solution)
-				# * cleanup time is not null
-				# * requested backup type is NOT log, because LOG backups will never result in a cleanup needed
-				if ((-not $null -eq $backupUrl) -and ($solutionBackupType -ne "LOG")) {
-					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType";
-					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -DatabaseName  $db.Name;
-				}
-				else {
-					SbsWriteDebug "Skipped cleanup.";
-				}
-
-				if ((-not $null -eq $backupUrl)) {
-					SbsWriteDebug "Calling LTS using AzCopy";
-					SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
-				}
-				else {
-					SbsWriteDebug "LTS AzCopy skipped because not backing up to URL.";
-				}
-			}
-			else {
-				SbsWriteDebug "Skipping post-backup operations due to backup type being '$backupType' or backup not completed with success.";
-			}
+			Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
 		} 
 		Catch {
 			$exceptions += $_.Exception
