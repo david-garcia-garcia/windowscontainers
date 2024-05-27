@@ -10,7 +10,6 @@ $dataPath = $dbaDefaultPath.Data;
 try {
     $taskNames = @(
         "MssqlDifferential",
-        "MssqlDifferential2",
         "MssqlFull",
         "MssqlLog",
         "MssqlSystem",
