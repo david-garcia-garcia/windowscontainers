@@ -38,6 +38,7 @@ services:
       # much more reasonable.
       - MSSQL_LIFECYCLE=BACKUP
       - SBS_INITASYNC=False
+      - SBS_DEBUG=True
       # We need to configure backup schedules
       - 'MSSQL_JOB_Full={"Job":"MssqlBackup - FULL", "Enabled": true, "Schedules": [{"Schedule": "Full weekly", "FrequencyType": "Weekly", "FrequencyInterval": "Saturday", "StartTime": "230000"}]}'
       - 'MSSQL_JOB_Log={"Job":"MssqlBackup - LOG", "Enabled": true, "Schedules": [{"Schedule": "Every 5 minutes", "FrequencyType": "Daily", "StartTime": "000000", "EndTime": "240000", "FrequencySubdayType": "Minutes", "FrequencySubdayInterval": 5}]}'
