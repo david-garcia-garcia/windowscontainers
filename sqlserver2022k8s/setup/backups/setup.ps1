@@ -13,6 +13,15 @@ Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlSystem.xml" -Raw) -
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlBackupLtsAzCopy.xml" -Raw) -TaskName "MssqlBackupLtsAzCopy";
 Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlCleanupBackups.xml" -Raw) -TaskName "MssqlCleanupBackups";
 
+Write-Host "`n---------------------------------------"
+Write-Host " Registering Backup Mssql Jobs"
+Write-Host "-----------------------------------------`n"
+
+Start-Service 'MSSQLSERVER';
+$sqlInstance = Connect-DbaInstance "localhost";
+Invoke-DbaQuery -SqlInstance $sqlInstance -File "c:\setup\mssqljobs\MssqlFull.sql" -EnableException;
+Invoke-DbaQuery -SqlInstance $sqlInstance -File "c:\setup\mssqljobs\MssqlLog.sql" -EnableException;
+
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;
