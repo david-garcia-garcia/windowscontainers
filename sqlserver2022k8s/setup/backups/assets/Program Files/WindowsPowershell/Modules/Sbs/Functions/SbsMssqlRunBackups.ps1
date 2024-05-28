@@ -17,8 +17,13 @@ function SbsMssqlRunBackups {
 	$backupType = $backupType.ToUpper();
 	
 	# Workaround for https://github.com/dataplat/dbatools/issues/9335
-	Import-Module Az.Accounts, Az.Storage
+	# Import-Module Az.Accounts, Az.Storage
 	Import-Module dbatools;
+
+	Set-DbatoolsConfig -FullName logging.errorlogenabled -Value $false
+	Set-DbatoolsConfig -FullName logging.errorlogfileenabled -Value $false
+	Set-DbatoolsConfig -FullName logging.messagelogenabled -Value $false
+	Set-DbatoolsConfig -FullName logging.messagelogfileenabled -Value $false
 
 	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
 	Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register 
@@ -43,11 +48,17 @@ function SbsMssqlRunBackups {
 
 	if (($null -eq $sqlInstance) -or ($sqlInstance -eq "")) {
 	  # "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
-	  $sqlInstance = "localhost";
-	  $sqlInstance = Connect-DbaInstance $sqlInstance;
+	  $sqlInstance = Connect-DbaInstance "localhost";
+	  SbsWriteDebug "Defaulting to LOCALHOST as database.";
 	}
 
-	$serverName = Invoke-DbaQuery -SqlInstance $connection -Query "SELECT @@SERVERNAME AS name" -EnableException;
+	$serverName = Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name" -EnableException;
+
+	if ($null -eq $serverName) {
+		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
+		return;
+	}
+
 	SbsWriteDebug "Server name: $($serverName['name'])";
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
@@ -168,17 +179,19 @@ function SbsMssqlRunBackups {
 			# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
 			# we could have an APP name?
 			# $directoryStructure = "{ServerName}{$InstanceName}{DirectorySeparator}{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
-			# $directoryStructure = "{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
-			$directoryStructure = "{DatabaseName}";
+			
+			# Cleanup is not supported if the token 2024-05-28 09:39:16 {BackupType} is not part of the directory.
+			$directoryStructure = "{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
 
 			# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
-			$fileName = "{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
+			$fileName = "{DatabaseName}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{BackupType}_{Partial}_{CopyOnly}_{FileNumber}.{FileExtension}";
 
 			$parameters = @{}
 
 			if (-not $null -eq $backupUrl) {
 				SbsWriteDebug "Backing up to URL: $($backupUrl.baseUrlWithPrefix)"
 				$parameters["@Url"] = $backupUrl.baseUrlWithPrefix;
+				# Recommended MS settings for blob storage
 				$parameters["@MaxTransferSize"] = 4194304;
 				$parameters["@BlockSize"] = 65536;
 			}
@@ -186,7 +199,18 @@ function SbsMssqlRunBackups {
 				# These are incompatible with the use of URL
 				SbsWriteDebug "No backup url defined, backing up to database backup directory: $databaseBackupDirectory (if NULL, default configured location will be used)";
 				$parameters["@Directory"] = $databaseBackupDirectory;
-				$parameters["@CleanupTime"] = "$cleanupTime";
+
+				# The value for the parameter @CleanupTime is not supported. Cleanup is not supported if the token 
+				# {BackupType} is not part of the directory.
+				# The documentation is available at 
+				# https://ola.hallengren.com/sql-server-backup.html.
+				if ($directoryStructure -match "\{BackupType\}") {
+				  $parameters["@CleanupTime"] = "$cleanupTime";
+				}
+				else {
+					# Better a warning, than no backups at all :(
+					SbsWriteWarning "Hallengren solution @CleanupTime cannot be used if {BackupType} is not part of the directory structure.";
+				}
 			}
 
 			if (-not $null -eq $mirrorUrl) {
@@ -238,49 +262,14 @@ function SbsMssqlRunBackups {
 			# Not sure why i have to add this N explictly here as it is the default value...
 			$parameters["@CopyOnly"] = "N";
 
+			# In LOGNOW these parameters are not applied!
 			if ($backupType -eq "LOG") {
 				$parameters["@LogSizeSinceLastLogBackup"] = $logSizeSinceLastLogBackup;
 				$parameters["@TimeSinceLastLogBackup"] = $timeSinceLastLogBackup;
 			}
 
-			$result = Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
-
-			$backupCompleted = $false;
-
-			if ($null -eq $result) {
-				SbsWriteHost "Backup completed succesfully.";
-				$backupCompleted = $true;
-			}
-			else {
-				SbsWriteError "Error running backup: $($result)";
-			}
-
-			# LOGNOW is used to shutdown the container, the less actions we take here, the better,
-			# so no file cleanup or AZCOPY to LTS.
-			if (($backupType -ne "LOGNOW") -and ($backupCompleted -eq $true)) {
-				# Cleanup only makes sense if:
-				# * we have a backup URL (because otherwise it is already taken care of by Hallengren Backup Solution)
-				# * cleanup time is not null
-				# * requested backup type is NOT log, because LOG backups will never result in a cleanup needed
-				if ((-not $null -eq $backupUrl) -and ($solutionBackupType -ne "LOG")) {
-					SbsWriteDebug "Calling database cleanup with solutionBackupType=$solutionBackupType";
-					SbsMssqlCleanupBackups -SqlInstance $sqlInstance -Url $backupUrl.url -DatabaseName  $db.Name;
-				}
-				else {
-					SbsWriteDebug "Skipped cleanup.";
-				}
-
-				if ((-not $null -eq $backupUrl)) {
-					SbsWriteDebug "Calling LTS using AzCopy";
-					SbsMssqlAzCopyLastBackupOfType -SqlInstance $sqlInstance -Database $db.Name -OriginalBackupUrl $backupUrl -BackupType "Full";
-				}
-				else {
-					SbsWriteDebug "LTS AzCopy skipped because not backing up to URL.";
-				}
-			}
-			else {
-				SbsWriteDebug "Skipping post-backup operations due to backup type being '$backupType' or backup not completed with success.";
-			}
+			SbsWriteDebug "Calling backup solution with arguments $(ConvertTo-Json $parameters -Depth 3)";
+			Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
 		} 
 		Catch {
 			$exceptions += $_.Exception

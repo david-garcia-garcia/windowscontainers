@@ -26,45 +26,51 @@ function SbsMssqlCleanupBackups {
         $WhatIf = $false
     )
 
+	# Workaround for https://github.com/dataplat/dbatools/issues/9335
+	Import-Module Az.Accounts, Az.Storage
+	Import-Module dbatools;
+
+    $logPrefix = "SbsMssqlCleanupBackups: ";
+
     if ($null -eq $cleanupTimeLog) {
-	    $cleanupTimeLog = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
+	    $cleanupTimeLog = SbsGetEnvInt -Name "$($logPrefix)MSSQL_BACKUP_CLEANUPTIME_LOG" -DefaultValue 0;
     }
 
     if ($null -eq $cleanupTimeDiff) {
-	    $cleanupTimeDiff = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
+	    $cleanupTimeDiff = SbsGetEnvInt -Name "$($logPrefix)MSSQL_BACKUP_CLEANUPTIME_DIFF" -DefaultValue 0;
     }
 
     if ($null -eq $cleanupTimeFull) {
-	    $cleanupTimeFull = SbsGetEnvInt -Name "MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
+	    $cleanupTimeFull = SbsGetEnvInt -Name "$($logPrefix)MSSQL_BACKUP_CLEANUPTIME_FULL" -DefaultValue 0;
     }
 
-    SbsWriteDebug "Blob Cleanup Time for LOG: $($cleanupTimeLog)H";
-    SbsWriteDebug "Blob Cleanup Time for DIFF: $($cleanupTimeDiff)H";
-    SbsWriteDebug "Blob Cleanup Time for FULL: $($cleanupTimeFull)H";
+    SbsWriteDebug "$($logPrefix)Blob Cleanup Time for LOG: $($cleanupTimeLog)H";
+    SbsWriteDebug "$($logPrefix)Blob Cleanup Time for DIFF: $($cleanupTimeDiff)H";
+    SbsWriteDebug "$($logPrefix)Blob Cleanup Time for FULL: $($cleanupTimeFull)H";
 
     $backupUrl = SbsParseSasUrl -Url $Url;
 
     if ($null -eq $backupUrl) {
-        SbsWriteWarning "Invalid backup URL. This method is only supported for Azure Blob Storage URLs.";
+        SbsWriteWarning "$($logPrefix)Invalid backup URL. This method is only supported for Azure Blob Storage URLs.";
         return;
     }
 
     SbsEnsureCredentialForSasUrl -SqlInstance $SqlInstance -Url $backupUrl.url;
 
-    SbsWriteDebug "Connecting to storage account $($backupUrl.baseUrlWithPrefix) to search for stale backups.";
+    SbsWriteDebug "$($logPrefix)Connecting to storage account $($backupUrl.baseUrlWithPrefix) to search for stale backups.";
     $ctx = New-AzStorageContext -StorageAccountName $backupUrl.storageAccountName -SasToken $backupUrl.sasToken;
 
-    SbsWriteDebug "Retrieving backup information from storage account $($backupUrl.baseUrlWithPrefix) to search for stale backups.";
+    SbsWriteDebug "$($logPrefix)Retrieving backup information from storage account $($backupUrl.baseUrlWithPrefix) to search for stale backups.";
     $blobs = Get-AzStorageBlob -Container $backupUrl.container -Context $ctx -Prefix $backupUrl.prefix |
         Where-Object { ($_.AccessTier -ne 'Archive') -and ($_.Length -gt 0) };
 
     if ($blobs.Count -eq 0) {
-        SbsWriteWarning "Found $($blobs.Count) blobs in container $($backupUrl.baseUrl)";
+        SbsWriteWarning "$($logPrefix)Found $($blobs.Count) blobs in container $($backupUrl.baseUrl)";
         return;
     }
 
     if ($blobs.Count -gt 100) {
-        SbsWriteWarning "Found $($blobs.Count) blobs in container $($backupUrl.baseUrl). Reading backup headers for remote files is slow and will not scale. Keep LTS storage separate from active backups."
+        SbsWriteWarning "$($logPrefix)Found $($blobs.Count) blobs in container $($backupUrl.baseUrl). Reading backup headers for remote files is slow and will not scale. Keep LTS storage separate from active backups."
     }
     
     $blobUrls = $blobs | ForEach-Object { $backupUrl.baseUrl + "/" + $_.Name }
@@ -72,7 +78,7 @@ function SbsMssqlCleanupBackups {
     # Define the cache directory path
     $cacheDirectory = Join-Path -Path ([System.IO.Path]::GetTempPath()) -ChildPath "MSSQLHEADERS\$($backupUrl.storageAccountName)\$($backupUrl.container)";
     New-Item -ItemType Directory -Path $cacheDirectory -Force | Out-Null
-    SbsWriteDebug "Cache directory: $cacheDirectory"
+    SbsWriteDebug "$($logPrefix)Cache directory: $cacheDirectory"
 
     # Get rid of old cached items
     Get-ChildItem -Path $cacheDirectory -Filter "*.json" | Where-Object { $_.CreationTime -lt (Get-Date).AddDays(-7) } | Remove-Item -Force;
@@ -104,7 +110,7 @@ function SbsMssqlCleanupBackups {
 
     # Get the files that are not present in the cache
     $filesToFetch = $blobUrls | Where-Object { -not $cachedFiles.ContainsKey($_) }
-    SbsWriteDebug "Fetching backup metadata for $($filesToFetch.Count) files";
+    SbsWriteDebug "$($logPrefix)Fetching backup metadata for $($filesToFetch.Count) files";
 
     # Fetch the missing files using Get-DbaBackupInformation
     if ($filesToFetch.Count -gt 0) {
@@ -137,7 +143,7 @@ function SbsMssqlCleanupBackups {
     $files = $cachedFiles.Values | Where-Object { $_.Database -eq $databaseName }
 
     if ($files.Count -eq 0) {
-        SbsWriteDebug "No backups found for database $databaseName"
+        SbsWriteDebug "$($logPrefix)No backups found for database $databaseName"
         return;
     }
 
@@ -153,15 +159,15 @@ function SbsMssqlCleanupBackups {
     } | Sort-Object -Property LastLSN;
 
     if ($filteredFiles.Count -eq 0) {
-        SbsWriteHost "No backup files found for database '$($databaseName)' that meet the staleness criteria."
+        SbsWriteHost "$($logPrefix)No backup files found for database '$($databaseName)' that meet the staleness criteria."
         return;
     }
 
     # Loop through the sorted files
     foreach ($file in $filteredFiles) {
         $blobName = ($file.Path[0] -replace $backupUrl.baseUrl, '').TrimStart("/");
-        SbsWriteDebug "Processing '$($file.Type)' backup deletion candidate '$($blobName)'";
-        SbsWriteDebug "Backup from $($file.FirstLSN) to $($file.LastLSN)";
+        SbsWriteDebug "$($logPrefix)Processing '$($file.Type)' backup deletion candidate '$($blobName)'";
+        SbsWriteDebug "$($logPrefix)Backup from $($file.FirstLSN) to $($file.LastLSN)";
         if ($file.Type -eq $fullType) {
 
             # Any new full backup
@@ -171,7 +177,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer full backup found";
+                SbsWriteDebug "$($logPrefix)No newer full backup found";
                 continue;
             }
 
@@ -182,7 +188,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($dependentBackups.Count -gt 0) {
-                SbsWriteDebug "The following backups depend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
+                SbsWriteDebug "$($logPrefix)The following backups depend on the full backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
         } elseif ($file.Type -eq $diffType) {
@@ -194,7 +200,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($null -eq $newerBackup) {
-                SbsWriteDebug "No newer diff of full backup found."
+                SbsWriteDebug "$($logPrefix)No newer diff of full backup found."
                 continue
             }
 
@@ -205,7 +211,7 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($dependentBackups.Count -gt 0) {
-                SbsWriteDebug "The following backups dpend on the diff backup $($file.Path): $($dependentBackups.Path -join ', ')"
+                SbsWriteDebug "$($logPrefix)The following backups dpend on the diff backup $($file.Path): $($dependentBackups.Path -join ', ')"
                 continue;
             }
         } elseif ($file.Type -eq $logType) {
@@ -216,17 +222,17 @@ function SbsMssqlCleanupBackups {
             }
 
             if ($newerBackup.Count -eq 0) {
-                SbsWriteDebug "No newer full or diff backup found."
+                SbsWriteDebug "$($logPrefix)No newer full or diff backup found."
                 continue;
             }
         }
 
         # Perform cleanup for the file
         if ($WhatIf) {
-            SbsWriteDebug "Would delete blob $($file.Path)"
+            SbsWriteDebug "$($logPrefix)Would delete blob $($file.Path)"
         } else {
             # Full uri is not supported, we need the blob name
-            SbsWriteHost "Deleting backup blob '$($blobName)'"
+            SbsWriteHost "$($logPrefix)Deleting backup blob '$($blobName)'"
             Remove-AzStorageBlob -Container $backupUrl.container -Context $ctx -Blob $blobName;
         }
     }

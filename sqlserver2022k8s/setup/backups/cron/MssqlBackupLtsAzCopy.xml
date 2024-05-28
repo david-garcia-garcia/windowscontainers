@@ -2,11 +2,11 @@
 <Task version="1.3" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Author></Author>
-    <URI>MSSQL Differential Backup II</URI>
+    <URI>MSSQL Backup LTS AzCopy</URI>
   </RegistrationInfo>
   <Triggers>
     <CalendarTrigger>
-      <StartBoundary>2024-01-23T05:00:00+01:00</StartBoundary>
+      <StartBoundary>2024-01-23T021:00:00+01:00</StartBoundary>
       <Enabled>false</Enabled>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
@@ -37,13 +37,13 @@
     <DisallowStartOnRemoteAppSession>false</DisallowStartOnRemoteAppSession>
     <UseUnifiedSchedulingEngine>true</UseUnifiedSchedulingEngine>
     <WakeToRun>false</WakeToRun>
-    <ExecutionTimeLimit>PT2H</ExecutionTimeLimit>
+    <ExecutionTimeLimit>PT15M</ExecutionTimeLimit>
     <Priority>7</Priority>
   </Settings>
   <Actions Context="Author">
     <Exec>
       <Command>C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe</Command>
-      <Arguments>-File "c:\cron\runscript.ps1" -path "c:\cron\scripts\mssqldifferential.ps1"</Arguments>
+      <Arguments>-File "c:\cron\runscript.ps1" -path "c:\cron\scripts\mssqlbackupltsazcopy.ps1"</Arguments>
     </Exec>
   </Actions>
 </Task>

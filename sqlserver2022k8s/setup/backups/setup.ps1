@@ -4,12 +4,24 @@ Write-Host "`n---------------------------------------"
 Write-Host " Registering Backup Scheduled Tasks"
 Write-Host "-----------------------------------------`n"
 
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlDifferential.xml" -Raw) -TaskName "MssqlDifferential";
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlDifferential2.xml" -Raw) -TaskName "MssqlDifferential2";
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlFull.xml" -Raw) -TaskName "MssqlFull";
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlLog.xml" -Raw) -TaskName "MssqlLog";
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlReleaseMemory.xml" -Raw) -TaskName "MssqlReleaseMemory";
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\MssqlSystem.xml" -Raw) -TaskName "MssqlSystem";
+$xmlFiles = Get-ChildItem -Path "c:\setup\cron" -Filter *.xml
+foreach ($file in $xmlFiles) {
+    $taskName = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+    $xmlContent = Get-Content -Path $file.FullName -Raw
+    Register-ScheduledTask -Xml $xmlContent -TaskName $taskName
+}
+
+Write-Host "`n---------------------------------------"
+Write-Host " Registering Backup Mssql Jobs"
+Write-Host "-----------------------------------------`n"
+
+Start-Service 'MSSQLSERVER';
+$sqlInstance = Connect-DbaInstance "localhost";
+
+$sqlFiles = Get-ChildItem -Path "c:\setup\mssqljobs" -Filter *.sql
+foreach ($file in $sqlFiles) {
+    Invoke-DbaQuery -SqlInstance $sqlInstance -File $file -EnableException;
+}
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

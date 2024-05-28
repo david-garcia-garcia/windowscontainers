@@ -38,11 +38,7 @@ function SbsMssqlAzCopyLastBackupOfType {
         # credentials are not stored neither retrievable
         # from sql server
         [Parameter(Mandatory = $true)]
-        [string]$OriginalBackupUrl,
-        # Backup type to copy to remote location, or
-        # EMPTY to use the most recent backup type
-		[ValidateSet('Full', 'Differential', 'Log')]
-		[string]$BackupType
+        [string]$OriginalBackupUrl
 	)
 
 	Import-Module dbatools;
@@ -51,13 +47,13 @@ function SbsMssqlAzCopyLastBackupOfType {
 	Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register
 
 	# To support LTR on immutable storage
-	$azCopyUrlDiff = SbsGetEnvString -Name "MSSQL_BACKUP_AZCOPY_DIFF" -DefaultValue $null;
-	$azCopyUrlFull = SbsGetEnvString -Name "MSSQL_BACKUP_AZCOPY_FULL" -DefaultValue $null;
-	$azCopyUrlLog = SbsGetEnvString -Name "MSSQL_BACKUP_AZCOPY_LOG" -DefaultValue $null;
+	$azCopyUrl = SbsGetEnvString -Name "MSSQL_BACKUP_AZCOPYLTS" -DefaultValue $null;
 
     $backupHistory = Get-DbaDbBackupHistory -SqlInstance $SqlInstance -Database $Database -Last -Force;
+
+    # Only consider full and differential
     if ($BackupType) {
-        $backupHistory = $backupHistory | Where-Object { $_.Type -eq  $BackupType};
+        $backupHistory = $backupHistory | Where-Object { ($_.Type -eq  "Full") -or ($_.Type -eq  "Differential")};
     }
 
     $lastBackup = $backupHistory | Sort-Object -Property FirstLsn -Descending | Select-Object -First 1;
@@ -70,24 +66,10 @@ function SbsMssqlAzCopyLastBackupOfType {
     SbsWriteHost "Last backup type is $($lastBackup.Type)";
     SbsWriteHost "Last backup url is $($lastBackup.Path)";
 
-    $azCopyUrl = $null;
-
-    switch ($lastBackup.Type) {
-        "Full" {
-            $azCopyUrl = $azCopyUrlFull;
-        }
-        "Differential" {
-            $azCopyUrl = $azCopyUrlDiff;
-        }
-        "Log" {
-            $azCopyUrl = $azCopyUrlLog;
-        }
-    }
-
     $destinationUrl = SbsParseSasUrl -Url $azCopyUrl;
 
     if ($null -eq $destinationUrl) {
-        SbsWriteHost "No LTR url provided for backups of type $($lastBackup.Type)";
+        SbsWriteHost "No LTR url provided for backups.";
         return;
     }
 
