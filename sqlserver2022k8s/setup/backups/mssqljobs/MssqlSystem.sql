@@ -14,14 +14,14 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'MssqlBackup - DIFF', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'MssqlBackup - SYSTEM', 
 		@enabled=1, 
 		@notify_level_eventlog=2, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 
 		@notify_level_page=0, 
 		@delete_level=0, 
-		@description=N'Differential backup of user databases.', 
+		@description=N'Backup of system databases.', 
 		@category_name=N'[Uncategorized (Local)]', 
 		@owner_login_name='sa', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -36,7 +36,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Run Scri
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'CmdExec', 
-		@command=N'PowerShell.exe -File "c:\cron\scripts\mssqldifferential.ps1"', 
+		@command=N'PowerShell.exe -File "c:\cron\scripts\mssqlsystem.ps1"', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1

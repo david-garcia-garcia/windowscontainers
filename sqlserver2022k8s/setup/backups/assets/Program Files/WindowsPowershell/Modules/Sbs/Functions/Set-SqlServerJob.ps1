@@ -14,7 +14,8 @@ function Set-SqlServerJob {
     $scheduleName = $null;
 
     # Convert the JSON string to a PowerShell object
-    $jobInfo = $JobDefinition | ConvertFrom-Json -ErrorAction Stop;
+    $jobInfo = $JobDefinition | ConvertFrom-Yaml | ConvertTo-Json | ConvertFrom-Json -ErrorAction Stop;
+    
     $schedulesInfo = $null;
     $jobName = $null;
 
@@ -85,14 +86,38 @@ function Set-SqlServerJob {
 "@
 
         # Execute the query
-        $jobSchedules = Invoke-DbaQuery -SqlInstance $SqlInstance -Query $query -SqlParameter @{ jobName = $jobName }
+        $jobSchedules = Invoke-DbaQuery -SqlInstance $SqlInstance -Query $query -SqlParameter @{ jobName = $jobName } -EnableException
 
         # If the schedule is not bound to the JOB, create it now
         $currentSchedule = $jobSchedules | Where-Object { $_.ScheduleName -eq $scheduleName };
 
         if ($null -eq $currentSchedule) {
             SbsWriteDebug "Creating new schedule '$scheduleName' for job '$jobName'"
-            New-DbaAgentSchedule -SqlInstance $server -Schedule $scheduleName -Job $jobName -Force -EnableException;
+
+            # New-DbaAgentSchedule -SqlInstance $server -Schedule $scheduleName -Job $jobName -Force -EnableException;
+            $createScheduleQuery = @"
+            EXEC msdb.dbo.sp_add_schedule
+                @schedule_name=@scheduleName,
+                @enabled=0,
+                @freq_type=4,
+                @freq_interval=1,
+                @freq_subday_type=1,
+                @freq_subday_interval=0,
+                @active_start_date=20230405,
+                @active_start_time=0,
+                @owner_login_name=N'sa';
+"@;
+
+                Invoke-DbaQuery -SqlInstance $SqlInstance -Query $createScheduleQuery -SqlParameter @{ scheduleName = $scheduleName } -EnableException
+
+            $attachToJobQuery = @"
+            EXEC msdb.dbo.sp_attach_schedule
+                @job_name=@jobName,
+                @schedule_name=@scheduleName
+"@;
+
+            SbsWriteDebug "Attaching schedule $scheduleName to job $jobName";
+            Invoke-DbaQuery -SqlInstance $SqlInstance -Query $attachToJobQuery -SqlParameter @{ scheduleName = $scheduleName; jobName = $jobName } -EnableException
         }
 
         $newTriggerParams["SqlInstance"] = $server;
@@ -122,7 +147,7 @@ function Set-SqlServerJob {
     $newJobParams["SqlInstance"] = $server;
     $newJobParams["Job"] = $jobName;
 
-    SbsWriteDebug "Updagint job '$jobName' configuration"
+    SbsWriteDebug "Updating job '$jobName' configuration"
     Set-DbaAgentJob @newJobParams;
 }
 

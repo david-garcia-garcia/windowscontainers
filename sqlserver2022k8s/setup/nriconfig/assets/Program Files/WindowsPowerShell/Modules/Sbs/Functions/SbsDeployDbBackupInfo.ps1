@@ -180,8 +180,7 @@ GO
                 Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query $sqlBatch -ErrorAction Stop
             }
             catch {
-                SbsWriteError "Error executing SQL command: $sqlBatch"
-                SbsWriteError $_.Exception.Message
+                SbsWriteError "$($_.Exception.Message) $($_.Exception.ScriptStackTrace)";
             }
         }
     }

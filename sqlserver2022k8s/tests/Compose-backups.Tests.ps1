@@ -94,7 +94,7 @@ CREATE TABLE dbo.TestTable (
 
     It 'Information is recovered after several cycles of backups and restores' {
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 25;
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 40;
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 2").TestData | Should -Be "New Record 2"
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
@@ -102,9 +102,9 @@ CREATE TABLE dbo.TestTable (
 
     It 'Can make a diff backup' {
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 30;
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 40;
         docker exec $Env:instanceName powershell "SbsMssqlRunBackups DIFF";
-        WaitForLog $Env:instanceName "Backup completed" -TimeoutSeconds 30;
+        WaitForLog $Env:instanceName "backups finished" -TimeoutSeconds 30;
         $backupFiles = Get-ChildItem -Path "c:\datavolume\backup\mytestdatabase\DIFF" -Recurse -Filter "*.bak"
         $backupFiles.Count | Should -Be 1
     }

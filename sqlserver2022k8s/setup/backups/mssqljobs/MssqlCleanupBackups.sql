@@ -14,14 +14,14 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'Mssql Cleanup Backups', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'MssqlBackup - CLEAN', 
 		@enabled=1, 
 		@notify_level_eventlog=2, 
 		@notify_level_email=0, 
 		@notify_level_netsend=0, 
 		@notify_level_page=0, 
 		@delete_level=0, 
-		@description=N'No description available.', 
+		@description=N'Clean old backups according to retention policy. Supports backups in Azure Blob.', 
 		@category_name=N'[Uncategorized (Local)]', 
 		@owner_login_name='sa', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback

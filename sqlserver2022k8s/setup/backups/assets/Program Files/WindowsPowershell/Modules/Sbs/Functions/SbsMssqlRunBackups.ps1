@@ -179,8 +179,9 @@ function SbsMssqlRunBackups {
 			# Because of the volatile nature of this setup, ServerName and InstanceName make no sense
 			# we could have an APP name?
 			# $directoryStructure = "{ServerName}{$InstanceName}{DirectorySeparator}{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
-			# $directoryStructure = "{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
-			$directoryStructure = "{DatabaseName}";
+			
+			# Cleanup is not supported if the token 2024-05-28 09:39:16 {BackupType} is not part of the directory.
+			$directoryStructure = "{DatabaseName}{DirectorySeparator}{BackupType}_{Partial}_{CopyOnly}";
 
 			# $fileName = "{ServerName}${InstanceName}_{DatabaseName}_{BackupType}_{Partial}_{CopyOnly}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{FileNumber}.{FileExtension}";
 			$fileName = "{DatabaseName}_{Year}{Month}{Day}_{Hour}{Minute}{Second}_{BackupType}_{Partial}_{CopyOnly}_{FileNumber}.{FileExtension}";
@@ -198,7 +199,18 @@ function SbsMssqlRunBackups {
 				# These are incompatible with the use of URL
 				SbsWriteDebug "No backup url defined, backing up to database backup directory: $databaseBackupDirectory (if NULL, default configured location will be used)";
 				$parameters["@Directory"] = $databaseBackupDirectory;
-				$parameters["@CleanupTime"] = "$cleanupTime";
+
+				# The value for the parameter @CleanupTime is not supported. Cleanup is not supported if the token 
+				# {BackupType} is not part of the directory.
+				# The documentation is available at 
+				# https://ola.hallengren.com/sql-server-backup.html.
+				if ($directoryStructure -match "\{BackupType\}") {
+				  $parameters["@CleanupTime"] = "$cleanupTime";
+				}
+				else {
+					# Better a warning, than no backups at all :(
+					SbsWriteWarning "Hallengren solution @CleanupTime cannot be used if {BackupType} is not part of the directory structure.";
+				}
 			}
 
 			if (-not $null -eq $mirrorUrl) {

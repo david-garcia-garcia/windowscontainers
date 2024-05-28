@@ -19,31 +19,50 @@ The image comes with a well known backup solution already installed:
 
 [SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html)
 
-If you need to configure backups, the image comes with the following scheduled tasks:
+It includes the following SQL Server Agent jobs:
 
-- **MssqlDifferential**: run differential backup on all user databases. Differential is promoted to FULL according to MSSQL_BACKUP_MODIFICATIONLEVEL and MSSQL_BACKUP_CHANGEBACKUPTYPE.
-- **MssqlDifferential2**: a second differential backup schedule, so you can have up to two differential backups daily. Differential is promoted to FULL according to MSSQL_BACKUP_MODIFICATIONLEVEL and MSSQL_BACKUP_CHANGEBACKUPTYPE.
-- **MssqlFull**: run full backup on all user databases.
-- **MssqlLog**: run log backup on all user databases.
-- **MssqlSystem**: run full backups on all system databases.
+| Job Name                 | Purpose                                                      | Recommended Schedule                                         |
+| ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| CommandLog Cleanup       | Clean logs                                                   | Weekly                                                       |
+| Mssql - Reset memory     | Release memory usage by temporarily downgrading server max memory according to environment MSSQL_BACKUP_RELEASEMEMORY | Use with caution when server is as close as possible to idle usage |
+| MssqlBackup - CLEAN      | Cleanup backups according to env: MSSQL_BACKUP_CLEANUPTIME_LOG, MSSQL_BACKUP_CLEANUPTIME_DIFF and MSSQL_BACKUP_CLEANUPTIME_FULL. Only used when backing up to Azure Blob Storage through MSSQL_PATH_BACKUPURL | Ideally run right after DIFF and FULL                        |
+| MssqlBackup - DIFF       | Differential backup for user databases                       | According to required RPO and RDP                            |
+| MssqlBackup - FULL       | Full backup for user databases                               | According to required RPO and RDP                            |
+| MssqlBackup - LOG        | Log backup for user databases                                | According to required RPO and RDP                            |
+| MssqlBackup - LTS AzCopy | Copy DIFF and Full backups to an alternate Azure Blob, that can support immutable storage. Uses MSSQL_BACKUP_AZCOPYLTS as target and MSSQL_PATH_BACKUPURL as source. Uses AzCopy so the copy is blob-to-blob, consuming no server resources and is extremely fast. | Every 1 hour.                                                |
+| MssqlBackup - SYSTEM     | Full backup for system databases                             | According to required RPO and RDP                            |
 
 You can schedule these tasks using environment variables:
 
 ```yaml
-# Full every saturdaY
-- 'SBS_CRON_MssqlFull={"Weekly":true,"At":"2023-01-01T02:00:00", "RandomDelay": "00:30:00", "DaysOfWeek": ["Saturday"]}'
-
-# Differential every day at 4:00
-- 'SBS_CRON_MssqlDifferential={"Daily":true,"At":"2023-01-01T04:00:00","DaysInterval":1}'
-
-# Log backup every 15 minutes
-- 'SBS_CRON_MssqlLog={"Once":true,"At":"2023-01-01T00:00:00","RepetitionInterval": "00:15:00", "RepetitionDuration": "Timeout.InfiniteTimeSpan"}'
-
-# System databases daily at 22:00
-- 'SBS_CRON_MssqlSystem={"Daily":true,"At":"2023-01-01T22:00:00","DaysInterval":1}'
+- 'MSSQL_JOB_Full={"Job":"MssqlBackup - FULL", "Enabled": true, "Schedules": [{"Schedule": "Full weekly", "FrequencyType": "Weekly", "FrequencyInterval": "Saturday", "FrequencySubdayType": "Once", "StartTime": "230000"}]}'
+      - 'MSSQL_JOB_Log={"Job":"MssqlBackup - LOG", "Enabled": true, "Schedules": [{"Schedule": "Every 5 minutes", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "000000", "EndTime": "235959", "FrequencySubdayType": "Minutes", "FrequencySubdayInterval": 5}]}'
+      - 'MSSQL_JOB_Diff={"Job":"MssqlBackup - DIFF", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "230000"}]}'
+      - 'MSSQL_JOB_CommandLogCleanup={"Job":"CommandLog Cleanup", "Enabled": true, "Schedules": [{"Schedule": "Full weekly", "FrequencyType": "Weekly", "FrequencyInterval": "Friday", "FrequencySubdayType": "Once", "StartTime": "220000"}]}'
+      - 'MSSQL_JOB_MssqlCleanBackups={"Job":"MssqlBackup - CLEAN", "Enabled": true, "Schedules": [{"Schedule": "Every 6 hours", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "000000", "EndTime": "235959", "FrequencySubdayType": "Hours", "FrequencySubdayInterval": 6}]}'
+      - 'MSSQL_JOB_LtsAzCopy={"Job":"MssqlBackup - LTS AzCopy", "Enabled": true, "Schedules": [{"Schedule": "Every 2 hours", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "000000", "EndTime": "235959", "FrequencySubdayType": "Hours", "FrequencySubdayInterval": 2}]}'
+      - 'MSSQL_JOB_DeleteBackupHistory={"Job":"sp_delete_backuphistory", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "190000"}]}'
+      - 'MSSQL_JOB_PurgeJobHistory={"Job":"sp_purge_jobhistory", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "200000"}]}'
+      - 'MSSQL_JOB_OutputFileCleanup={"Job":"Output File Cleanup", "Enabled": true, "Schedules": [{"Schedule": "Full weekly", "FrequencyType": "Weekly", "FrequencyInterval": "Thursday", "FrequencySubdayType": "Once", "StartTime": "220000"}]}'
 ```
 
-You can define backup cleanup times for each type of backup (retention). If you are using Backup To Url (Azure Blob SAS) the image contains custom logic to deal with cleanup, compensating for the lack of support for CleanupTime in the native Hallengren backup solution, the code for this cleanup code is [here](setup/backups/assets/Program Files/WindowsPowershell/Modules/Sbs/Functions/SbsMssqlCleanupBackups.ps1). Note, like the original backup solution, the cleanup logic ensure that a viable full restore can be made, even if you misconfigure retention times.
+The general structure of a Job Schedule configuration using environment is (supports YAML)
+
+```yaml
+# Root object is passed down to Set-DbaAgentJob, except for the SCHEDULES array (see their docs for available options)
+
+# Name of the job, must exist in the container
+Job: sp_purge_jobhistory
+Enabled: true
+# List of schedules for the JOB. The schedule definition is passed to Set-DbaAgentSchedule (see their docs for available options)
+Schedules:
+- Schedule: Daily
+  FrequencyType: Daily
+  FrequencyInterval: EveryDay
+  StartTime: '200000'
+```
+
+You can define backup cleanup times for each type of backup (retention). If you are using Backup To Url (Azure Blob SAS) the image contains custom logic to deal with cleanup, compensating for the lack of support for CleanupTime in the native Hallengren backup solution, the code for this cleanup code is [here](setup/backups/assets/Program Files/WindowsPowershell/Modules/Sbs/Functions/SbsMssqlCleanupBackups.ps1). Note, like the original backup solution, the cleanup logic ensure that a **viable full restore can be made** and that **no restore chain is affected** , even if you misconfigure retention times.
 
 ```yaml
 - MSSQL_BACKUP_CLEANUPTIME_LOG=48
@@ -60,15 +79,6 @@ Because it makes it easier to *tightly couple the backup rules to the lifecycle 
 Use the following configuration to fully backup your data for a 5min RPO with enhanced behavior that takes backups more often (2min) if at least 50MB of log size has been generated.
 
 ```bash
-# Backup schedules: WEEKLY FULL
-- 'SBS_CRON_MssqlFull={"Weekly":true,"At":"2023-01-01T02:00:00", "RandomDelay": "00:30:00", "DaysOfWeek": ["Saturday"]}'
-
-# Backup schedules: DAILY DIFFERENTIAL
-- 'SBS_CRON_MssqlDifferential={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
-
-# Backup schedule: LOG Every 2 minutes
-- 'SBS_CRON_MssqlLog={"Once":true,"At":"2023-01-01T00:00:00","RepetitionInterval": "00:02:00", "RepetitionDuration": "Timeout.InfiniteTimeSpan"}'
-
 # Only do transaction log backup if tx log is 50MB or 600s have passed since last backup.
 - MSSQL_BACKUP_LOGSIZESINCELASTBACKUP=50
 - MSSQL_BACKUP_TIMESINCELASTLOGBACKUP=300
@@ -82,8 +92,7 @@ Use the following configuration to fully backup your data for a 5min RPO with en
 - MSSQL_BACKUP_CLEANUPTIME_FULL=128 # 1 week of fulls
 
 # LTR (Long term storage, you can use IMMUTABLE blobs here), overhead for this is very small because it uses AZCOPY blob-to-blob direct copy so it's ultra fast
-- MSSQL_BACKUP_AZCOPY_DIFF=https://immutable.blob.core.windows.net/lts/?sv=xx
-- MSSQL_BACKUP_AZCOPY_FULL=https://immutable.blob.core.windows.net/lts/?sv=xx
+- MSSQL_BACKUP_AZCOPYLTS=https://immutable.blob.core.windows.net/lts/?sv=xx
 ```
 
 All of these settings can be adjusted with **live reload** in the container, just make sure you are using kubernetes configmaps as described in the documentation of the base image.
@@ -190,9 +199,7 @@ The idea behind the backup lifecycle is very simple: backups are bound to the co
 
 This is **not a high availability setup**, but it is **robust**, **very cheap to operate** and you can get reliable low RPO with frequent transaction log backups. If you actually setup the proper VM and storage types, you could move a MSSQL database pod that hosts a 100GB database between nodes in about **4 minutes** (see the Benchmarks chapter for additional details). 
 
-
-
-## Memory usage and footpring
+## Memory usage and footprint
 
 The base memory consumption AKA memory footprint for this image is approx. **356Mb**. ~100MB are for the entrypoint and windows services, the other 256MB are for MSSQL Server itself. You cannot run MSSQL with less than 256MB (although official documentation states a minimum of Max Server memory of 128MB). If you push this limit too much, you will loose access to the server and CPU usage will spike - plus your logs will be getting flooded. I have tested 256MB to be the bare minimum to keep MSSQL running (probably due to the image having Full Text Search and SQL Server Agent).
 

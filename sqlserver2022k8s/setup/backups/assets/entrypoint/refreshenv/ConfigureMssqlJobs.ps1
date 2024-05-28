@@ -7,13 +7,22 @@ Import-Module dbatools;
 
 $sqlInstance = Connect-DbaInstance "localhost";
 
+$errors = New-Object -TypeName System.Collections.ArrayList;
+
 # Loop through each found environment variable
 foreach ($job in $jobs) {
-    #try {
+    try {
         Set-SqlServerJob -SQLInstance $sqlInstance -JobDefinition $job.Value;
-    #}
-    #catch {
-    #    SbsWriteError "Message: $($_.Exception.Message)";
-    #    SbsWriteError "Stack: $($_.Exception.StackTrace)";
-    #}
+    }
+    catch {
+        $errors.Add($_);
+    }
+}
+
+if ($errors.Length -gt 1) {
+    throw [System.AggregateException]::new($errors);
+}
+
+if ($errors.Length -gt 0) {
+    throw $errors[0];
 }

@@ -63,9 +63,7 @@ services:
       - MSSQL_CLEARDATAPATHS=True
       #- MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
       - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_BACKUP_AZCOPY_LOG=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_BACKUP_AZCOPY_DIFF=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_BACKUP_AZCOPY_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_BACKUP_AZCOPYLTS=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
       # Database info
       - MSSQL_DB_NAME=mytestdatabase
       - MSSQL_DB_RECOVERYMODEL=FULL
