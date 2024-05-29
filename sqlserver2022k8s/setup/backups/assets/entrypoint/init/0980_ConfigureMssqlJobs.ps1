@@ -1,0 +1,1 @@
+. "c:\entrypoint\refreshenv\ConfigureMssqlJobs.ps1";

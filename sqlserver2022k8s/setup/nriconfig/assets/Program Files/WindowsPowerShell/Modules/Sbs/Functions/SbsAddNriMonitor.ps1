@@ -26,7 +26,7 @@ function SbsAddNriMonitor {
     }
     else {
         Set-DbaLogin -SqlInstance $instance -Login $loginName -SecurePassword (ConvertTo-SecureString $password -AsPlainText -Force);
-        Write-Output "Login $loginName already exists."
+        SbsWriteDebug "Login $loginName already exists."
     }
 
     Invoke-DbaQuery -SqlInstance $instance -Query "GRANT CONNECT SQL, VIEW SERVER STATE, VIEW ANY DEFINITION TO [$loginName]";
@@ -43,7 +43,7 @@ function SbsAddNriMonitor {
             New-DbaDbUser -SqlInstance $instance -Database $db -Login $loginName -User $loginName;
         }
         else {
-            Write-Output "User $loginName already exists in database $db.";
+            SbsWriteDebug "User $loginName already exists in database $db.";
         }
     }
 

@@ -126,6 +126,7 @@ SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)
 $lastCheck = (Get-Date).AddSeconds(-1);
 
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
+$stopwatchLogRefresh = [System.Diagnostics.Stopwatch]::StartNew();
 
 # Get the parent process name
 $parentProcessIsLogMonitor = $false;
@@ -149,15 +150,27 @@ try {
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
         # Warm refresh environment configuration
-        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 5) {
+        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
 
             $changed = SbsPrepareEnv;
 
             if ($true -eq $changed) {
                 SbsWriteHost "Environment refreshed.";
-                SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
+                try {
+                    SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
+                }
+                catch {
+                    # Set a random ENVHASH so that the ENV is refresh on next loop again, we WANT to flood the
+                    # logs, but we don't want to stop the pods.
+                    [System.Environment]::SetEnvironmentVariable("ENVHASH", (Get-Date).ToString("o"), [System.EnvironmentVariableTarget]::Process);
+                    SbsWriteHost "Error running environment update $($_.Message). Will retry later.";
+                }
             }
 
+            $stopwatchEnvRefresh.Restart();
+        }
+
+        if ($stopwatchLogRefresh.Elapsed.TotalSeconds -gt 2) {
             # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance
             # is terrible, taking almost 1 whole CPU once published in an AKS cluster. And it's not the cmdlet going crazy,
             # it's the Event Viewer service after the querying.
@@ -177,10 +190,10 @@ try {
             }
 
             $lastCheck = Get-Date;
-            $stopwatchEnvRefresh.Restart();
+            $stopwatchLogRefresh.Restart();
         }
-         
-        Start-Sleep -Seconds 2;
+
+        Start-Sleep -Milliseconds 1500;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving

@@ -25,9 +25,10 @@ Function SbsRunScriptsInDirectory {
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
             Import-Module Sbs;
             foreach ($script in $scripts) {
+                $sw = [System.Diagnostics.Stopwatch]::StartNew();
                 SbsWriteHost "$($script.Name): START ";
                 & $script.FullName;
-                SbsWriteHost "$($script.Name): END";
+                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
             }
         } -ArgumentList $Path
         
@@ -45,9 +46,10 @@ Function SbsRunScriptsInDirectory {
         SbsWriteHost "Running $($scripts.count) init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
         Import-Module Sbs;
         foreach ($script in $scripts) {
+            $sw = [System.Diagnostics.Stopwatch]::StartNew();
             SbsWriteHost "$($script.Name): START";
             & $script.FullName;
-            SbsWriteHost "$($script.Name): END";
+            SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
         }
     }
 }
