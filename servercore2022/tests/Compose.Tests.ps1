@@ -28,6 +28,14 @@ Describe 'compose.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Automatic"
     }
 
+    It 'DPAPI encode/decode works' {
+        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT_PROTECT' | Should -Be "supersecretekey"
+        $encoded = docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT'
+        $encoded | Should -Not -Be "supersecretekey"
+        $decoded = docker exec servercore2022-servercore-1 powershell 'Import-Module Sbs; return SbsDpapiDecode -EncodedValue $Env:SBS_TESTPROTECT';
+        $decoded | Should -Be "supersecretekey"
+    }
+
     It 'Env warm reload' {
         $jsonString = @{
             "SBS_TESTVALUE" = "value1"
