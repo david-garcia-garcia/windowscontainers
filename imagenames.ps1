@@ -2,7 +2,10 @@
 
 param ()
 
-.\envsettings.ps1
+if (Test-Path -Path ".\envsettings.ps1") {
+    # If the file exists, run the script
+    .\envsettings.ps1
+}
 
 # Define the array of environment variable names to check
 $envVarsToCheck = @(
