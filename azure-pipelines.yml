@@ -18,11 +18,9 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
-    - task: build-and-push
+    - script: powershell .\buildall.ps1 -Test $true
       env:
         MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
         MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
-      script: |
-            powershell .\buildall.ps1 -Test $true
