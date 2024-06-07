@@ -28,6 +28,11 @@ foreach ($envVarName in $envVarsToCheck) {
 $version = $ENV:IMAGE_VERSION;
 $containerregistry = $ENV:REGISTRY_PATH;
 
+if (-not $containerregistry.EndsWith('/')) {
+    # Add a slash to the end of $containerregistry
+    $containerregistry = "$containerregistry/"
+}
+
 # Image names
 $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";
 $Env:IMG_SERVERCORE2022IIS = "$($containerregistry)servercore2022iis:$($version)";
