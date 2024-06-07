@@ -125,5 +125,10 @@ Set-Service ssh-agent -StartupType Disabled;
 Write-Host "Disabled service ssh-agent"
 
 # Clean temp data
-Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
-Remove-Item -Path "$env:TEMP\*" -Recurse -Force;
+Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | ForEach-Object {
+    try {
+        Remove-Item -Path $_.FullName -Force -Recurse -ErrorAction Stop
+    } catch {
+        Write-Host "Failed to delete $($_.FullName): $($_.Exception.Message)"
+    }
+}
