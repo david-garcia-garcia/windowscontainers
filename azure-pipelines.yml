@@ -1,0 +1,28 @@
+trigger:
+  branches:
+    include:
+    - '*'
+
+resources:
+- repo: self
+
+variables:
+  tag: '$(Build.BuildId)'
+  vmImageName: 'windows-2022'
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: build-and-push
+      env:
+        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+        REGISTRY_PATH: $(REGISTRY_PATH)
+      powershell: |
+            .\buildall.ps1 -Test $true

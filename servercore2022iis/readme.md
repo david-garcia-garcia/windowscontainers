@@ -29,9 +29,9 @@ Just in case you need to setup TLS termination directly in the container, unsafe
 
 ## IIS Remote Administration
 
-Container is prepared for IIS Remote Administration.
+Container is prepared for IIS Remote Administration using [Administración remota para el Administrador de IIS | Microsoft Learn](https://learn.microsoft.com/es-es/iis/manage/remote-administration/remote-administration-for-iis-manager)
 
-This service is disabled by default, to enable during container startup automatically:
+This service is disabled by default, to enable during container startup automatically, use the service-autostart configuration:
 
 ```powershell
 SBS_SRVENSURE=WMSVC
@@ -77,15 +77,12 @@ The image has old SSL protocols disabled, you will have to force your client to 
 
 You need to default to strong crypto in the host where the IIS Admin Client is running
 
-```
-Windows Registry Editor Version 5.00
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework\v4.0.30319]
-"SchUseStrongCrypto"=dword:00000001
-[HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319]
-"SchUseStrongCrypto"=dword:00000001
+```powershell
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value 1
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value 1
 ```
 
-**Important**: you will not be able to connect to IIS from within the same machine where the port is bound. IIS remote manager detects that the destination IP is also bound to the local computer and will skip remote management completely. There is no way to workaround this (not changing ports, not using HOSTS to fake a different hostname). The only way to make is to connect from somewhere where the IP does not match the one used for port forwarding. You can spin up a VM inside HyperV and from there, access the forwarded port in your host.
+**Important**: you will not be able to connect to IIS **from within the same machine where the port is bound**. IIS remote manager detects that the destination IP is also bound to the local computer and will skip remote management completely. There is no way to workaround this (not changing ports, not using HOSTS to fake a different hostname). The only way to make is to connect from somewhere where the IP does not match the one used for port forwarding. You can spin up a VM inside HyperV and from there, access the forwarded port in your host.
 
 ![image-20240117144908714](readme_assets/img-remoteiis-hyperv)
 

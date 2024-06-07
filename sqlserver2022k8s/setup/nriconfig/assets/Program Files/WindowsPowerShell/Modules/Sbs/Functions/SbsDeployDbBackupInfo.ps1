@@ -4,13 +4,9 @@ function SbsDeployDbBackupInfo {
         [string]$sqlInstance
     )
 
-    $sqlDropProcedure = @"
-IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[GetDatabaseBackupInfo]') AND type in (N'P', N'PC'))
-DROP PROCEDURE dbo.GetDatabaseBackupInfo
-"@;
-	
-    $sqlUpsertProcedure = @"
-CREATE PROCEDURE dbo.GetDatabaseBackupInfo
+    SbsWriteDebug "Upserting dbo.GetDatabaseBackupInfo";
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query @"
+CREATE OR ALTER PROCEDURE dbo.GetDatabaseBackupInfo
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -93,7 +89,8 @@ WHERE database_name = ' + QUOTENAME(@DatabaseName, N'''') + N';
 END
 "@
 
-    $sqlCreateTable = @"
+    SbsWriteDebug "Upserting SbsDatabaseBackupInfo";
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query @"
 IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SbsDatabaseBackupInfo')
 DROP TABLE SbsDatabaseBackupInfo;
 
@@ -114,7 +111,8 @@ CREATE TABLE SbsDatabaseBackupInfo
 );
 "@
 
-    $sqlCreateJob = @"
+    SbsWriteDebug "Upserting SbsDatabaseBackupInfo";
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query @"
 USE msdb;
 GO
 
@@ -164,24 +162,4 @@ EXEC msdb.dbo.sp_add_jobserver
     @server_name = N'(local)';
 GO
 "@
-
-    # List of your SQL commands
-    $sqlCommands = @($sqlDropProcedure, $sqlUpsertProcedure, $sqlCreateTable, $sqlCreateJob)
-
-    foreach ($sqlCommand in $sqlCommands) {
-        # Clean up the command to remove new lines and carriage returns
-        $sqlCommand = $sqlCommand -replace '\r', '' -replace '\n', ' '
-        # Split the command on "GO" statements to handle them as separate batches
-        $sqlBatches = $sqlCommand -split '(?i)go'
-        foreach ($sqlBatch in $sqlBatches) {
-            if ([string]::IsNullOrWhiteSpace($sqlBatch)) { continue }
-            # Use Invoke-DbaQuery to execute each SQL batch. This cmdlet manages the connection for you.
-            try {
-                Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query $sqlBatch -ErrorAction Stop
-            }
-            catch {
-                SbsWriteError "$($_.Exception.Message) $($_.Exception.ScriptStackTrace)";
-            }
-        }
-    }
 }

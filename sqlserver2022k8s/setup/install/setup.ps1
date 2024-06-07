@@ -10,6 +10,12 @@ Write-Host "-----------------------------------------`n"
 
 Install-DbaMaintenanceSolution -SqlInstance "localhost" -LogToTable -InstallJobs;
 
+Write-Host "`n---------------------------------------"
+Write-Host " Install https://ola.hallengren.com/"
+Write-Host "-----------------------------------------`n"
+
+Install-DbaFirstResponderKit -SqlInstance "localhost"
+
 # Disable jobs that we will not be using (backups are taken care of differently)
 $JobsToDisable = @(
     "DatabaseBackup - SYSTEM_DATABASES - FULL",
@@ -28,7 +34,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install azcopy"
 Write-Host "-----------------------------------------`n"
 
-choco install azcopy10 -y --version=10.24.0 --no-progress;
+choco install azcopy10 -y --version=10.25.0 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
