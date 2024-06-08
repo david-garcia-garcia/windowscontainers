@@ -17,6 +17,8 @@ stages:
     displayName: Build
     pool:
       vmImage: $(vmImageName)
+      demands:
+        - agent.name -equals DESKTOP-0QIQHPA
     steps:
     - script: powershell .\buildall.ps1 -Test $true
       env:
