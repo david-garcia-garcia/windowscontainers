@@ -17,6 +17,7 @@ stages:
     displayName: Build
     pool:
       vmImage: $(vmImageName)
+      name: Default
     steps:
     - script: powershell .\buildall.ps1 -Test $true
       env:
