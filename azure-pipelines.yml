@@ -16,6 +16,7 @@ stages:
   - job: Build
     displayName: Build
     pool:
+      name: Default
       vmImage: $(vmImageName)
       demands:
         - agent.name -equals DESKTOP-0QIQHPA
