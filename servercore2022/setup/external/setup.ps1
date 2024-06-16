@@ -28,7 +28,9 @@ Write-Host " Open SSH server"
 Write-Host "-----------------------------------------`n"
 
 Add-WindowsCapability -Online -Name OpenSSH.Server
+
 Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "PasswordAuthentication yes";
+Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "Subsystem sftp C:/Windows/System32/OpenSSH/sftp-server.exe";
 
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.
