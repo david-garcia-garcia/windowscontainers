@@ -14,14 +14,14 @@ Write-Host " Installing 7zip"
 Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
-choco upgrade 7zip.install -y --version=23.1 --ignore-checksums --no-progress;
+choco upgrade 7zip.install -y --version=23.1 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Installing Micro"
 Write-Host "-----------------------------------------`n"
 
 # Command line editor
-choco upgrade micro -y --version=2.0.11 --ignore-checksums --no-progress;
+choco upgrade micro -y --version=2.0.11 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Open SSH server"
