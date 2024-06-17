@@ -5,6 +5,7 @@ function SbsDpapiDecode {
         [Parameter()]
         [AllowNull()]
         [AllowEmptyString()]
+        [string]
         $EncodedValue
     )
 

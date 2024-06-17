@@ -36,6 +36,29 @@ Describe 'compose.yaml' {
         $decoded | Should -Be "supersecretekey"
     }
 
+    It 'SSH Connection works' {
+        Import-Module Posh-SSH
+        # Define the SSH server details
+        $serverIp = "172.18.8.8"
+        $username = "localadmin"
+        $password = "P@ssw0rd"
+
+        # Create a PSCredential object
+        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+
+        # Attempt to create a new SSH session with auto-accepted host key
+        $sshSession = New-SSHSession -ComputerName $serverIp -Credential $credential -AcceptKey -ErrorAction SilentlyContinue
+    
+        # Assert that the session was created successfully
+        $sshSession | Should -Not -BeNullOrEmpty
+
+        # Close the session if it was created
+        if ($sshSession) {
+            Remove-SSHSession -SessionId $sshSession.SessionId
+        }
+    }
+
     It 'Env warm reload' {
         $jsonString = @{
             "SBS_TESTVALUE" = "value1"
