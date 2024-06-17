@@ -11,7 +11,7 @@ Write-Host "-----------------------------------------`n"
 Install-DbaMaintenanceSolution -SqlInstance "localhost" -LogToTable -InstallJobs;
 
 Write-Host "`n---------------------------------------"
-Write-Host " Install https://ola.hallengren.com/"
+Write-Host " Install https://github.com/BrentOzarULTD/SQL-Server-First-Responder-Kit"
 Write-Host "-----------------------------------------`n"
 
 Install-DbaFirstResponderKit -SqlInstance "localhost"
