@@ -34,7 +34,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install azcopy"
 Write-Host "-----------------------------------------`n"
 
-choco install azcopy10 -y --version=10.25.0 --no-progress;
+choco install azcopy10 -y --version=10.25.1 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
