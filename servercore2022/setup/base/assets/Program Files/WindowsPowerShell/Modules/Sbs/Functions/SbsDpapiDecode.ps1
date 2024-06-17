@@ -2,10 +2,15 @@ function SbsDpapiDecode {
 
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true)]
-        [string]
+        [Parameter()]
+        [AllowNull()]
+        [AllowEmptyString()]
         $EncodedValue
     )
+
+    if ([string]::IsNullOrWhiteSpace($EncodedValue)) {
+        return $EncodedValue;
+    }
 
     try {
         Add-Type -AssemblyName System.Security;
