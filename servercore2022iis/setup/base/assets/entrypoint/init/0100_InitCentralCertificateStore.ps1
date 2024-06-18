@@ -4,13 +4,12 @@ $certStorePath = [System.Environment]::GetEnvironmentVariable("SBS_AUTOSSLCSSPAT
 if (![string]::IsNullOrWhiteSpace($certStorePath)) {
 
     # DECODE PASSWORD
-    Add-Type -AssemblyName System.Security;
     $password = [System.Environment]::GetEnvironmentVariable("SBS_AUTOSSLPASSWORD");
     if ([string]::IsNullOrWhiteSpace($password)) {
         throw "SBS_AUTOSSLPASSWORD env not provided. In order to setup CCS through SBS_AUTOSSLCSSPATH you must provide a PFX password.";
     }
-    $password = [Convert]::FromBase64String($password);
-    $password = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect($password, $null, 'LocalMachine'));
+    
+    $password = SbsDpapiDecode -EncodedValue $password;
 
     SbsWriteHost "Initializing Central Certificate Store in Image";
     Invoke-IISChefSetupCcs -CertStoreLocation $certStorePath -PrivateKeyPassword $password;

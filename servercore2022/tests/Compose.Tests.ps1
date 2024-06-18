@@ -28,6 +28,37 @@ Describe 'compose.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Automatic"
     }
 
+    It 'DPAPI encode/decode works' {
+        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT_PROTECT' | Should -Be "supersecretekey"
+        $encoded = docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT'
+        $encoded | Should -Not -Be "supersecretekey"
+        $decoded = docker exec servercore2022-servercore-1 powershell 'Import-Module Sbs; return SbsDpapiDecode -EncodedValue $Env:SBS_TESTPROTECT';
+        $decoded | Should -Be "supersecretekey"
+    }
+
+    It 'SSH Connection works' {
+        Import-Module Posh-SSH
+        # Define the SSH server details
+        $serverIp = "172.18.8.8"
+        $username = "localadmin"
+        $password = "P@ssw0rd"
+
+        # Create a PSCredential object
+        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+
+        # Attempt to create a new SSH session with auto-accepted host key
+        $sshSession = New-SSHSession -ComputerName $serverIp -Credential $credential -AcceptKey -ErrorAction SilentlyContinue
+    
+        # Assert that the session was created successfully
+        $sshSession | Should -Not -BeNullOrEmpty
+
+        # Close the session if it was created
+        if ($sshSession) {
+            Remove-SSHSession -SessionId $sshSession.SessionId
+        }
+    }
+
     It 'Env warm reload' {
         $jsonString = @{
             "SBS_TESTVALUE" = "value1"

@@ -80,7 +80,7 @@ function SbsPrepareEnv {
             Add-Type -AssemblyName System.Security;
             $originalVariableName = $matches[1];
             $originalValue = $processEnvironmentVariables[$key];
-            $protectedValue = [System.Convert]::ToBase64String([System.Security.Cryptography.ProtectedData]::Protect([System.Text.Encoding]::UTF8.GetBytes($originalValue), $null, 'LocalMachine'));
+            $protectedValue = SbsDpapiEncode -ClearValue $originalValue;
             [System.Environment]::SetEnvironmentVariable($originalVariableName, $protectedValue, [System.EnvironmentVariableTarget]::Process);
             Remove-Item -Path "Env:\$variableName";
             Write-Host "Protected environment variable '$variableName' with DPAPI at the machine level and renamed to '$originalVariableName'";
