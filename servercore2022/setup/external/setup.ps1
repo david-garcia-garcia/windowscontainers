@@ -14,21 +14,23 @@ Write-Host " Installing 7zip"
 Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
-choco upgrade 7zip.install -y --version=23.1 --ignore-checksums --no-progress;
+choco upgrade 7zip.install -y --version=23.1 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Installing Micro"
 Write-Host "-----------------------------------------`n"
 
 # Command line editor
-choco upgrade micro -y --version=2.0.11 --ignore-checksums --no-progress;
+choco upgrade micro -y --version=2.0.11 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Open SSH server"
 Write-Host "-----------------------------------------`n"
 
 Add-WindowsCapability -Online -Name OpenSSH.Server
+
 Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "PasswordAuthentication yes";
+Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "Subsystem sftp C:/Windows/System32/OpenSSH/sftp-server.exe";
 
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.
@@ -125,5 +127,10 @@ Set-Service ssh-agent -StartupType Disabled;
 Write-Host "Disabled service ssh-agent"
 
 # Clean temp data
-Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
-Remove-Item -Path "$env:TEMP\*" -Recurse -Force;
+Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | ForEach-Object {
+    try {
+        Remove-Item -Path $_.FullName -Force -Recurse -ErrorAction Stop
+    } catch {
+        Write-Host "Failed to delete $($_.FullName): $($_.Exception.Message)"
+    }
+}

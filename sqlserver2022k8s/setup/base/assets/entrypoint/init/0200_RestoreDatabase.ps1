@@ -31,8 +31,6 @@ SbsWriteHost "SQL Backup Path: $backupPath";
 SbsWriteHost "SQL Data Path: $dataPath";
 SbsWriteHost "SQL Log Path: $logPath";
 
-$controlPath = $Env:MSSQL_PATH_CONTROL;
-
 $databaseName = SbsGetEnvString -Name "MSSQL_DB_NAME" -DefaultValue $null;
 $databaseRecoveryModel = SbsGetEnvString -Name "MSSQL_DB_RECOVERYMODEL" -DefaultValue "SIMPLE";
 
@@ -98,80 +96,85 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
 # Restore from a remote backup file
 # Restore to a point in time
 # Define the path to the startup file
-$startupFile = Join-Path -Path $controlPath -ChildPath "startup.yaml";
+$controlPath = $Env:MSSQL_PATH_CONTROL;
 
-# Check if the startup file exists
-if (Test-Path $startupFile) {
+if ($null -ne $controlPath) {
 
-    SbsWriteHost "Initiating startup instructions...";
+    $startupFile = Join-Path -Path $controlPath -ChildPath "startup.yaml";
 
-    # Load the steps from the startup file
-    $steps = (Get-Content $startupFile -Raw | ConvertFrom-Yaml).steps
+    # Check if the startup file exists
+    if (Test-Path $startupFile) {
 
-    # Check if there are any steps defined
-    if ($steps -and $steps.Count -gt 0) {
-        foreach ($step in $steps) {
-            switch ($step.type) {
-                'restore_bacpac' {
-                    if ($step.url -match "\.zip$" -or $step.url -match "\.7z$") {
-                        # Handle decompression for .zip or .7z files
-                        $tempPath = [System.IO.Path]::GetTempFileName();
-                        Invoke-WebRequest -Uri $step.url -OutFile $tempPath -UseBasicParsing
-                        if ($step.url -match "\.zip$") {
-                            Expand-Archive -Path $tempPath -DestinationPath "tempDir" -Force
+        SbsWriteHost "Initiating startup instructions...";
+
+        # Load the steps from the startup file
+        $steps = (Get-Content $startupFile -Raw | ConvertFrom-Yaml).steps
+
+        # Check if there are any steps defined
+        if ($steps -and $steps.Count -gt 0) {
+            foreach ($step in $steps) {
+                switch ($step.type) {
+                    'restore_bacpac' {
+                        if ($step.url -match "\.zip$" -or $step.url -match "\.7z$") {
+                            # Handle decompression for .zip or .7z files
+                            $tempPath = [System.IO.Path]::GetTempFileName();
+                            Invoke-WebRequest -Uri $step.url -OutFile $tempPath -UseBasicParsing
+                            if ($step.url -match "\.zip$") {
+                                Expand-Archive -Path $tempPath -DestinationPath "tempDir" -Force
+                            }
+                            elseif ($step.url -match "\.7z$") {
+                                # Assuming 7z.exe is available in the system PATH
+                                Start-Process 7z.exe -ArgumentList "x `"$tempPath`" -o`"tempDir`" -p`"$($step.pwd)`" -y" -Wait;
+                            }
+                            $bacpacPath = Get-ChildItem "tempDir" -Filter "*.bacpac" | Select-Object -ExpandProperty FullName -First 1;
+                            Restore-DbaDatabase -SqlInstance 'localhost' -Path $bacpacPath;
+                            Remove-Item "tempDir" -Recurse -Force;
+                            Remove-Item $tempPath -Force;
                         }
-                        elseif ($step.url -match "\.7z$") {
-                            # Assuming 7z.exe is available in the system PATH
-                            Start-Process 7z.exe -ArgumentList "x `"$tempPath`" -o`"tempDir`" -p`"$($step.pwd)`" -y" -Wait;
+                        else {
+                            # Direct restore from URL without decompression
+                            Restore-DbaDatabase -SqlInstance 'localhost' -Path $step.url;
                         }
-                        $bacpacPath = Get-ChildItem "tempDir" -Filter "*.bacpac" | Select-Object -ExpandProperty FullName -First 1;
-                        Restore-DbaDatabase -SqlInstance 'localhost' -Path $bacpacPath;
-                        Remove-Item "tempDir" -Recurse -Force;
-                        Remove-Item $tempPath -Force;
+                        $restored = $true;
                     }
-                    else {
-                        # Direct restore from URL without decompression
-                        Restore-DbaDatabase -SqlInstance 'localhost' -Path $step.url;
+                    'restore_full' {
+                        SbsWriteHost "Initiating full backup restore";
+                        # Download and import the backup certificate
+                        $certUrl = $step.cert;
+                        $backupUrl = $step.url;
+                        if ($null -ne $certUrl) {
+                            $certPath = "C:\windows\temp\tempCert.zip";
+                            Invoke-WebRequest -Uri $certUrl -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
+                            SbsRestoreCertificateFromZip 'localhost' $certPath;
+                            SbsWriteHost "Certificate restored";
+                        }
+                        SbsWriteHost "Initiating restore...";
+                        # Rename and download
+                        $fileName = [System.IO.Path]::GetFileName($backupUrl -replace '\?.*$');
+                        $localFilePath = Join-Path -Path $tempDir -ChildPath $fileName;
+                        if (Test-Path $localFilePath) { Remove-Item $localFilePath }
+                        SbsDownloadFile $backupUrl $localFilePath $localFilePath;
+                        # Grant permissions
+                        icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
+                        # Restore
+                        Restore-DbaDatabase -SqlInstance 'localhost' -DatabaseName $databaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose;
+                        # Clean
+                        Remove-Item -Path $localFilePath -Force;
+                        $restored = $true;
+                        SbsWriteHost "Restored database from $backupUrl.";
                     }
-                    $restored = $true;
-                }
-                'restore_full' {
-                    SbsWriteHost "Initiating full backup restore";
-                    # Download and import the backup certificate
-                    $certUrl = $step.cert;
-                    $backupUrl = $step.url;
-                    if ($null -ne $certUrl) {
-                        $certPath = "C:\windows\temp\tempCert.zip";
-                        Invoke-WebRequest -Uri $certUrl -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
-                        SbsRestoreCertificateFromZip 'localhost' $certPath;
-                        SbsWriteHost "Certificate restored";
+                    default {
+                        SbsWriteHost "$($step.type) not supported.";
                     }
-                    SbsWriteHost "Initiating restore...";
-                    # Rename and download
-                    $fileName = [System.IO.Path]::GetFileName($backupUrl -replace '\?.*$');
-                    $localFilePath = Join-Path -Path $tempDir -ChildPath $fileName;
-                    if (Test-Path $localFilePath) { Remove-Item $localFilePath }
-                    SbsDownloadFile $backupUrl $localFilePath $localFilePath;
-                    # Grant permissions
-                    icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
-                    # Restore
-                    Restore-DbaDatabase -SqlInstance 'localhost' -DatabaseName $databaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose;
-                    # Clean
-                    Remove-Item -Path $localFilePath -Force;
-                    $restored = $true;
-                    SbsWriteHost "Restored database from $backupUrl.";
-                }
-                default {
-                    SbsWriteHost "$($step.type) not supported.";
                 }
             }
         }
-    }
 
-    SbsArchiveFile $startupFile;
-}
-else {
-    SbsWriteHost "Startup file not found at path $startupFile, resuming regular lifecycle startup."
+        SbsArchiveFile $startupFile;
+    }
+    else {
+        SbsWriteHost "Startup file not found at path $startupFile, resuming regular lifecycle startup."
+    }
 }
 
 # If nothing was restored try from a backup

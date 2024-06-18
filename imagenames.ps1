@@ -2,7 +2,10 @@
 
 param ()
 
-.\envsettings.ps1
+if (Test-Path -Path ".\envsettings.ps1") {
+    # If the file exists, run the script
+    .\envsettings.ps1
+}
 
 # Define the array of environment variable names to check
 $envVarsToCheck = @(
@@ -24,6 +27,11 @@ foreach ($envVarName in $envVarsToCheck) {
 
 $version = $ENV:IMAGE_VERSION;
 $containerregistry = $ENV:REGISTRY_PATH;
+
+if (-not $containerregistry.EndsWith('/')) {
+    # Add a slash to the end of $containerregistry
+    $containerregistry = "$containerregistry/"
+}
 
 # Image names
 $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";

@@ -13,7 +13,7 @@ $global:ErrorActionPreference = 'Stop'
 
 
 # Instalar monitorización de New Relic
-choco upgrade newrelic-infra -y --version=1.52.0 --no-progress;
+choco upgrade newrelic-infra -y --version=1.52.3 --no-progress;
 
 # El servicio para por defecto y con arranque manual. Porque no sirve de nada
 # que arranque si no le llegan los parámetros de configuración, que vienen

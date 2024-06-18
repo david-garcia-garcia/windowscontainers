@@ -175,6 +175,13 @@ Start-Service -Name sshd;
 net user localadmin @MyP@ssw0rd
 ```
 
+You can also set environment variables to have this automatically configured when the container starts:
+
+```powershell
+- SBS_LOCALADMINPWD_PROTECT=P@ssw0rd
+- SBS_ENABLESSH=true
+```
+
 ## Log rotation
 
 A unix style logrotation utility is installed https://github.com/theohbrothers/Log-Rotate and runs every day at 3AM.

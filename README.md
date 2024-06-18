@@ -10,7 +10,7 @@ These all are **unofficial**, **unsupported** and **in no way connected to Micro
 
 ## Quick Start
 
-This repository contains multiple images that cannot be pushed to public repositories due to EULA of some of the software used in the build process. You will have to build and push them to a private repository in order to get started.
+This repository contains multiple images that cannot be pushed to public repositories due to EULA of some of the software used in the build process. You will have to build and push them to a private repository in order to get started (or you can just test them locally)
 
 Some of these images have dependencies between them.
 

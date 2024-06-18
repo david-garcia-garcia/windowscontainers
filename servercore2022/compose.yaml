@@ -18,6 +18,7 @@ services:
       - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
       # Timezone
       - SBS_CONTAINERTIMEZONE=Pacific Standard Time
+      - SBS_ENABLESSH=true
       # Services that need enforced started
       - SBS_SRVENSURE=newrelic-infra
       # Services that need to be stopped on shutdown
@@ -26,6 +27,7 @@ services:
       - SBS_INITASYNC=false
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
+      - SBS_LOCALADMINPWD_PROTECT=P@ssw0rd
       # Scheduled tasks that must be run once during startup
       - 'SBS_CRON_LogRotate={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
       # Run this immediately during boot (async)
