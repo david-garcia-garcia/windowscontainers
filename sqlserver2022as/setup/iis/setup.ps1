@@ -1,3 +1,5 @@
+$global:ErrorActionPreference = 'Stop'
+
 # Install IIS Web Server Role
 Install-WindowsFeature -Name Web-Server
 Install-WindowsFeature -Name Web-Windows-Auth, Web-Basic-Auth, Web-Url-Auth, Web-IP-Security

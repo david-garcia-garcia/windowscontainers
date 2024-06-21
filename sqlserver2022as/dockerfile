@@ -36,4 +36,13 @@ RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;
 
+# Fix for https://learn.microsoft.com/en-us/analysis-services/instances/encryption-upgrade?view=asallproducts-allversions
+# "Server Gen2 cryptokey is not present, but server assembly object System is set to use server gen2 cryptokey. 
+# Terminating server. (Source: \?\C:\Program Files\Microsoft SQL Server\MSAS16.MSSQLSERVER\OLAP\Log\msmdsrv.log, 
+# Type: 1, Category: 289, Event ID: 0x4121005C"
+RUN $global:ErrorActionPreference = 'Stop'; `
+    $dataPath = 'C:/Program Files/Microsoft SQL Server/MSAS16.MSSQLSERVER/OLAP/Data';  `
+    Remove-Item -Path \"$dataPath/*.asm.xml\" -Force;  `
+    Get-ChildItem -Path $dataPath -Directory -Filter '*.asm' | Remove-Item -Recurse -Force
+
 SHELL ["cmd.exe"]

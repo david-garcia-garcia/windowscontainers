@@ -16,10 +16,11 @@ services:
         MSSQLINSTALL_CUFIX_URL: ${MSSQLINSTALL_CUFIX_URL}
     image: ${IMG_SQLSERVER2022AS}
     networks:
-      - container_default
+      container_default:
+        ipv4_address: 172.18.8.18
     environment:
       - SSAS_USERS=user1:8r69s6ZGJKNBeGA
-      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_ENTRYPOINTERRORACTION=Continue
       - SBS_SRVENSURE=MSSQLServerOLAPService
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
