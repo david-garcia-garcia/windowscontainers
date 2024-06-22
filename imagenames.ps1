@@ -38,6 +38,7 @@ $Env:IMG_SERVERCORE2022 = "$($containerregistry)servercore2022:$($version)";
 $Env:IMG_SERVERCORE2022IIS = "$($containerregistry)servercore2022iis:$($version)";
 $Env:IMG_SERVERCORE2022IISNET48 = "$($containerregistry)servercore2022iisnet48:$($version)";
 $Env:IMG_SQLSERVER2022AS = "$($containerregistry)sqlserver2022as:$($version)";
+$Env:IMG_SQLSERVER2022IS = "$($containerregistry)sqlserver2022is:$($version)";
 $Env:IMG_SQLSERVER2022BASE = "$($containerregistry)sqlserver2022base:$($version)";
 $Env:IMG_SQLSERVER2022K8S = "$($containerregistry)sqlserver2022k8s:$($version)";
 

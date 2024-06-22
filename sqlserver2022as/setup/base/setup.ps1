@@ -33,7 +33,7 @@ New-Item -Path $installDir -ItemType Directory -Force;
 $process = Start-Process -Wait -NoNewWindow -FilePath "C:\SQLServerISO\setup.exe" -ArgumentList "/Q",
 "/ACTION=install",
 "/SUPPRESSPRIVACYSTATEMENTNOTICE",
-"/FEATURES=AS,IS",
+"/FEATURES=AS",
 "/INSTANCEID=MSSQLSERVER",
 "/INSTANCENAME=MSSQLSERVER",
 "/INSTALLSQLDATADIR=`"$installDir`"",

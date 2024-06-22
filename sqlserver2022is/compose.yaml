@@ -1,0 +1,34 @@
+version: "3.7"
+services:
+  mssql:
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022IS: ${IMG_SQLSERVER2022IS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        MSSQLINSTALL_ISO_URL: ${MSSQLINSTALL_ISO_URL}
+        MSSQLINSTALL_CU_URL: ${MSSQLINSTALL_CU_URL}
+        MSSQLINSTALL_CUFIX_URL: ${MSSQLINSTALL_CUFIX_URL}
+    image: ${IMG_SQLSERVER2022IS}
+    volumes:
+      - "f:/databases/example/data:d:"
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.8
+    environment:
+      - MSSQL_ADMIN_USERNAME=sa
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_PATH_DATA=d:\data
+      - MSSQL_PATH_LOG=d:\log
+      - MSSQL_PATH_SYSTEM=d:\system
+      - MSSQL_PATH_BACKUP=d:\backup
+      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
+      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
+      - SBS_ENTRYPOINTERRORACTION=Stop
+networks:
+  container_default:
+    external: true

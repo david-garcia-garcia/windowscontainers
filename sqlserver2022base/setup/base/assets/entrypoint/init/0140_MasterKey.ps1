@@ -13,8 +13,8 @@ $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 $masterKeyExists = Get-DbaDbMasterKey -SqlInstance $sqlInstance -Database master;
 
 if (-not $masterKeyExists) {
-    $sqlScript = "CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$escapedPassword';";
-    Invoke-DbaQuery -SqlInstance $sqlInstance -Database master -Query $sqlScript;
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database master -Query "ALTER SERVICE MASTER KEY FORCE REGENERATE;";
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database master -Query "CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$escapedPassword';";
     SbsWriteHost "Created master key";
 } else {
     SbsWriteHost "A master key already exists in the 'master' database.";
