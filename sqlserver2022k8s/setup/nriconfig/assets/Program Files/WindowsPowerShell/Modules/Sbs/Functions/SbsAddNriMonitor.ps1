@@ -4,6 +4,8 @@ function SbsAddNriMonitor {
         [string]$instanceName
     )
 
+    # https://github.com/dataplat/dbatools/issues/9364
+    Set-DbatoolsConfig -FullName commands.connect-dbainstance.smo.computername.source -Value 'instance.ComputerName'
     $instance = Connect-DbaInstance $instanceName;
 
     # These login name and password are shared among all instances
@@ -11,9 +13,10 @@ function SbsAddNriMonitor {
 
     $password = SbsRandomPassword 30;
 
+    # Puede que sí esté habilitado, pero que no podamos leer la network configuration
     $networkConfig = Get-DbaNetworkConfiguration -SqlInstance $instance;
     if (-not $networkConfig.TcpIpEnabled) {
-        SbsWriteError "TcpIp protocol is not enabled on server $instanceName."
+        SbsWriteWarning "TcpIp protocol is not enabled on server $instanceName or network configuration could not be read."
     }
 
     # Check if the login exists

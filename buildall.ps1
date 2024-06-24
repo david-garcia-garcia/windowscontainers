@@ -136,11 +136,21 @@ if ("sqlserver2022k8s" -match $Images) {
 }
 
 # SQL Server Analysis Services
-#Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
-#docker compose -f sqlserver2022as/compose.yaml build
-#ThrowIfError
+Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
+docker compose -f sqlserver2022as/compose.yaml build
+ThrowIfError
 
-#if ($push) {
-#    docker push "$($Env:IMG_SQLSERVER2022AS)"
-#    ThrowIfError
-#}
+if ($push) {
+    docker push "$($Env:IMG_SQLSERVER2022AS)"
+    ThrowIfError
+}
+
+# SQL Server Integration Services
+Write-Host "Building $($Env:IMG_SQLSERVER2022IS)"
+docker compose -f sqlserver2022is/compose.yaml build
+ThrowIfError
+
+if ($push) {
+    docker push "$($Env:IMG_SQLSERVER2022IS)"
+    ThrowIfError
+}

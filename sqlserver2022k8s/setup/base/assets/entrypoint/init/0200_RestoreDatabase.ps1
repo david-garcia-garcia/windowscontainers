@@ -98,6 +98,7 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
 # Define the path to the startup file
 $controlPath = $Env:MSSQL_PATH_CONTROL;
 
+# TODO: Remove this control instructions, it should be done manually on the server.
 if ($null -ne $controlPath) {
 
     $startupFile = Join-Path -Path $controlPath -ChildPath "startup.yaml";
@@ -207,9 +208,11 @@ if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName
 
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     # Create the database
+    SbsWriteHost "Creating database $databaseName"
     New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
 }
 
 if (-not [String]::IsNullOrWhiteSpace($databaseName)) {
+    SbsWriteDebug "Testing that database $($databaseName) exists."
     Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false | Out-Null;
 }
