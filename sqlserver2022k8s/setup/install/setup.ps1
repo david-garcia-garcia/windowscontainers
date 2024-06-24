@@ -16,6 +16,12 @@ Write-Host "-----------------------------------------`n"
 
 Install-DbaFirstResponderKit -SqlInstance "localhost"
 
+Write-Host "`n---------------------------------------"
+Write-Host " Install https://github.com/erikdarlingdata/DarlingData"
+Write-Host "-----------------------------------------`n"
+
+Install-DbaDarlingData -SqlInstance "localhost"
+
 # Disable jobs that we will not be using (backups are taken care of differently)
 $JobsToDisable = @(
     "DatabaseBackup - SYSTEM_DATABASES - FULL",
