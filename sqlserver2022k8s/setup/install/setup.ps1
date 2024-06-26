@@ -48,6 +48,12 @@ Write-Host "-----------------------------------------`n"
 
 Install-Module -Name Az.Storage -RequiredVersion 6.2.0 -Force;
 
+Write-Host "`n---------------------------------------"
+Write-Host " Install SqlPackage"
+Write-Host "-----------------------------------------`n"
+
+choco install sqlpackage -y --version=162.2.111 --no-progress;
+
 # Cleanup
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;

@@ -118,7 +118,6 @@ resource "kubernetes_config_map" "env_config" {
       "MSSQL_DB_NAME"                       = "mytestdatabase",
       "MSSQL_DB_RECOVERYMODEL"              = "FULL",
       "MSSQL_PATH_BACKUP"                   = "d:\\backup",
-      "MSSQL_PATH_CONTROL"                  = "d:\\control",
       "SBS_ENTRYPOINTERRORACTION"           = "Continue",
       "SBS_TEMPORARY"                       = "d:\\temp",
       "MSSQL_DISABLESHUTDOWNTIMEOUTCHECK"   = "True",
