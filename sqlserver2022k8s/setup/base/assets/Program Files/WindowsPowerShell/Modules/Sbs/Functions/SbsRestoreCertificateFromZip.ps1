@@ -1,3 +1,22 @@
+<#
+.SYNOPSIS
+Restores a sql server certificate from an archive file. Path can be local or remote.
+
+.DESCRIPTION
+Long description
+
+.PARAMETER sqlInstance
+Parameter description
+
+.PARAMETER zipPath
+Parameter description
+
+.EXAMPLE
+An example
+
+.NOTES
+General notes
+#>
 function SbsRestoreCertificateFromZip {
     param(
         [Parameter(Mandatory = $true)]

@@ -52,36 +52,24 @@ function SbsRestoreFull {
     $certificateRequested = $false;
 
     if (-not [String]::IsNullOrWhiteSpace($CertificatePath)) {
-
         $certificateRequested = $true;
-        $certPath = Join-Path $TempPath "tempCert_$((Get-Random -Maximum 50)).zip";
-
-        if ($CertificatePath -match "^http") {
-            SbsWriteDebug "Downloading certificate from URL"
-            Invoke-WebRequest -Uri $certUrl -OutFile $certPath -UseBasicParsing -TimeoutSec 45;
-        }
-        else {
-            Copy-Item $CertificatePath $certPath;
-        }
-        
         SbsRestoreCertificateFromZip 'localhost' $certPath;
-        Remove-Item $certPath;
     }
 
     SbsWriteHost "Initiating restore...";
 
     $sasUrl = SbsParseSasUrl -Url $Path;
-    $isBacpac = ($Path -Like "*.bacpac" -or $sasUrl.baseUrlWithPrefix -Like "*.bacpac")
-
-    # If this was a SAS url and it is not encrypted, directly restore
-    # MSSQL built in functionality.
-    if ($null -ne $sasUrl -and $certificateRequested -eq $false -and $isBacpac -eq $false) {
+    $isBak = ($Path -Like "*.bak" -or $sasUrl.baseUrlWithPrefix -Like "*.bak")
+    
+    # We can only remote restore when using plain .BAK files and it is a SAS URL
+    if ($null -ne $sasUrl -and $certificateRequested -eq $false -and $isBak -eq $true) {
         SbsWriteHost "Restoring directly using MSSQL URL Restore."
         SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Path;
         Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $DatabaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose;
     }
     else {
-        SbsWriteHost "Downloading and restoring from a local copy."
+        
+        $deleteAfterRestore = $false;
 
         # Rename and download
         $fileName = [System.IO.Path]::GetFileName($Path -replace '\?.*$');
@@ -92,7 +80,36 @@ function SbsRestoreFull {
             Remove-Item $localFilePath 
         }
 
-        SbsDownloadFile $Path $localFilePath $localFilePath;
+        if ($null -ne $sasUrl) {
+            SbsWriteHost "Downloading from remote $($sasUrl.baseUrlWithPrefix)"
+            SbsDownloadFile $Path $localFilePath $localFilePath;
+            $deleteAfterRestore = $true;
+        }
+        else {
+            # This is already something local we can deal with
+            $localFilePath = $Path;
+        }
+
+        # We might need to decompress
+        $isArchive = ($localFilePath -match "\.zip$|\.7z$");
+        if ($isArchive) {
+            SbsWriteHost "Extracting archive $($localFilePath)"
+            $uniqueName = [System.Guid]::NewGuid().ToString()
+            $tempDir = Join-Path -Path $tempPath -ChildPath $uniqueName
+            Start-Process 7z.exe -ArgumentList "x `"$tempPath`" -o`"$tempDir`" -y" -Wait;
+            $newLocalFilePath = Get-ChildItem -Path $tempDir -Include "*.bacpac", "*.bak" -File | Select-Object -ExpandProperty FullName -First 0
+            if ($null -eq $newLocalFilePath) {
+                Remove-Item $tempDir -Recurse;
+                SbsWriteError -Message "Unable to find backup file in downloaded archive.";
+                return;
+            }
+            if ($deleteAfterRestore -eq $true) {
+                Remove-Item -Path $localFilePath -Force;
+                $localFilePath = $newLocalFilePath;
+            }
+        }
+
+        $isBacpac = ($localFilePath -Like "*.bacpac");
 
         # Grant permissions
         icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
@@ -109,12 +126,14 @@ function SbsRestoreFull {
             # example import to Azure SQL Database using SQL authentication and a connection string
             SbsWriteHost "Restoring using SqlPackage"
             SqlPackage /Action:Import `
-            /SourceFile:"$localFilePath" `
-            /TargetConnectionString:"$connectionString2" `
+                /SourceFile:"$localFilePath" `
+                /TargetConnectionString:"$connectionString2"
         }
 
         # Clean
-        Remove-Item -Path $localFilePath -Force;
+        if ($deleteAfterRestore -eq $true) {
+            Remove-Item -Path $localFilePath -Force;
+        }
     }
 
     SbsWriteHost "Restored database from $($sasUrl.baseUrl)";
