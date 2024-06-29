@@ -99,12 +99,15 @@ function SbsRestoreFull {
 
         # Restore
         if ($isBacpac -eq $false) {
+            SbsWriteHost "Restoring with dbatools"
             Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $DatabaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose;
         }
         else {
+            SbsWriteHost "Preparing connection string for SQL Package"
             $connectionString = New-DbaConnectionString -SqlInstance $SqlInstance;
             $connectionString2 = New-DbaConnectionStringBuilder -ConnectionString $connectionString -InitialCatalog $DatabaseName;
             # example import to Azure SQL Database using SQL authentication and a connection string
+            SbsWriteHost "Restoring using SqlPackage"
             SqlPackage /Action:Import `
             /SourceFile:"$localFilePath" `
             /TargetConnectionString:"$connectionString2" `
@@ -114,5 +117,5 @@ function SbsRestoreFull {
         Remove-Item -Path $localFilePath -Force;
     }
 
-    SbsWriteHost "Restored database from $backupUrl.";
+    SbsWriteHost "Restored database from $($sasUrl.baseUrl)";
 }
