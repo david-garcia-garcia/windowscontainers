@@ -92,30 +92,12 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
 
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
-    SbsWriteHost "Starting database restore...";
-    $files = @();
+    $backupPathForRestore = $backupPath;
     if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
-        $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
+        $backupPathForRestore = $Env:MSSQL_PATH_BACKUPURL;
     }
-    else {
-        $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $backupPath -DatabaseName $databaseName;
-    }
-    if ($null -ne $files -and $files.Count -gt 0) {
-        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
-        $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
-        if ($database) {
-            SbsWriteHost "Database $($databaseName) restored successfully."
-            $restored = $true;
-            # The teardown scripts puts the backup in ReadOnly, and this will be the state after restore
-            $database | Set-DbaDbState -ReadWrite -Force;
-        }
-        else {
-            SbsWriteError "Database $($databaseName) was not restored successfully."
-        }
-    }
-    else {
-        SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";
-    }
+
+    $restored = SbsRestoreDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -Path $backupPathForRestore;
 }
 
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
