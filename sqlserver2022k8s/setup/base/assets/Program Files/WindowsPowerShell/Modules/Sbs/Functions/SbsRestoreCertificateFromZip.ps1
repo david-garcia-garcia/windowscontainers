@@ -20,7 +20,7 @@ General notes
 function SbsRestoreCertificateFromZip {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$sqlInstance,
+        [DbaInstanceParameter]$SqlInstance,
         [Parameter(Mandatory = $true)]
         [string]$zipPath
     )
@@ -36,6 +36,7 @@ function SbsRestoreCertificateFromZip {
 
     # Check if zipPath is a URL and download the file if it is
     if ($zipPath -match '^http') {
+        SbsWriteDebug "Starting certificate download from remote URL"
         $urlWithoutQuery = $zipPath -replace '\?.*$';
         $fileName = [System.IO.Path]::GetFileName($urlWithoutQuery);
         $downloadedZipPath = Join-Path -Path $env:TEMP -ChildPath $fileName;
@@ -45,6 +46,7 @@ function SbsRestoreCertificateFromZip {
     }
 
     # Extract ZIP file
+    SbsWriteHost "Restoring certificate from $zipPath"
     $zipFileName = [System.IO.Path]::GetFileNameWithoutExtension($zipPath);
     $baseTempPath = "C:\Users\Public";
     $extractFolder = Join-Path -Path $baseTempPath -ChildPath ("temp_extract_" + [Guid]::NewGuid().ToString());
@@ -55,22 +57,22 @@ function SbsRestoreCertificateFromZip {
 
     # Identify files based on extensions and validate their existence
     $certFile = (Get-FileByExtension -folder $extractFolder -extension 'cer').FullName
-    if (-not (Test-Path -Path $certFile)) {
+    if ($null -eq $certFile) {
         throw "Certificate file (*.cer) not found in $extractFolder"
     }
 
     $keyFile = (Get-FileByExtension -folder $extractFolder -extension 'pvk').FullName
-    if (-not (Test-Path -Path $keyFile)) {
+    if ($null -eq $keyFile) {
         throw "Key file (*.pvk) not found in $extractFolder"
     }
 
     $pwdPath = (Get-FileByExtension -folder $extractFolder -extension 'txt').FullName
-    if (-not (Test-Path -Path $pwdPath)) {
+    if ($null -eq $pwdPath) {
         throw "Password file (*.txt) not found in $extractFolder"
     }
 
     $pwdKeyPath = (Get-FileByExtension -folder $extractFolder -extension 'key').FullName
-    if (-not (Test-Path -Path $pwdKeyPath)) {
+    if ($null -eq $pwdKeyPath) {
         throw "Key password file (*.key) not found in $extractFolder"
     }
 

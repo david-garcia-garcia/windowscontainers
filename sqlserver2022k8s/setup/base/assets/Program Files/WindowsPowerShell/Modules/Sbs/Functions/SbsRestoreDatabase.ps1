@@ -7,11 +7,7 @@ function SbsRestoreDatabase {
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $false)]
-        [Date]$RestoreTime,
-        [Parameter(Mandatory = $false)]
-        [string]$CertificatePath,
-        [Parameter(Mandatory = $false)]
-        [string]$TempPath
+        [Nullable[DateTime]]$RestoreTime
     )
 
     SbsWriteHost "Starting database restore...";
@@ -19,6 +15,11 @@ function SbsRestoreDatabase {
     $files = @();
 
     $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Path -DatabaseName $databaseName;
+
+    $parsedUrl = SbsParseSasUrl -Url $Path;
+    if ($null -ne $parsedUrl) {
+        SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Path;
+    }
 
     if ($null -eq $files -or $files.Count -eq 0) {
         SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";

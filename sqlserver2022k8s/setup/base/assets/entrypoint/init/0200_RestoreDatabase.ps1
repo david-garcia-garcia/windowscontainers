@@ -39,12 +39,6 @@ if ($null -eq $tempDir) {
     $tempDir = "c:\windows\temp";
 }
 
-# Make sure the credential is available for the given URL
-if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
-    $backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
-    SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
-}
-
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 
     SbsWriteHost "Lifecycle attach mode starting up..."

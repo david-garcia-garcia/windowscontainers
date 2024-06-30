@@ -24,6 +24,7 @@ SbsRestoreFull -SqlInstance "localhost" -DatabaseNAME "mydatabase" -Path "https:
 .NOTES
 General notes
 #>
+
 function SbsRestoreFull {
     param(
         [Parameter(Mandatory = $true)]
@@ -42,8 +43,6 @@ function SbsRestoreFull {
         $TempPath = [System.IO.Path]::GetTempPath();
     }
 
-    Import-Module dbatools;
-
     if ($SqlInstance -is [String]) {
         $SqlInstance = Connect-DbaInstance -SqlInstance $SqlInstance;
     }
@@ -51,9 +50,9 @@ function SbsRestoreFull {
     SbsWriteHost "Initiating full backup restore from path or URL";
     $certificateRequested = $false;
 
-    if (-not [String]::IsNullOrWhiteSpace($CertificatePath)) {
+    if ($CertificatePath) {
         $certificateRequested = $true;
-        SbsRestoreCertificateFromZip 'localhost' $certPath;
+        SbsRestoreCertificateFromZip -sqlInstance $SqlInstance -zipPath $CertificatePath;
     }
 
     SbsWriteHost "Initiating restore...";
