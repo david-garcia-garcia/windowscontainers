@@ -4,7 +4,7 @@ Describe 'compose-backups.yaml' {
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;Database=mytestdatabase;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
         New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup" -Force
-        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
+        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*", "c:\datavolume\bacpac\*" -Recurse -Force
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
         WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
     }
@@ -47,8 +47,8 @@ CREATE TABLE dbo.TestTable (
 
     It 'Restore archived bacpac with SbsRestoreFull' {
         # Restore from bacpac using SbsRestoreFull
-        Compress-Archive -Path "c:\\datavolume\\bacpac\\" -DestinationPath "c:\\datavolume\\bacpac.zip"
-        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName restoreArchivedBackpack -Path 'd:\\bacpac.zip'"
+        Compress-Archive -Path "c:\\datavolume\\bacpac\\*" -DestinationPath "c:\\datavolume\\bacpac\\bacpac.zip"
+        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName restoreArchivedBackpack -Path 'd:\\bacpac\\bacpac.zip'"
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database restoreArchivedBackpack | Should -Not -BeNullOrEmpty;
 
         # Test that the database has the table we created before
@@ -79,7 +79,7 @@ CREATE TABLE dbo.TestTable (
 
     AfterAll {
         docker compose -f sqlserver2022k8s/compose-backups.yaml down;
-        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
+        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*", "c:\datavolume\bacpac\*" -Recurse -Force
     }
 }
 

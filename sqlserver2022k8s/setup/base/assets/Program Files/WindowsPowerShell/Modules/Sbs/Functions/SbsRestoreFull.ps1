@@ -95,8 +95,8 @@ function SbsRestoreFull {
             SbsWriteHost "Extracting archive $($localFilePath)"
             $uniqueName = [System.Guid]::NewGuid().ToString()
             $tempDir = Join-Path -Path $tempPath -ChildPath $uniqueName
-            Start-Process 7z.exe -ArgumentList "x `"$tempPath`" -o`"$tempDir`" -y" -Wait;
-            $newLocalFilePath = Get-ChildItem -Path $tempDir -Include "*.bacpac", "*.bak" -File | Select-Object -ExpandProperty FullName -First 0
+            Start-Process 7z.exe -ArgumentList "x `"$localFilePath`" -o`"$tempDir`" -y" -Wait;
+            $newLocalFilePath = Get-ChildItem -Path $tempDir -Recurse -Include "*.bacpac", "*.bak" -File | Select-Object -ExpandProperty FullName -First 1
             if ($null -eq $newLocalFilePath) {
                 Remove-Item $tempDir -Recurse;
                 SbsWriteError -Message "Unable to find backup file in downloaded archive.";
@@ -104,8 +104,8 @@ function SbsRestoreFull {
             }
             if ($deleteAfterRestore -eq $true) {
                 Remove-Item -Path $localFilePath -Force;
-                $localFilePath = $newLocalFilePath;
             }
+            $localFilePath = $newLocalFilePath;
         }
 
         $isBacpac = ($localFilePath -Like "*.bacpac");
@@ -120,8 +120,11 @@ function SbsRestoreFull {
         }
         else {
             SbsWriteHost "Preparing connection string for SQL Package"
-            $connectionString = New-DbaConnectionString -SqlInstance $SqlInstance;
-            $connectionString2 = New-DbaConnectionStringBuilder -ConnectionString $connectionString -InitialCatalog $DatabaseName;
+            # https://github.com/dataplat/dbatools/issues/9411
+            # $connectionString = New-DbaConnectionString -SqlInstance $SqlInstance;
+            # $connectionString2 = New-DbaConnectionStringBuilder -ConnectionString $connectionString -InitialCatalog $DatabaseName;
+            # Until https://github.com/dataplat/dbatools/issues/9411 just hardcode a simple connectionstring
+            $connectionString2 = "Server=$($SqlInstance.ComputerName);Initial Catalog=$DatabaseName;TrustServerCertificate=True;Trusted_Connection=True;";
             # example import to Azure SQL Database using SQL authentication and a connection string
             SbsWriteHost "Restoring using SqlPackage"
             SqlPackage /Action:Import `
