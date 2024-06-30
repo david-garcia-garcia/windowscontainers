@@ -29,17 +29,30 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
-    It 'Make bacpac from image and restore with SbsRestoreFull' {
+    It 'Make bacpac from database' {
         # SqlPackage should work from within the image itself
-        docker exec $Env:instanceName powershell "SqlPackage /Action:Export /SourceConnectionString:'Server=localhost;Initial Catalog=mytestdatabase;TrustServerCertificate=True;Trusted_Connection=True;' /TargetFile:'d:\\export.bacpac'"
-        Test-Path "c:\\datavolume\\export.bacpac" | Should -Be $true;
-
+        New-Item -ItemType "Directory" -Path "c:\\datavolume\\bacpac\\" -Force
+        docker exec $Env:instanceName powershell "SqlPackage /Action:Export /SourceConnectionString:'Server=localhost;Initial Catalog=mytestdatabase;TrustServerCertificate=True;Trusted_Connection=True;' /TargetFile:'d:\\bacpac\\export.bacpac'"
+        Test-Path "c:\\datavolume\\bacpac\\export.bacpac" | Should -Be $true;
+    }
+    
+    It 'Restore bacpac with SbsRestoreFull' {
         # Restore from bacpac using SbsRestoreFull
-        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase -Path 'd:\\export.bacpac'"
-        Get-DbaDatabase -SqlInstance $Env:connectionString -Database renamedDatabase | Should -Not -BeNullOrEmpty;
+        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName restoreBackpack -Path 'd:\\bacpac\\export.bacpac'"
+        Get-DbaDatabase -SqlInstance $Env:connectionString -Database restoreBackpack | Should -Not -BeNullOrEmpty;
 
         # Test that the database has the table we created before
-        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database renamedDatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
+        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database restoreBackpack -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
+    }
+
+    It 'Restore archived bacpac with SbsRestoreFull' {
+        # Restore from bacpac using SbsRestoreFull
+        Compress-Archive -Path "c:\\datavolume\\bacpac\\" -DestinationPath "c:\\datavolume\\bacpac.zip"
+        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName restoreArchivedBackpack -Path 'd:\\bacpac.zip'"
+        Get-DbaDatabase -SqlInstance $Env:connectionString -Database restoreArchivedBackpack | Should -Not -BeNullOrEmpty;
+
+        # Test that the database has the table we created before
+        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database restoreArchivedBackpack -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
     It 'SbsMssqlRunBackups FULL and restore SbsRestoreFull from .bak' {
