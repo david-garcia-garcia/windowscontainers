@@ -39,12 +39,6 @@ if ($null -eq $tempDir) {
     $tempDir = "c:\windows\temp";
 }
 
-# Make sure the credential is available for the given URL
-if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
-    $backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
-    SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Env:MSSQL_PATH_BACKUPURL;
-}
-
 if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 
     SbsWriteHost "Lifecycle attach mode starting up..."
@@ -90,126 +84,23 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
     }
 }
 
-# One time startup-instructions are provided in a stand-alone file that will be consumed
-# and renamed. These instructions allow things such as:
-# Restore from a remote backpack file
-# Restore from a remote backup file
-# Restore to a point in time
-# Define the path to the startup file
-$controlPath = $Env:MSSQL_PATH_CONTROL;
-
-if ($null -ne $controlPath) {
-
-    $startupFile = Join-Path -Path $controlPath -ChildPath "startup.yaml";
-
-    # Check if the startup file exists
-    if (Test-Path $startupFile) {
-
-        SbsWriteHost "Initiating startup instructions...";
-
-        # Load the steps from the startup file
-        $steps = (Get-Content $startupFile -Raw | ConvertFrom-Yaml).steps
-
-        # Check if there are any steps defined
-        if ($steps -and $steps.Count -gt 0) {
-            foreach ($step in $steps) {
-                switch ($step.type) {
-                    'restore_bacpac' {
-                        if ($step.url -match "\.zip$" -or $step.url -match "\.7z$") {
-                            # Handle decompression for .zip or .7z files
-                            $tempPath = [System.IO.Path]::GetTempFileName();
-                            Invoke-WebRequest -Uri $step.url -OutFile $tempPath -UseBasicParsing
-                            if ($step.url -match "\.zip$") {
-                                Expand-Archive -Path $tempPath -DestinationPath "tempDir" -Force
-                            }
-                            elseif ($step.url -match "\.7z$") {
-                                # Assuming 7z.exe is available in the system PATH
-                                Start-Process 7z.exe -ArgumentList "x `"$tempPath`" -o`"tempDir`" -p`"$($step.pwd)`" -y" -Wait;
-                            }
-                            $bacpacPath = Get-ChildItem "tempDir" -Filter "*.bacpac" | Select-Object -ExpandProperty FullName -First 1;
-                            Restore-DbaDatabase -SqlInstance 'localhost' -Path $bacpacPath;
-                            Remove-Item "tempDir" -Recurse -Force;
-                            Remove-Item $tempPath -Force;
-                        }
-                        else {
-                            # Direct restore from URL without decompression
-                            Restore-DbaDatabase -SqlInstance 'localhost' -Path $step.url;
-                        }
-                        $restored = $true;
-                    }
-                    'restore_full' {
-                        SbsWriteHost "Initiating full backup restore";
-                        # Download and import the backup certificate
-                        $certUrl = $step.cert;
-                        $backupUrl = $step.url;
-                        if ($null -ne $certUrl) {
-                            $certPath = "C:\windows\temp\tempCert.zip";
-                            Invoke-WebRequest -Uri $certUrl -OutFile $certPath -UseBasicParsing -TimeoutSec 60;
-                            SbsRestoreCertificateFromZip 'localhost' $certPath;
-                            SbsWriteHost "Certificate restored";
-                        }
-                        SbsWriteHost "Initiating restore...";
-                        # Rename and download
-                        $fileName = [System.IO.Path]::GetFileName($backupUrl -replace '\?.*$');
-                        $localFilePath = Join-Path -Path $tempDir -ChildPath $fileName;
-                        if (Test-Path $localFilePath) { Remove-Item $localFilePath }
-                        SbsDownloadFile $backupUrl $localFilePath $localFilePath;
-                        # Grant permissions
-                        icacls $localFilePath /grant "NT Service\MSSQLSERVER:F"
-                        # Restore
-                        Restore-DbaDatabase -SqlInstance 'localhost' -DatabaseName $databaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose;
-                        # Clean
-                        Remove-Item -Path $localFilePath -Force;
-                        $restored = $true;
-                        SbsWriteHost "Restored database from $backupUrl.";
-                    }
-                    default {
-                        SbsWriteHost "$($step.type) not supported.";
-                    }
-                }
-            }
-        }
-
-        SbsArchiveFile $startupFile;
-    }
-    else {
-        SbsWriteHost "Startup file not found at path $startupFile, resuming regular lifecycle startup."
-    }
-}
-
 # If nothing was restored try from a backup
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
-    SbsWriteHost "Starting database restore...";
-    $files = @();
+    $backupPathForRestore = $backupPath;
     if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
-        $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Env:MSSQL_PATH_BACKUPURL -DatabaseName $databaseName;
+        $backupPathForRestore = $Env:MSSQL_PATH_BACKUPURL;
     }
-    else {
-        $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $backupPath -DatabaseName $databaseName;
-    }
-    if ($null -ne $files -and $files.Count -gt 0) {
-        $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
-        $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
-        if ($database) {
-            SbsWriteHost "Database $($databaseName) restored successfully."
-            $restored = $true;
-            # The teardown scripts puts the backup in ReadOnly, and this will be the state after restore
-            $database | Set-DbaDbState -ReadWrite -Force;
-        }
-        else {
-            SbsWriteError "Database $($databaseName) was not restored successfully."
-        }
-    }
-    else {
-        SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";
-    }
+
+    $restored = SbsRestoreDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -Path $backupPathForRestore;
 }
 
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     # Create the database
+    SbsWriteHost "Creating database $databaseName"
     New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
 }
 
 if (-not [String]::IsNullOrWhiteSpace($databaseName)) {
+    SbsWriteDebug "Testing that database $($databaseName) exists."
     Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName | Set-DbaDbRecoveryModel -RecoveryModel $databaseRecoveryModel -Confirm:$false | Out-Null;
 }

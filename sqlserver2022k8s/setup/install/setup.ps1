@@ -16,6 +16,12 @@ Write-Host "-----------------------------------------`n"
 
 Install-DbaFirstResponderKit -SqlInstance "localhost"
 
+Write-Host "`n---------------------------------------"
+Write-Host " Install https://github.com/erikdarlingdata/DarlingData"
+Write-Host "-----------------------------------------`n"
+
+Install-DbaDarlingData -SqlInstance "localhost"
+
 # Disable jobs that we will not be using (backups are taken care of differently)
 $JobsToDisable = @(
     "DatabaseBackup - SYSTEM_DATABASES - FULL",
@@ -41,6 +47,12 @@ Write-Host " Install Az.Storage"
 Write-Host "-----------------------------------------`n"
 
 Install-Module -Name Az.Storage -RequiredVersion 6.2.0 -Force;
+
+Write-Host "`n---------------------------------------"
+Write-Host " Install SqlPackage"
+Write-Host "-----------------------------------------`n"
+
+choco install sqlpackage -y --version=162.2.111 --no-progress;
 
 # Cleanup
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

@@ -7,7 +7,9 @@ function SbsMssqlPrepareRestoreFiles {
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true)]
-        [string]$DatabaseName
+        [string]$DatabaseName,
+        [Parameter(Mandatory = $false)]
+        [Nullable[DateTime]]$RestoreTime
     )
 
     # Path could either be a SAS URL, a regular URL o a local/network path
@@ -28,6 +30,13 @@ function SbsMssqlPrepareRestoreFiles {
     else {
         SbsWriteHost "Checking for backups in $($Path)";
         $files = Get-DbaBackupInformation -SqlInstance $SqlInstance -Path $Path | Where-Object { $_.Database -eq $DatabaseName };
+    }
+
+    SbsWriteDebug -Message "Found $($files.length) backup files."
+
+    if ($null -ne $RestoreTime) {
+        $files = $files | Where-Object { $_.Start -gt $RestoreTime };
+        SbsWriteDebug -Message "Found $($files.length) backup files after filter by restore time $($RestoreTime)"
     }
 
     # This is what we have for each $file object

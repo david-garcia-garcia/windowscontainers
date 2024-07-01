@@ -69,3 +69,13 @@ Scripting in this image proposes several database lifecycle and backup automatio
 SQL Server 2022 Analysis Services exposed through HTTP.
 
 See details [here](sqlserver2022as/readme.md).
+
+## Debugging the powershell code
+
+To debug the powershell code in the different images, you use the helper method import functions:
+
+```
+. .\importfunctions.ps1   
+```
+
+Just remember to call this method again every time you change the implementation of any of the helper functions.

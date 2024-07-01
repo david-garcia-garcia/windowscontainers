@@ -84,6 +84,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     # This is a simplified example; consider each database's requirements
     # TODO: Figure out what to do with tempdb
     # Get system databases
+    SbsWriteDebug "Moving system databases to new location"
     $systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance | Where-Object { $_.IsSystemObject -eq $true }
 
     # Iterate over system databases and generate ALTER DATABASE commands for each
@@ -135,6 +136,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 }
 
 # Prepare path for data, log, backup, temporary and control
+SbsWriteDebug "Calling Get-DbaDefaultPath to retrieve default path configuration"
 $dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance;
 
 $backupPath = $dbaDefaultPath.Backup;

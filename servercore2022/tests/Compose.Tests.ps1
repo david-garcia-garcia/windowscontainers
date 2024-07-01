@@ -48,7 +48,7 @@ Describe 'compose.yaml' {
         $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
 
         # Attempt to create a new SSH session with auto-accepted host key
-        $sshSession = New-SSHSession -ComputerName $serverIp -Credential $credential -AcceptKey -ErrorAction SilentlyContinue
+        $sshSession = New-SSHSession -ComputerName $serverIp -Credential $credential -AcceptKey -Force
     
         # Assert that the session was created successfully
         $sshSession | Should -Not -BeNullOrEmpty

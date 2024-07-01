@@ -1,4 +1,11 @@
 #################################
+# Admin groups
+#################################
+
+New-DbaLogin -SqlInstance 'localhost' -Login 'BUILTIN\Administrators' -Force
+Add-DbaServerRoleMember -SqlInstance 'localhost' -ServerRole sysadmin, public -Login 'BUILTIN\Administrators'
+
+#################################
 # Basic MSSQL configuration
 #################################
 
