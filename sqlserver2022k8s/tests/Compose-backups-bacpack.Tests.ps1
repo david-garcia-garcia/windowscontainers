@@ -55,6 +55,7 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database restoreArchivedBackpack -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
+    ### TODO: Needs to be fixed and moved to it's own test suite?
     It 'SbsMssqlRunBackups FULL and restore SbsRestoreFull from .bak' {
         # SqlPackage should work from within the image itself
         docker exec $Env:instanceName powershell "Import-Module Sbs;SbsMssqlRunBackups -backupType FULL -sqlInstance localhost";
@@ -63,14 +64,14 @@ CREATE TABLE dbo.TestTable (
               Sort-Object LastWriteTime -Descending | 
               Select-Object -First 1
 
-        $lastBackup | Shoule -Not -BeNullOrEmpty
+        $lastBackup | Should -Not -BeNullOrEmpty
 
         # Database has been deleted
-        Remove-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase -EnableException;
+        Remove-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase -EnableException -Confirm:$false
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase | Should -Be $null;
 
         # Restore from bacpac using SbsRestoreFull
-        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path \"$($lastBackup)\""
+        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($lastBackup)'"
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database renamedDatabase2 | Should -Not -BeNullOrEmpty;
 
         # Test that the database has the table we created before
