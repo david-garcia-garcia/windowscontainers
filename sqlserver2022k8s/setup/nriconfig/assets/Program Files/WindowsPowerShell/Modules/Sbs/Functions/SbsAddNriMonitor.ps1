@@ -4,6 +4,8 @@ function SbsAddNriMonitor {
         [string]$instanceName
     )
 
+    # https://github.com/dataplat/dbatools/issues/9364
+    Set-DbatoolsConfig -FullName commands.connect-dbainstance.smo.computername.source -Value 'instance.ComputerName'
     $instance = Connect-DbaInstance $instanceName;
 
     # These login name and password are shared among all instances

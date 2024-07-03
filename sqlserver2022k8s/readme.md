@@ -3,7 +3,6 @@
 This image has configurable behavior based on two concepts:
 
 * **Lifecycle**: through env, you will set a Lifecycle type, this will tell the container how to persistent data lifecycle will be managed.
-* **Control operations**: through a control file, you can setup one-time startup commands to run on the container.
 
 ## Instance Startup Configuration
 
@@ -182,7 +181,6 @@ Focusing on the minimum ENV setup needed for this:
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
-      - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_PATH_SYSTEM=d:\system
       - SBS_TEMPORARY=d:\temp
 ```
