@@ -118,8 +118,8 @@ This task:
 
 * Deploys the backup summary table and populating job using SbsDeployDbBackupInfo
 
-* Setups the newrelic identity in the SQL engine using SbsAddNriMonitor
-* Configure the newrelic authentication (mssql-config.yml)
+* Setups the monitoring identity in the SQL engine using SbsAddNriMonitorUser
+* Configure the monitoring authentication (mssql-config.yml)
 
 To run this immediately after booting use the env configuration:
 

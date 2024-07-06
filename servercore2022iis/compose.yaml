@@ -16,12 +16,10 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       # Promocionar variables de entorno a variables de sistema
-      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+      - SBS_PROMOTE_ENV_REGEX=^SBS_
       - SBS_CONTAINERTIMEZONE=Pacific Standard Time
-      - SBS_SRVENSURE=newrelic-infra
       - SBS_ENTRYPOINTERRORACTION=Stop
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
-      - NEW_RELIC_LICENSE_KEY=badkey
       # Output in the entrypoint loop
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]

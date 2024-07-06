@@ -16,7 +16,7 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       # Promote env variables to system, needed for AUTOSSL visibility in scheduled task
-      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+      - SBS_PROMOTE_ENV_REGEX=^SBS_
       # Scheduled task needed to handle SSL renewal and SYNC of certs in CCS
       - 'SBS_CRON_RenewCertificates={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
       - SBS_CRONRUNONBOOT=RenewCertificates

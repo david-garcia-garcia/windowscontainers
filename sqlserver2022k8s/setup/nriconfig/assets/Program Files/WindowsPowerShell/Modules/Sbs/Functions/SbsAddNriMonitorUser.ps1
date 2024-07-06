@@ -1,7 +1,9 @@
-function SbsAddNriMonitor {
+function SbsAddNriMonitorUser {
     param (
         [Parameter(Mandatory = $true)]
-        [string]$instanceName
+        [string]$instanceName,
+        [string]$User,
+        [string]$Password
     )
 
     # https://github.com/dataplat/dbatools/issues/9364
@@ -9,14 +11,9 @@ function SbsAddNriMonitor {
     $instance = Connect-DbaInstance $instanceName;
 
     # These login name and password are shared among all instances
-    $loginName = "newrelic";
+    $loginName = $User;
 
-    $password = SbsRandomPassword 30;
-
-    $networkConfig = Get-DbaNetworkConfiguration -SqlInstance $instance;
-    if (-not $networkConfig.TcpIpEnabled) {
-        SbsWriteError "TcpIp protocol is not enabled on server $instanceName."
-    }
+    $password = $Password;
 
     # Check if the login exists
     $loginExists = Get-DbaLogin -SqlInstance $instance -Login $loginName;
@@ -57,20 +54,4 @@ function SbsAddNriMonitor {
 	
     # Grant db_datareader in master
     Invoke-DbaQuery -SqlInstance $instance -Query "USE [master]; EXEC sp_addrolemember 'db_datareader', '$loginName'"
-	
-    $configPath = "c:\program files\new relic\newrelic-infra\integrations.d\mssql-config.yml";
-    $template = Get-Content -Path $configPath | ConvertFrom-Yaml
-
-    # Load the template YAML file for this connection string
-    $config = $template | ConvertTo-Yaml | ConvertFrom-Yaml
-
-    # Modify the "env" section with the new server information
-    foreach ($integration in $config.integrations) {
-        # $integration.env.HOSTNAME = $hostname;
-        $integration.env.USERNAME = $loginName;
-        $integration.env.PASSWORD = $password;
-        # $integration.labels.environment = $Env;
-    }
-
-    $config | ConvertTo-Yaml | Out-File $configPath;
 }

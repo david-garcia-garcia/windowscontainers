@@ -15,12 +15,6 @@
             "level": "Information"
           }
         ]
-      },
-      {
-        "type": "File",
-        "directory": "C:\\ProgramData\\New Relic\\newrelic-infra\\",
-        "filter": "*.log",
-        "includeSubdirectories": false
       }
     ]
   }

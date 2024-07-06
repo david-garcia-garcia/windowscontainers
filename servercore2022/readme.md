@@ -50,7 +50,7 @@ By default, all the environment variables you setup for a container will be proc
 If you need some of these environment variables promoted to system, so they can be seen by any other process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment configuration
 
 ```powershell
-SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC # Regular expresion to match ENV that you want to promote to system
+SBS_PROMOTE_ENV_REGEX=^SBS_ # Regular expresion to match ENV that you want to promote to system
 ```
 
 All the environment variables that have a name that matches the Regular Expression in SBS_PROMOTE_ENV_REGEX will be promoted to System.
@@ -121,7 +121,7 @@ resource "kubernetes_config_map" "env_config" {
       "SBS_ENTRYPOINTERRORACTION"           = "Continue",
       "SBS_TEMPORARY"                       = "d:\\temp",
       "MSSQL_DISABLESHUTDOWNTIMEOUTCHECK"   = "True",
-      "SBS_PROMOTE_ENV_REGEX"               = "^SBS_|^NEW_RELIC|^MSSQL_",
+      "SBS_PROMOTE_ENV_REGEX"               = "^SBS_|^MSSQL_",
       "MSSQL_ADMIN_USERNAME"                = "sa",
       "MSSQL_ADMIN_PWD"                     = random_password.sqladmin.result,
       "SBS_GETEVENTLOG"                     = jsonencode([{ LogName : "Application", Source : "*", MinLevel : "Information" }, { LogName : "System", Source : "*", MinLevel : "Warning" }])
@@ -316,29 +316,6 @@ When developing with docker, use a high SBS_SHUTDOWNTIMEOUT to control and debug
 
 In production K8S environments, because we have hooks to deal with this, try to keep SBS_SHUTDOWNTIMEOUT low to avoid stuck container shutdowns (i.e. 15-20s), set SBS_AUTOSHUTDOWN=0 and make sure you have your pre_stop hook and termination_grace_period_seconds properly configured.
 
-## New Relic and NRI Perfmon
-
-The image comes pre-installed with New Relic NRI (Infrastructure) and Perfmon ([newrelic/nri-perfmon: Windows Perfmon / WMI On-Host Integration for New Relic Infrastructure (github.com)](https://github.com/newrelic/nri-perfmon)).
-
-The second is just an extension for the NRI agent to collect Performance Counters.
-
-The service is stopped and needs to be configured if you want it to be started.
-
-```powershell
-# Ensure the new relic service starts with the container as it is disabled by default
-SBS_SRVENSURE=newrelic-infra
-
-# Add the new relic license key
-NEW_RELIC_LICENSE_KEY=MYLICENSEKEY
-```
-
-By default the infrastructure agent is configured to NOT capture any sort of metrics (which make no sense inside a container). The purpose of this integration is to support remote monitoring and visibility of:
-
-* Windows Performance counters (very valuable for IIS, .Net, MSSQL and other workloads)
-* Log forwarding
-
-Memory, CPU, network and other standard metrics should be obtained using the standard tools for the K8S ecosystem.
-
 ## Time Zone
 
 To set the container time zone during startup:
@@ -352,7 +329,7 @@ SBS_CONTAINERTIMEZONE=Pacific Standard Time
 To start services with the container - even if they are disabled at the image level - use:
 
 ```yaml
-SBS_SRVENSURE=newrelic-infra;service2;service3
+SBS_SRVENSURE=sshd;service2;service3
 ```
 
 Their startup type will be set to automatic, and they will be started.
@@ -386,7 +363,6 @@ This will be available for you entry point scripts and inside the container. The
 | SBS_SHUTDOWNTIMEOUT        | 15                  | Yes                                     | Container shutdown timeout in seconds.                       |
 | SBS_ENTRYPOINTERRORACTION  | Stop                | No                                      | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
 | SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | Yes                                     | List of processes that will be terminated when shutdown has completed |
-| NEW_RELIC_LICENSE_KEY      | $null               | No                                      | New Relic infrastructure license key                         |
 | SBS_SRVENSURE              | $null               | No                                      | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
 | SBS_SRVSTOP                | $null               | Yes                                     | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
 | SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Yes                                     | Use this to configure the trigger for a scheduled task that is already present inside the image. |

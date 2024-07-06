@@ -20,12 +20,12 @@ Describe 'compose.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Be "Pacific Standard Time";
     }
 
-    It 'new-relic service is started' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').Status" | Should -Be "Running"
+    It 'sshd service is started' {
+        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Running"
     }
 
-    It 'new-relic service has automatic startup' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Automatic"
+    It 'sshd service has automatic startup' {
+        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Automatic"
     }
 
     It 'DPAPI encode/decode works' {
