@@ -18,7 +18,7 @@ reg import $regFilePath;
 ################################################
 
 Write-Host "`n---------------------------------------"
-Write-Host " Configurating default application pool"
+Write-Host " Configuring default application pool"
 Write-Host "-----------------------------------------`n"
 
 Stop-WebAppPool -Name "DefaultAppPool";
