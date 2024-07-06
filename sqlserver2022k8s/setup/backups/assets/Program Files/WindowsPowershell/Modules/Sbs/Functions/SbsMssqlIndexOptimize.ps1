@@ -5,8 +5,11 @@ function SbsMssqlIndexOptimize {
         $sqlInstance = $null
     )
 
-    $backupType = $backupType.ToUpper();
-	
+    $MSSQL_OPTIMIZE_TIMELIMIT = SbsGetEnvInt -Name "MSSQL_OPTIMIZE_TIMELIMIT" -DefaultValue 600;
+    $MSSQL_OPTIMIZE_MINNUMBEROFPAGES = SbsGetEnvInt -Name "MSSQL_OPTIMIZE_MINNUMBEROFPAGES" -DefaultValue 1000;
+    $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1 = SbsGetEnvInt -Name "MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1" -DefaultValue 30;
+    $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2 = SbsGetEnvInt -Name "MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2" -DefaultValue 50;
+
     # Workaround for https://github.com/dataplat/dbatools/issues/9335
     # Import-Module Az.Accounts, Az.Storage
     Import-Module dbatools;
@@ -37,9 +40,7 @@ function SbsMssqlIndexOptimize {
     $StopWatch = new-object system.diagnostics.stopwatch
     $StopWatch.Start();
 		
-    SbsWriteHost "Starting '$($backupType)' IndexOptimize for '$($instanceFriendlyName)'"
-
-    $systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
+    SbsWriteHost "Starting IndexOptimize for '$($serverName)'"
 
     # Recorremos todas las bases de datos
     # Check for null and determine count
@@ -72,24 +73,24 @@ function SbsMssqlIndexOptimize {
     foreach ($db in $dbs) {
 
         Try {
-            SbsWriteHost "Starting IndexOptimize";
+            SbsWriteHost "Starting IndexOptimize for $($db)";
             $parameters2 = @{}
             $parameters2["@Databases"] = $db.Name;
-            $parameters2["@FragmentationLevel1"] = 30;
-            $parameters2["@FragmentationLevel2"] = 50;
+            $parameters2["@FragmentationLevel1"] = $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1;
+            $parameters2["@FragmentationLevel2"] = $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2;
             $parameters2["@FragmentationLow"] = $null;
             $parameters2["@FragmentationMedium"] = 'INDEX_REORGANIZE';
             $parameters2["@FragmentationHigh"] = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE';
-            $parameters2["@MinNumberOfPages"] = 1000;
-            $parameters2["@TimeLimit"] = 600;
+            $parameters2["@MinNumberOfPages"] = $MSSQL_OPTIMIZE_MINNUMBEROFPAGES;
+            $parameters2["@TimeLimit"] = $MSSQL_OPTIMIZE_TIMELIMIT;
             $parameters2["@LogToTable"] = 'Y';
-            Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1200 -Database "master" -Query "IndexOptimize" -SqlParameter $parameters2 -CommandType StoredProcedure -EnableException;
-            SbsWriteHost "Finished IndexOptimize";
+            Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout ($MSSQL_OPTIMIZE_TIMELIMIT + 120) -Database "master" -Query "IndexOptimize" -SqlParameter $parameters2 -CommandType StoredProcedure -EnableException;
+            SbsWriteHost "Finished IndexOptimize for $($db)";
 			
         } 
         Catch {
             $exceptions += $_.Exception
-            SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($instanceFriendlyName): $($_.Exception.Message)"
+            SbsWriteWarning "Error performing IndexOptimize for the database $($db) and instance $($serverName): $($_.Exception.Message)"
             SbsWriteWarning "Exception Stack Trace: $($_.Exception.StackTrace)"
         }
     }
@@ -103,5 +104,5 @@ function SbsMssqlIndexOptimize {
 
     $StopWatch.Stop()
     $Minutes = $StopWatch.Elapsed.TotalMinutes;
-    SbsWriteHost "$($backupType) Index optimized finished in $($Minutes) min";
+    SbsWriteHost "IndexOptimize finished in $($Minutes) min";
 }

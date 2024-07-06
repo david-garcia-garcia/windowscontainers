@@ -70,7 +70,7 @@ function SbsMssqlRunBackups {
 	$StopWatch = new-object system.diagnostics.stopwatch
 	$StopWatch.Start();
 		
-	SbsWriteHost "Starting '$($backupType)' backup generation for '$($instanceFriendlyName)'"
+	SbsWriteHost "Starting '$($backupType)' backup generation for '$($serverName)'"
 	$systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
 
 	# Recorremos todas las bases de datos
@@ -82,7 +82,7 @@ function SbsMssqlRunBackups {
 	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
 		$dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
 		if ($dbs.Count -eq 0) {
-			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($instanceFriendlyName)";
+			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($serverName)";
 			return;
 		}
 	}
@@ -94,7 +94,7 @@ function SbsMssqlRunBackups {
 		$dbCount = $dbs.Count;
 	}
 	else {
-		SbsWriteWarning "Could not obtain databases to backup in instance: $($instanceFriendlyName)";
+		SbsWriteWarning "Could not obtain databases to backup in instance: $($serverName)";
 		return;
 	}
 
@@ -255,7 +255,7 @@ function SbsMssqlRunBackups {
 		} 
 		Catch {
 			$exceptions += $_.Exception
-			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($instanceFriendlyName): $($_.Exception.Message)"
+			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($serverName): $($_.Exception.Message)"
 			SbsWriteWarning "Exception Stack Trace: $($_.Exception.StackTrace)"
 		}
 	}

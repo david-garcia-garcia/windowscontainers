@@ -49,6 +49,7 @@ services:
       - 'MSSQL_JOB_DeleteBackupHistory={"Job":"sp_delete_backuphistory", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "190000"}]}'
       - 'MSSQL_JOB_PurgeJobHistory={"Job":"sp_purge_jobhistory", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "200000"}]}'
       - 'MSSQL_JOB_OutputFileCleanup={Job: Output File Cleanup, Enabled: true, Schedules: [{Schedule: Full weekly, FrequencyType: Weekly, FrequencyInterval: Thursday, FrequencySubdayType: Once, StartTime: 220000}]}'
+      - 'MSSQL_JOB_MssqlIndexOptimize={Job: "MSSQL Index Optimize", Enabled: true, Schedules: [{Schedule: Full weekly, FrequencyType: Weekly, FrequencyInterval: "Saturday", FrequencySubdayType: Once, StartTime: 010000}]}'
       # Automated certificates
       #- MSSQL_BACKUP_CERT=AUTO
       # Log backup criteria
