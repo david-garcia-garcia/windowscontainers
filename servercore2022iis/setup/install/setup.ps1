@@ -14,6 +14,7 @@ $features = @(
 	'IIS-NetFxExtensibility45',
 	'IIS-HealthAndDiagnostics',
 	'IIS-RequestFiltering',
+	'IIS-CertProvider',
 	'IIS-HttpCompressionDynamic',
 	'IIS-HttpCompressionStatic',
 	'IIS-ApplicationInit',
@@ -36,9 +37,10 @@ Foreach ($featureName in $features) {
 }
 
 Write-Host "`n---------------------------------------"
-Write-Host " Installing IIS URL rewrite"
+Write-Host " Installing IIS rewrite and Array Request Routing"
 Write-Host "-----------------------------------------`n"
 
 choco upgrade urlrewrite -y --version=2.1.20190828 --no-progress;
+choco upgrade iis-arr -y --version=3.0.20210521 --no-progress;
 
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
