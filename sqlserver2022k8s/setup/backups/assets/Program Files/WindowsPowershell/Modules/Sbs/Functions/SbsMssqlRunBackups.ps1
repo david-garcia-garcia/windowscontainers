@@ -233,25 +233,7 @@ function SbsMssqlRunBackups {
 				$parameters["@EncryptionAlgorithm"] = "AES_256";
 				$parameters["@ServerCertificate"] = $certificate;
 			}
-				
-			if (($backupType -eq "FULL") -and ($isSystemDb -eq $false)) {
-				# SbsWriteDebug "Running Index Optimize Before Full Backup";
-				# Index optimize before the full
-				SbsWriteHost "Starting IndexOptimize before full backup";
-				$parameters2 = @{}
-				$parameters2["@Databases"] = $db.Name;
-				$parameters2["@FragmentationLevel1"] = 30;
-				$parameters2["@FragmentationLevel2"] = 50;
-				$parameters2["@FragmentationLow"] = $null;
-				$parameters2["@FragmentationMedium"] = 'INDEX_REORGANIZE';
-				$parameters2["@FragmentationHigh"] = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE';
-				$parameters2["@MinNumberOfPages"] = 1000;
-				$parameters2["@TimeLimit"] = 600;
-				$parameters2["@LogToTable"] = 'Y';
-				Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1200 -Database "master" -Query "IndexOptimize" -SqlParameter $parameters2 -CommandType StoredProcedure -EnableException;
-				SbsWriteHost "Finished IndexOptimize before full backup";
-			}
-				
+
 			# This is always OK for FULL, DIFF OR LOG backups (but on FULL it means nothing)
 			$parameters["@ChangeBackupType"] = $changeBackupType;
 
