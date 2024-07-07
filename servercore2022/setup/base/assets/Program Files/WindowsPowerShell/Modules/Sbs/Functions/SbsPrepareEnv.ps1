@@ -7,11 +7,12 @@ function SbsPrepareEnv {
     param (
     )
 
-    $configuration = $null;
+    $configuration = "";
+    $configDir = "C:\environment.d";
 
-    if (Test-Path "C:\environment.d") {
+    if (Test-Path $configDir) {
         $mergedJson = @{}
-        $confFiles = Get-ChildItem -Path "C:\environment.d" -Filter *.json;
+        $confFiles = Get-ChildItem -Path $configDir -Filter *.json;
 
         foreach ($file in $confFiles) {
             $jsonContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
