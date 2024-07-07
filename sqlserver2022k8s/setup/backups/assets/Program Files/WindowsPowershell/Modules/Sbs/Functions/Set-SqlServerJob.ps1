@@ -37,13 +37,14 @@ function Set-SqlServerJob {
 
     # Get the job
     $job = Get-DbaAgentJob -SqlInstance $server -Job $newJobParams["Job"];
-    SbsWriteDebug "Found job with name $($jobName)"
-
+    
     # Check if the job exists
     if ($null -eq $job) {
         SbsWriteError "Job $jobName not found on server $SqlInstance.";
         return;
     }
+    
+    SbsWriteDebug -Message "Found job with name $($jobName)"
 
     $scheduleIndex = 0;
 
