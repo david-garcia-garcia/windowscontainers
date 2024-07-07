@@ -1,20 +1,20 @@
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
 # Gather all environment variables that match the pattern SBS_CRON_TRIGGER_
-$jobs = Get-ChildItem env: | Where-Object { $_.Name -match '^MSSQL_JOB_(.*)$' }
+$logins = Get-ChildItem env: | Where-Object { $_.Name -match '^MSSQL_LOGIN_(.*)$' }
 
 Import-Module dbatools;
-
-$sqlInstance = Connect-DbaInstance "localhost";
 
 $errors = New-Object -TypeName System.Collections.ArrayList;
 
 # Loop through each found environment variable
-foreach ($job in $jobs) {
+foreach ($login in $logins) {
     try {
-        Set-SqlServerJob -SQLInstance $sqlInstance -JobDefinition $job.Value;
+        SbsWriteDebug "Adding Login"
+        SbsMssqlAddLogin -instanceName "localhost" -LoginConfiguration $login.Value;
     }
     catch {
+        SbsWriteWarning $_.Message;
         $errors.Add($_);
     }
 }

@@ -18,33 +18,22 @@ Function SbsRunScriptsInDirectory {
         # Doing this ASYNC is a little bit slower, but it pays off in some situations.
         $job = Start-Job -ScriptBlock {
             param ($iniDir)
-            try {
-                Import-Module Sbs;
-                # Get all .ps1 files in the directory
-                $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name;
-                SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
-                $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
-                Import-Module Sbs;
-                foreach ($script in $scripts) {
-                    $sw = [System.Diagnostics.Stopwatch]::StartNew();
-                    SbsWriteHost "$($script.Name): START ";
-                    & $script.FullName;
-                    SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
-                }
-            }
-            catch {
-                # Capture the exception details
-                $global:jobException = $_
+            Import-Module Sbs;
+            # Get all .ps1 files in the directory
+            $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name;
+            SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
+            $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
+            Import-Module Sbs;
+            foreach ($script in $scripts) {
+                $sw = [System.Diagnostics.Stopwatch]::StartNew();
+                SbsWriteHost "$($script.Name): START ";
+                & $script.FullName;
+                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
             }
         } -ArgumentList $Path
         
         Receive-Job -Job $job -Wait -AutoRemoveJob;
 
-        # Check if there was an exception in the job
-        if ($null -ne $global:jobException) {
-            throw $global:jobException
-        }
-        
         # Check if the state is 'Failed' or if there are error records in the results
         if ($job.State -eq 'Failed') {
             SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task encountered an error during execution";

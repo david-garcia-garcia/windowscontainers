@@ -12,7 +12,7 @@ function SbsPrepareEnv {
 
     if (Test-Path $configDir) {
         $mergedJson = @{}
-        $confFiles = Get-ChildItem -Path $configDir -Filter *.json;
+        $confFiles = Get-ChildItem -Path $configDir -Filter *.json | Sort-Object Name
 
         foreach ($file in $confFiles) {
             $jsonContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
@@ -100,11 +100,10 @@ function SbsPrepareEnv {
 
     ##########################################################################
     # Promote process level env variables to machine level. This is the most straighforward
-    # way making these accessible ot other processes in the container such as IIS pools,
+    # way for making these accessible ot other processes in the container such as IIS pools,
     # scheduled tasks, etc.
     # Some of these contain sensible information that should not be promoted or readily available
-    # to those services (i.e. there could be 3d party software such as NR running that will
-    # have access to theses inmmediately)
+    # to those services.
     ##########################################################################
     $SBS_PROMOTE_ENV_REGEX = [System.Environment]::GetEnvironmentVariable("SBS_PROMOTE_ENV_REGEX");
     if (-not [string]::IsNullOrWhiteSpace($SBS_PROMOTE_ENV_REGEX)) {
