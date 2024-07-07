@@ -64,13 +64,21 @@ Describe 'compose.yaml' {
             "SBS_TESTVALUE" = "value1"
         } | ConvertTo-Json
 
-        # Create directory and set configmap
-        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\configmap'; Set-Content -Path 'C:\configmap\env.json' -Value '$jsonString'"
+        # Create directory and set environment
+        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env0.json' -Value '$jsonString'"
+
+        $jsonString2 = @{
+            "SBS_TESTVALUE2" = "value2"
+        } | ConvertTo-Json
+
+        # Create directory and set environment
+        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env1.json' -Value '$jsonString2'"
 
         # Force refresh
         docker exec servercore2022-servercore-1 powershell "Import-Module Sbs; SbsPrepareEnv;"
 
         docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
+        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE2' | Should -Be "value2"
     }
 
     #It 'Can SSH to container' {

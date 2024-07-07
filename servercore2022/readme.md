@@ -94,10 +94,10 @@ This does NOT protect the information from being decoded by any other process ru
 The image can use a JSON file in disk to read the environment from:
 
 ```
-c:\configmap\env.json
+c:\environment.d\env.json
 ```
 
-Changes to this file are checked every 8 seconds in the entry point, and environment variables updated accordingly. Note that this **does not** mean that whatever this environment variables control or affect is going to be updated, it depends on each specific setting and how it is used.
+Changes to this file are checked every 8 seconds in the entry point, and environment variables updated accordingly. Note that this **does not** mean that whatever this environment variables controls or affects is going to be updated, it depends on each specific setting and how it is used.
 
 Configuring environment through a Json file has some advantages:
 
@@ -371,7 +371,7 @@ Relevant locations
 
 | Path                                                     | Usage                                                        |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
-| c:\configmap\env.json                                    | Provide environment variables as a json file                 |
+| c:\environment.d\env.json                                | Provide environment variables as a json file/s                |
 | c:\entrypoint\init\                                      | Path for initialization scripts                              |
 | c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed |
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |

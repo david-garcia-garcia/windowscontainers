@@ -1,5 +1,5 @@
 ##########################################################################
-# Reads environment variables from c:\configmap\env.json if available
+# Reads environment variables from c:\C:\environment.d\{anyname}.json if available
 # + prepares them (system level promotion or DPAPI protection)
 ##########################################################################
 function SbsPrepareEnv {
@@ -7,10 +7,20 @@ function SbsPrepareEnv {
     param (
     )
 
-    $configuration = "";
+    $configuration = $null;
 
-    if (Test-Path "c:\configmap\env.json") {
-        $configuration = Get-Content -Raw -Path "c:\configmap\env.json";
+    if (Test-Path "C:\environment.d") {
+        $mergedJson = @{}
+        $confFiles = Get-ChildItem -Path "C:\environment.d" -Filter *.json;
+
+        foreach ($file in $confFiles) {
+            $jsonContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
+            foreach ($key in $jsonContent.PSObject.Properties.Name) {
+                $mergedJson[$key] = $jsonContent.$key
+            }
+        }
+
+        $configuration = $mergedJson | ConvertTo-Json -Depth 100;
     }
 
     $hashFilePath = "c:\env.json.hash";
@@ -33,7 +43,7 @@ function SbsPrepareEnv {
     [System.Environment]::SetEnvironmentVariable("ENVHASH", $md5HashString, [System.EnvironmentVariableTarget]::Process);
 
     if (-not [String]::IsNullOrWhiteSpace($configuration)) {
-        Write-Host "Reading environment from config map."
+        Write-Host "Reading environment from C:\environment.d"
         $configMap = $configuration | ConvertFrom-Json;
         foreach ($key in $configMap.PSObject.Properties) {
             $variableName = $key.Name
