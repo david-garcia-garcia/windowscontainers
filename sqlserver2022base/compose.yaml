@@ -25,9 +25,11 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_SYSTEM=d:\system
       - MSSQL_PATH_BACKUP=d:\backup
+      - MSSQL_SERVERNAME=MYSERVERNAME
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_DEBUG=True
 networks:
   container_default:
     external: true

@@ -70,6 +70,31 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     }
 }
 
+########################################################
+# START IN MINIMAL MODE TO BE ABLE TO SET SERVERNAME
+########################################################
+SbsWriteHost "Starting MSSQL in minimal mode"
+Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\stdout.txt -RedirectStandardError c:\stderr.txt
+
+$processId = (Get-Process -Name SQLSERVR).Id
+SbsWriteDebug "MSSQL process id $($processId)"
+
+# Get current server name
+$oldServerName = sqlcmd -S localhost -Q "SELECT @@servername" -h -1 -W | Out-String
+$oldServerName = ($oldServerName -split "`n")[0]
+SbsWriteDebug "Old server name $($oldServerName)"
+
+Start-Sleep -Seconds 10;
+
+# Define the server name change command
+SbsWriteDebug "Dropserver $($oldServerName)"
+sqlcmd -S localhost -Q "EXEC sp_dropserver $($oldServerName)"
+
+SbsWriteDebug "Addserver $($oldServerName)"
+sqlcmd -S localhost -Q "EXEC sp_addserver 'new_name2', 'local';"
+
+Stop-Process -Id $processId
+
 ###############################
 # START THE SERVER
 ###############################
@@ -109,7 +134,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
             $newFilename = $newDataPath + "\" + $file.Name + ".mdf"
             if (-not (Test-Path $newFilename)) {
                 $filesToMove[$file.FileName] = $newFilename;
-                $sql = "ALTER DATABASE $($db.Name) MODIFY FILE ( NAME = $($file.Name), FILENAME = '$newFilename' );"
+                $sql = "ALTER DATABASE $($db.Name) MODIFY FILE ( NAME = $($file.Name), FILENAME = '$newFilename' ); "
                 Invoke-DbaQuery -SqlInstance $sqlInstance -Query $sql;
             }
         } 
@@ -118,7 +143,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
             $newFilename = $newLogPath + "\" + $file.Name + ".ldf"
             if (-not (Test-Path $newFilename)) {
                 $filesToMove[$file.FileName] = $newFilename;
-                $sql = "ALTER DATABASE $($db.Name) MODIFY FILE ( NAME = $($file.Name), FILENAME = '$newFilename' );"
+                $sql = "ALTER DATABASE $($db.Name) MODIFY FILE ( NAME = $($file.Name), FILENAME = '$newFilename' ); "
                 Invoke-DbaQuery -SqlInstance $sqlInstance -Query $sql;
             }
         }
