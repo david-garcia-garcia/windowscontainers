@@ -71,29 +71,41 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 }
 
 ########################################################
-# START IN MINIMAL MODE TO BE ABLE TO SET SERVERNAME
+# START IN MINIMAL MODE TO BE ABLE TO SET SERVERNAME,
+# THIS MIGHT MAKE NO SENSE WHEN MASTER IS PRESERVED
+# BETWEEN USAGES, BUT IN K8S STATE-LESS BACKUP BASED
+# RECREATION, WE NEED TO SET THIS UP EVERY TIME
+# THE SERVER BOOTS AS ONLY THE ACTUAL USER DATABASE DATA
+# IS PRESERVED
 ########################################################
-SbsWriteHost "Starting MSSQL in minimal mode"
-Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\stdout.txt -RedirectStandardError c:\stderr.txt
 
-$processId = (Get-Process -Name SQLSERVR).Id
-SbsWriteDebug "MSSQL process id $($processId)"
+$newServerName = SbsGetEnvString -Name "MSSQL_SERVERNAME" -DefaultValue $null;
 
-# Get current server name
-$oldServerName = sqlcmd -S localhost -Q "SELECT @@servername" -h -1 -W | Out-String
-$oldServerName = ($oldServerName -split "`n")[0]
-SbsWriteDebug "Old server name $($oldServerName)"
+if ($newServerName) {
+    SbsWriteHost "Starting MSSQL in minimal mode to change Server Name to $($newServerName)"
+    Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\stdout.txt -RedirectStandardError c:\stderr.txt
 
-Start-Sleep -Seconds 10;
+    $processId = (Get-Process -Name SQLSERVR).Id
+    SbsWriteHost "MSSQL process id $($processId)"
 
-# Define the server name change command
-SbsWriteDebug "Dropserver $($oldServerName)"
-sqlcmd -S localhost -Q "EXEC sp_dropserver $($oldServerName)"
+    # Get current server name
+    $oldServerName = sqlcmd -S localhost -Q "SELECT @@servername" -h -1 -W | Out-String
+    $oldServerName = ($oldServerName -split "`n")[0]
+    SbsWriteHost "Old server name $($oldServerName)"
 
-SbsWriteDebug "Addserver $($oldServerName)"
-sqlcmd -S localhost -Q "EXEC sp_addserver 'new_name2', 'local';"
+    # Define the server name change command
+    do {
+        SbsWriteHost "Attempting sp_dropserver $($oldServerName)..."
+        $res = sqlcmd -S localhost -Q "EXEC sp_dropserver $($oldServerName); SELECT 'OPERATIONEXECUTED'"
+        Start-Sleep -Milliseconds 500;
+    } while (-not($res -contains "OPERATIONEXECUTED"))
+    
 
-Stop-Process -Id $processId
+    SbsWriteDebug "Addserver $($newServerName)"
+    sqlcmd -S localhost -Q "EXEC sp_addserver '$($newServerName)', 'local';"
+
+    Stop-Process -Id $processId
+}
 
 ###############################
 # START THE SERVER

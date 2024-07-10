@@ -1,5 +1,5 @@
 ##########################################################################
-# Reads environment variables from c:\C:\environment.d\{anyname}.json if available
+# Reads environment variables from C:\environment.d\{anyname}.json if available
 # + prepares them (system level promotion or DPAPI protection)
 ##########################################################################
 function SbsPrepareEnv {
