@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   mssql:
     stop_grace_period: 40s

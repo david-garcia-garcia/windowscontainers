@@ -12,8 +12,8 @@ Describe 'compose-basic.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
     }
 
-    It 'Timezone is default' {
-        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Be "Romance Standard Time";
+    It 'Timezone is set' {
+        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Match "Brunei Time";
     }
 
     It 'sshd service is stopped' {

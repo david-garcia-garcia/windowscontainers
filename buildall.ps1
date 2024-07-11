@@ -45,7 +45,6 @@ function ThrowIfError() {
     }
 }
 
-# TODO: Write some tests with PESTER
 if ($test) {
 
     # Check if the 'container_default' network exists
@@ -63,7 +62,7 @@ if ($test) {
 }
 
 
-# Core Server
+# Core Server, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build
 ThrowIfError
@@ -79,7 +78,7 @@ if ("servercore2022" -match $Images) {
     }
 }
 
-# IIS Base
+# IIS Base, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
 docker compose -f servercore2022iis/compose.yaml build
 ThrowIfError
@@ -96,18 +95,18 @@ if ("servercore2022iis" -match $Images) {
 }
 
 # IIS NET 48
-Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
-docker compose -f servercore2022iisnet48/compose.yaml build
-ThrowIfError
-
 if ("servercore2022iisnet48" -match $Images) {
+    Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
+    docker compose -f servercore2022iisnet48/compose.yaml build
+    ThrowIfError
+
     if ($push) { 
         docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
         ThrowIfError
     }
 }
 
-# SQL Server Base
+# SQL Server Base, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SQLSERVER2022BASE)"
 docker compose -f sqlserver2022base/compose.yaml build
 ThrowIfError
@@ -119,12 +118,13 @@ if ("sqlserver2022base" -match $Images) {
     }
 }
 
-# SQL Server K8S
-Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
-docker compose -f sqlserver2022k8s/compose.yaml build
-ThrowIfError
-
 if ("sqlserver2022k8s" -match $Images) {
+
+    # SQL Server K8S
+    Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
+    docker compose -f sqlserver2022k8s/compose.yaml build
+    ThrowIfError
+
     if ($test) {
         Invoke-Pester -Path "sqlserver2022k8s\tests"
     }
@@ -135,12 +135,12 @@ if ("sqlserver2022k8s" -match $Images) {
     }
 }
 
-# SQL Server Analysis Services
-Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
-docker compose -f sqlserver2022as/compose.yaml build
-ThrowIfError
-
 if ("sqlserver2022as" -match $Images) {
+    # SQL Server Analysis Services
+    Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
+    docker compose -f sqlserver2022as/compose.yaml build
+    ThrowIfError
+
     if ($test) {
     }
     if ($push) {
@@ -149,12 +149,12 @@ if ("sqlserver2022as" -match $Images) {
     }
 }
 
-# SQL Server Integration Services
-Write-Host "Building $($Env:IMG_SQLSERVER2022IS)"
-docker compose -f sqlserver2022is/compose.yaml build
-ThrowIfError
-
 if ("sqlserver2022is" -match $Images) {
+    # SQL Server Integration Services
+    Write-Host "Building $($Env:IMG_SQLSERVER2022IS)"
+    docker compose -f sqlserver2022is/compose.yaml build
+    ThrowIfError
+
     if ($test) {
     }
     if ($push) {

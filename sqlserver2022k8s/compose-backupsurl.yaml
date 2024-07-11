@@ -1,6 +1,5 @@
 # Backup base lifecyle: there is no persistent state, backup restored when pod
 # spins up, and backup done when it tears down.
-version: "3.7"
 services:
   mssql:
     stop_grace_period: 60s
