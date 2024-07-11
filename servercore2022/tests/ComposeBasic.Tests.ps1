@@ -13,7 +13,7 @@ Describe 'compose-basic.yaml' {
     }
 
     It 'Timezone is set' {
-        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Match "Brunei Time";
+        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Match "Alaskan Standard Time";
     }
 
     It 'sshd service is stopped' {

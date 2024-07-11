@@ -23,7 +23,6 @@ Function SbsRunScriptsInDirectory {
             $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name;
             SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
-            Import-Module Sbs;
             foreach ($script in $scripts) {
                 $sw = [System.Diagnostics.Stopwatch]::StartNew();
                 SbsWriteHost "$($script.Name): START ";
@@ -32,14 +31,23 @@ Function SbsRunScriptsInDirectory {
             }
         } -ArgumentList $Path
         
-        Receive-Job -Job $job -Wait -AutoRemoveJob;
+        try {
+            Receive-Job -Job $job -Wait -AutoRemoveJob;
+        }
+        catch {
+            SbsWriteWarning "Job error: $_.Message";
+        }
 
         # Check if the state is 'Failed' or if there are error records in the results
         if ($job.State -eq 'Failed') {
-            SbsWriteHost "[$(Get-Date -format 'HH:mm:ss')] Task encountered an error during execution";
-            $host.SetShouldExit(1);
-            throw "Task $jobName failed";
+            SbsWriteWarning "Found exception while runnign async entrypoint scripts."
+            $reason = $job.ChildJobs[0].JobStateInfo.Reason;
+            $stack = $reason.ErrorRecord.ScriptStackTrace;
+            $message = $reason.Message;
+            SbsWriteError "$($message) $($stack)";
         }
+
+        SbsWriteHost "Async init job state $($job.State)"
     }
     else {
         $scripts = Get-ChildItem -Path $Path -Filter *.ps1 | Sort-Object Name;
