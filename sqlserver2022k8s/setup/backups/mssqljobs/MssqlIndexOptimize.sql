@@ -21,7 +21,7 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'MssqlIndexOptimize',
 		@notify_level_netsend=0, 
 		@notify_level_page=0, 
 		@delete_level=0, 
-		@description=N'Optimize user databases', 
+		@description=N'MSSQL Index Optimize', 
 		@category_name=N'[Uncategorized (Local)]', 
 		@owner_login_name='sa', @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
@@ -36,7 +36,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Run Scri
 		@retry_attempts=0, 
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'CmdExec', 
-		@command=N'PowerShell.exe -File "c:\cron\scripts\mssqlIndexOptimize.ps1"', 
+		@command=N'PowerShell.exe -File "c:\cron\scripts\MssqlIndexOptimize.ps1"', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1

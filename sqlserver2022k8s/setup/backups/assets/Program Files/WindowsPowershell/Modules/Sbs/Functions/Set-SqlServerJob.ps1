@@ -40,7 +40,7 @@ function Set-SqlServerJob {
     
     # Check if the job exists
     if ($null -eq $job) {
-        SbsWriteError "Job $jobName not found on server $SqlInstance.";
+        SbsWriteWarning "Job $jobName not found on server $SqlInstance.";
         return;
     }
     

@@ -14,7 +14,7 @@ Describe 'compose-persistent.yaml' {
     }
 
     It 'Ensure exists' {
-        (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -Be -Empty
+        (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -BeNullOrEmpty
         New-DbaDatabase -SqlInstance $Env:connectionString -Name mytestdatabase
         (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -Be "mytestdatabase"
     }
