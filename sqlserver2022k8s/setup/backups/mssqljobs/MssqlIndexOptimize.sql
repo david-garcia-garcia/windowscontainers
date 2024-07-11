@@ -14,7 +14,7 @@ IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 END
 
 DECLARE @jobId BINARY(16)
-EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'MssqlIndexOptimize', 
+EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'MSSQL Index Optimize', 
 		@enabled=1, 
 		@notify_level_eventlog=2, 
 		@notify_level_email=0, 
