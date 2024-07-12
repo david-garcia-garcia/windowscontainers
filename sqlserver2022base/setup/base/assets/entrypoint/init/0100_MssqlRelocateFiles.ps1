@@ -5,7 +5,6 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 ###############################
 
 $id = "MSSQL16.MSSQLSERVER";
-$version = "160";
 
 Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver\supersocketnetlib\tcp\ipall') -name tcpdynamicports -value '' ;
 Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver\supersocketnetlib\tcp\ipall') -name tcpport -value 1433 ;
@@ -82,28 +81,42 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 $newServerName = SbsGetEnvString -Name "MSSQL_SERVERNAME" -DefaultValue $null;
 
 if ($newServerName) {
-    SbsWriteHost "Starting MSSQL in minimal mode to change Server Name to $($newServerName)"
-    Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\MSSQL16.MSSQLSERVER\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\stdout.txt -RedirectStandardError c:\stderr.txt
+    SbsWriteHost "Starting MSSQL in minimal mode to change @@servername to $($newServerName)"
+    Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\$($id)\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\mssql_stdout.txt -RedirectStandardError c:\mssql_stderr.txt
 
     $processId = (Get-Process -Name SQLSERVR).Id
     SbsWriteHost "MSSQL process id $($processId)"
 
+    $safetyStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
+
     # Get current server name
-    $oldServerName = sqlcmd -S localhost -Q "SELECT @@servername" -h -1 -W | Out-String
-    $oldServerName = ($oldServerName -split "`n")[0]
-    SbsWriteHost "Old server name $($oldServerName)"
+    do {
+        Start-Sleep -Milliseconds 250;
+        $oldServerName = sqlcmd -S localhost -Q "SELECT @@servername" -h -1 -W | Out-String
+        if ($safetyStopwatch.Elapsed.TotalSeconds -gt 10) {
+            SbsWriteWarning "@@servername retrieval back off";
+            break;
+        }
+    } while ([string]::IsNullOrWhiteSpace($oldServerName))
+    $oldServerName = ($oldServerName -split "`n")[0].Replace("`r", '').Replace("`n", '')
+
+    SbsWriteHost "Renaming $($oldServerName) to $($newServerName)"
 
     # Define the server name change command
     do {
+        Start-Sleep -Milliseconds 1000;
         SbsWriteHost "Attempting sp_dropserver $($oldServerName)..."
-        $res = sqlcmd -S localhost -Q "EXEC sp_dropserver $($oldServerName); SELECT 'OPERATIONEXECUTED'"
-        Start-Sleep -Milliseconds 500;
-    } while (-not($res -contains "OPERATIONEXECUTED"))
-    
+        $res = sqlcmd -S localhost -Q "EXEC sp_dropserver $($oldServerName)" | Out-String
+        SbsWriteDebug $res;
+        if ($safetyStopwatch.Elapsed.TotalSeconds -gt 10) {
+            SbsWriteWarning "sp_dropserver retrieval back off";
+            break;
+        }
+    } while (-not [string]::IsNullOrWhiteSpace($res))
 
     SbsWriteDebug "Addserver $($newServerName)"
     sqlcmd -S localhost -Q "EXEC sp_addserver '$($newServerName)', 'local';"
-
+    
     Stop-Process -Id $processId
 }
 
