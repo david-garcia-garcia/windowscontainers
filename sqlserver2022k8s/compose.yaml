@@ -42,19 +42,20 @@ services:
       - MSSQL_PATH_CONTROL=c:\SQLControl
       - MSSQL_INSTANCENAME=myinstance
       - MSSQL_MAXMEMORY=286
+      - SBS_DEBUG=True
       # For debugging timeout at 40s
       - SBS_SHUTDOWNTIMEOUT=40
       # Start services
-      - SBS_SRVENSURE=SQLSERVERAGENT;newrelic-infra
+      - SBS_SRVENSURE=SQLSERVERAGENT
       - SBS_TEMPORARY=f:\
       - SBS_ENTRYPOINTERRORACTION=Stop
-      - SBS_INITASYNC=True
+      - SBS_INITASYNC=False
       # Monitor from event viewer
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_CRONRUNONBOOT=DeployMssqlNri
-      - NEW_RELIC_LICENSE_KEY=
       - 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      - 'MSSQL_LOGIN_APP={"Login":"monitoring", "Password":"MyP@assword", "DefaultDatabase":null, "DatabasesRegex":".*", "Permissions": "CONNECT SQL, VIEW SERVER STATE, VIEW ANY DEFINITION", "Roles":"db_datareader"}'
 networks:
   container_default:
     external: true

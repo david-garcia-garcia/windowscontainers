@@ -24,13 +24,19 @@ Describe 'compose-jobs.yaml' {
     }
 
     It 'Diff backup job scheduled' {
-        $job = (Get-DbaAgentJob -SqlInstance $Env:connectionString -Job "MssqlBackup - FULL");
+        $job = (Get-DbaAgentJob -SqlInstance $Env:connectionString -Job "MssqlBackup - DIFF");
         $job.HasSchedule | Should -Be $true;
         $job.Enabled | Should -Be $true;
     }
 
     It 'Log backup job scheduled' {
-        $job = (Get-DbaAgentJob -SqlInstance $Env:connectionString -Job "MssqlBackup - FULL");
+        $job = (Get-DbaAgentJob -SqlInstance $Env:connectionString -Job "MssqlBackup - LOG");
+        $job.HasSchedule | Should -Be $true;
+        $job.Enabled | Should -Be $true;
+    }
+
+    It 'Index Optimize job scheduled' {
+        $job = (Get-DbaAgentJob -SqlInstance $Env:connectionString -Job "MSSQL Index Optimize");
         $job.HasSchedule | Should -Be $true;
         $job.Enabled | Should -Be $true;
     }

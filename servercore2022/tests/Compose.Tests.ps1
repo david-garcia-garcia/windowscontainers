@@ -20,12 +20,12 @@ Describe 'compose.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Be "Pacific Standard Time";
     }
 
-    It 'new-relic service is started' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').Status" | Should -Be "Running"
+    It 'sshd service is started' {
+        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Running"
     }
 
-    It 'new-relic service has automatic startup' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Automatic"
+    It 'sshd service has automatic startup' {
+        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Automatic"
     }
 
     It 'DPAPI encode/decode works' {
@@ -62,15 +62,26 @@ Describe 'compose.yaml' {
     It 'Env warm reload' {
         $jsonString = @{
             "SBS_TESTVALUE" = "value1"
+            "SBS_OVERRIDE" = "originalValue"
         } | ConvertTo-Json
 
-        # Create directory and set configmap
-        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\configmap'; Set-Content -Path 'C:\configmap\env.json' -Value '$jsonString'"
+        # Create directory and set environment
+        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env0.json' -Value '$jsonString'"
+
+        $jsonString2 = @{
+            "SBS_TESTVALUE2" = "value2"
+            "SBS_OVERRIDE" = "overridenValue"
+        } | ConvertTo-Json
+
+        # Create directory and set environment
+        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env1.json' -Value '$jsonString2'"
 
         # Force refresh
         docker exec servercore2022-servercore-1 powershell "Import-Module Sbs; SbsPrepareEnv;"
 
         docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
+        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE2' | Should -Be "value2"
+        docker exec servercore2022-servercore-1 powershell '$Env:SBS_OVERRIDE' | Should -Be "overridenValue"
     }
 
     #It 'Can SSH to container' {

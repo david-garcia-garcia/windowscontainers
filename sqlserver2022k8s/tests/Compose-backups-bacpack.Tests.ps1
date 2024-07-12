@@ -1,9 +1,9 @@
 Describe 'compose-backups.yaml' {
     BeforeAll {
         # Set environment variable for connection string
-        $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;Database=mytestdatabase;";
+        $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
-        New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup" -Force
+        New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup", "c:\datavolume\bacpac\*" -Force
         Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*", "c:\datavolume\bacpac\*" -Recurse -Force
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
         WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
@@ -70,8 +70,10 @@ CREATE TABLE dbo.TestTable (
         Remove-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase -EnableException -Confirm:$false
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase | Should -Be $null;
 
+        $containerPath = $lastBackup.FullName.ToLower() -Replace "c:\\datavolume\\backup", "d:\backup"
+
         # Restore from bacpac using SbsRestoreFull
-        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($lastBackup)'"
+        docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($containerPath)'"
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database renamedDatabase2 | Should -Not -BeNullOrEmpty;
 
         # Test that the database has the table we created before

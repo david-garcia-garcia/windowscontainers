@@ -1,4 +1,4 @@
-function SbsDeployDbBackupInfo {
+function SbsMssqlDeployDbBackupInfo {
     param (
         [Parameter(Mandatory = $true)]
         [string]$sqlInstance

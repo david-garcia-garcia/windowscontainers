@@ -10,6 +10,10 @@ Describe 'compose.yaml' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
 
+    It 'Can connect with application user' {
+        Connect-DbaInstance "Server=172.18.8.8;User Id=monitoring;Password=MyP@assword;" | Should -Not -BeNullOrEmpty;
+    }
+
     AfterAll {
         docker compose -f sqlserver2022k8s/compose.yaml down;
         Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\backup\*", "c:\datavolume\control\*" -Recurse -Force

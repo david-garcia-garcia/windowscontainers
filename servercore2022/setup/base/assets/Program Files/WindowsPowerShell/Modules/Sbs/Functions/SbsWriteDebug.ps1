@@ -1,12 +1,15 @@
 function SbsWriteDebug {
     param (
-        [Parameter(Mandatory = $true)]
         [string]$Message,
         [string]$Source = "SbsContainer",
         [string]$LogName = "Application"
     )
 
     if ((SbsGetEnvBool "SBS_DEBUG") -eq $false) {
+        return;
+    }
+
+    if ([string]::IsNullOrWhiteSpace($Message)) {
         return;
     }
 

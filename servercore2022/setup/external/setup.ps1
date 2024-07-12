@@ -56,7 +56,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Creating log source: SbsContainer"
 Write-Host "-----------------------------------------`n"
 
-New-EventLog -LogName Application -Source "SbsContainer" -ErrorAction SilentlyContinue;
+New-EventLog -LogName Application -Source "SbsContainer";
 Write-EventLog -LogName "Application" -Source "SbsContainer" -EventID 9900 -EntryType Information -Message "Setup script executed.";
 
 Write-Host "`n---------------------------------------"

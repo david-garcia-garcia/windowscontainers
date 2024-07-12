@@ -12,16 +12,16 @@ Describe 'compose-basic.yaml' {
         docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
     }
 
-    It 'Timezone is default' {
-        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Be "Romance Standard Time";
+    It 'Timezone is set' {
+        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Match "Alaskan Standard Time";
     }
 
-    It 'new-relic service is stopped' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').Status" | Should -Be "Stopped"
+    It 'sshd service is stopped' {
+        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Stopped"
     }
 
-    It 'new-relic service is disabled' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'newrelic-infra').StartType" | Should -Be "Disabled"
+    It 'sshd service is disabled' {
+        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Disabled"
     }
 
     It 'Shutdown not called twice' {

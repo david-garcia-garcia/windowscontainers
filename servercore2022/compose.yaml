@@ -1,4 +1,3 @@
-version: "3.7"
 services:
   servercore:
     stop_grace_period: 40s
@@ -15,14 +14,14 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       # Promote to system environment
-      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC
+      - SBS_PROMOTE_ENV_REGEX=^SBS_
       # Timezone
       - SBS_CONTAINERTIMEZONE=Pacific Standard Time
       - SBS_ENABLESSH=true
       # Services that need enforced started
-      - SBS_SRVENSURE=newrelic-infra
+      - SBS_SRVENSURE=ssh-agent;sshd
       # Services that need to be stopped on shutdown
-      - SBS_SRVSTOP=newrelic-infra
+      - SBS_SRVSTOP=ssh-agent;sshd
       # Do not run in ASYNC boot mode
       - SBS_INITASYNC=false
       # Shutdown timeout
@@ -41,12 +40,8 @@ services:
       # Output in the entrypoint loop
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
-      # New relic license KEY
-      - NEW_RELIC_LICENSE_KEY=badlicensekey
       # Secret key
       - SBS_TESTPROTECT_PROTECT=supersecretekey
-      # Other new relic stuff
-      - NRIA_CUSTOM_ATTRIBUTES={"environment":"docker"}
 networks:
   container_default:
     external: true

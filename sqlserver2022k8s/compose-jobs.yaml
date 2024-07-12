@@ -1,6 +1,5 @@
 # Backup base lifecyle: there is no persistent state, backup restored when pod
 # spins up, and backup done when it tears down.
-version: "3.7"
 services:
   mssql:
     stop_grace_period: 60s
@@ -27,7 +26,7 @@ services:
         ipv4_address: 172.18.8.8
     environment:
       # Temporary workaround to make scheduled tasks work
-      - SBS_PROMOTE_ENV_REGEX=^SBS_|^NEW_RELIC|^MSSQL_
+      - SBS_PROMOTE_ENV_REGEX=^SBS_|^MSSQL_
       # Admin credentials
       - MSSQL_ADMIN_USERNAME=sa
       - MSSQL_ADMIN_PWD_PROTECT=sapwd
@@ -49,6 +48,7 @@ services:
       - 'MSSQL_JOB_DeleteBackupHistory={"Job":"sp_delete_backuphistory", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "190000"}]}'
       - 'MSSQL_JOB_PurgeJobHistory={"Job":"sp_purge_jobhistory", "Enabled": true, "Schedules": [{"Schedule": "Daily", "FrequencyType": "Daily", "FrequencyInterval": "EveryDay", "StartTime": "200000"}]}'
       - 'MSSQL_JOB_OutputFileCleanup={Job: Output File Cleanup, Enabled: true, Schedules: [{Schedule: Full weekly, FrequencyType: Weekly, FrequencyInterval: Thursday, FrequencySubdayType: Once, StartTime: 220000}]}'
+      - 'MSSQL_JOB_MssqlIndexOptimize={Job: "MSSQL Index Optimize", Enabled: true, Schedules: [{Schedule: Full weekly, FrequencyType: Weekly, FrequencyInterval: "Saturday", FrequencySubdayType: Once, StartTime: 010000}]}'
       # Automated certificates
       #- MSSQL_BACKUP_CERT=AUTO
       # Log backup criteria

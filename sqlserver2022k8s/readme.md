@@ -1,9 +1,5 @@
 # Microsoft SQL Server 2022 base image - For Kubernetes
 
-This image has configurable behavior based on two concepts:
-
-* **Lifecycle**: through env, you will set a Lifecycle type, this will tell the container how to persistent data lifecycle will be managed.
-
 ## Instance Startup Configuration
 
 Use MSSQL_SPCONFIGURE to run SPCONFIGURE on boot, if any of the changes requires a restart, the script will detect it and take care of it.
@@ -118,22 +114,17 @@ This task:
 
 * Deploys the backup summary table and populating job using SbsDeployDbBackupInfo
 
-* Setups the newrelic identity in the SQL engine using SbsAddNriMonitor
-* Configure the newrelic authentication (mssql-config.yml)
-
-To run this immediately after booting use the env configuration:
-
-```yaml
-SBS_CRONRUNONBOOT=DeployMssqlNri
-```
-
 ### Backup State for databases
 
 The image has a Job "RefreshSbsDatabaseBackupInfo" and a table in Master "SbsDatabaseBackupInfo". This job populates the table with summarized backup information for all databases in the SQL engine that you can use to monitor database backup status.
 
 ![image-20240312090653947](readme_assets/image-20240312090653947.png)
 
-The new relic MSSQL integration in the image is already configured to push this information to New Relic (see mssql-custom-query.yml) so you can build integrated monitoring panels for MSSQL in New Relic
+You can use this information to monitor your databases using New Relic:
+
+[david-garcia-garcia/newrelicinframssql (github.com)](https://github.com/david-garcia-garcia/newrelicinframssql)
+
+You can build integrated monitoring panels for MSSQL in New Relic
 
 ![image-20240312091029724](readme_assets/image-20240312091029724.png)
 

@@ -18,7 +18,6 @@ $features = @(
 	'IIS-HttpCompressionDynamic',
 	'IIS-HttpCompressionStatic',
 	'IIS-ApplicationInit',
-	'IIS-IpSecurity',
 	'IIS-LoggingLibraries',
 	'IIS-RequestMonitor',
 	'IIS-HttpTracing',

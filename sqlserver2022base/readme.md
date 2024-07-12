@@ -4,34 +4,21 @@ The purpose of this image is to serve as working base installation of MSSQL2022.
 
 The installation sets up a Default Instance, with IP bindings and enabling SQL Authentication, so you can use the image as it is.
 
-The whole engine and data are setup inside the container at:
-
-```powershell
-$systemDbDir = 'C:\SQLSystemDB\Data';
-$systemDbLogDir = 'C:\SQLSystemDB\Log';
-$userDbDir = 'C:\SQLUserDB\Data';
-$userDbLogDir = 'C:\SQLUserDB\Log';
-$backupDir = 'C:\SQLBackup';
-$installDir = 'C:\Program Files\Microsoft SQL Server';
-```
-
-Except for test purposes, you should be moving those **out** of the c:\ drive (even if you are mapping them to storage in K8S or other platform). Besides other reasons, when restoring a backup MSSQL dos preemptive free space calculations based on the size of the c:\ drive, and even if you have enough space in your mapped storage, MSSQL is not able to see it unless you map it to a drive of its own.
+As part of the boostrapping, a random master key is automatically provisioned if none exists.
 
 The image takes care automatically of moving al storage through env variables.
 
-**MSSQL_ADMIN_USERNAME and MSSQL_ADMIN_PWD**
+| Name                 | Default Value       | Description                                                  | Supports live refresh (changes are applied without restaring the container) |
+| -------------------- | ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| MSSQL_ADMIN_USERNAME | null                | Admin username, reconfigured every time when container starts | Yes                                                          |
+| MSSQL_ADMIN_PWD      | null                | Admin password, reconfigured every time when container starts | Yes                                                          |
+| MSSQL_PATH_DATA      | C:\SQLSystemDB\Data | Data file location                                           | No                                                           |
+| MSSQL_PATH_LOG       | C:\SQLSystemDB\Log  | Log file location                                            | No                                                           |
+| MSSQL_PATH_BACKUP    | C:\SQLBackup        | Backup file location                                         | No                                                           |
+| MSSQL_PATH_SYSTEM    | C:\SQLUserDB\Data   | By design, this image is intended to be ephemeral, so system databases are kept inside the continer itself. Use this ENV to move the system databases to a persistent location if you want/need to preserve state. | No                                                           |
+| MSSQL_SERVERNAME     | null                | Change the @@servername when starting the instance. This sill slow down container boot times for about 2-3 additional seconds, as the change requires booting the engine in minimal configuration and the stopping it again. | No                                                           |
 
-Configure an admin username and password.
-
-**MSSQL_PATH_DATA, MSSQL_PATH_LOG, MSSQL_PATH_BACKUP**
-
-Configure the default log, data and backup path.
-
-**MSSQL_PATH_SYSTEM**
-
-This is the tricky one. This ENV variable will MOVE all system databases (including master) to the specified location. This allows you to map off-container the engine configuration if you need to (i.e. in environments where the container state is lost such as K8S).
-
-*Example setup, all the database state is moved out of the container to a local f:/databases/example* directory
+*Example composer setup for development environments, all the database state is moved out of the container to a local f:/databases/example* directory
 
 ```yaml
 services:

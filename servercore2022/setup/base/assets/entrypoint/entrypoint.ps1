@@ -21,7 +21,6 @@ if (Test-Path("c:\ready")) {
     Remove-Item -Path 'C:\ready' -Force | Out-Null;
 }
 
-
 ##########################################################################
 # Setup shutdown listeners. For docker. In K8S use LifeCycleHooks
 ##########################################################################

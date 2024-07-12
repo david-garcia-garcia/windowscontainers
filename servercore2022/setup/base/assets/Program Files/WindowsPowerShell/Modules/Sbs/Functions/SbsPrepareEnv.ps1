@@ -1,5 +1,5 @@
 ##########################################################################
-# Reads environment variables from c:\configmap\env.json if available
+# Reads environment variables from C:\environment.d\{anyname}.json if available
 # + prepares them (system level promotion or DPAPI protection)
 ##########################################################################
 function SbsPrepareEnv {
@@ -8,9 +8,20 @@ function SbsPrepareEnv {
     )
 
     $configuration = "";
+    $configDir = "C:\environment.d";
 
-    if (Test-Path "c:\configmap\env.json") {
-        $configuration = Get-Content -Raw -Path "c:\configmap\env.json";
+    if (Test-Path $configDir) {
+        $mergedJson = @{}
+        $confFiles = Get-ChildItem -Path $configDir -Filter *.json | Sort-Object Name
+
+        foreach ($file in $confFiles) {
+            $jsonContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
+            foreach ($key in $jsonContent.PSObject.Properties.Name) {
+                $mergedJson[$key] = $jsonContent.$key
+            }
+        }
+
+        $configuration = $mergedJson | ConvertTo-Json -Depth 100;
     }
 
     $hashFilePath = "c:\env.json.hash";
@@ -33,7 +44,7 @@ function SbsPrepareEnv {
     [System.Environment]::SetEnvironmentVariable("ENVHASH", $md5HashString, [System.EnvironmentVariableTarget]::Process);
 
     if (-not [String]::IsNullOrWhiteSpace($configuration)) {
-        Write-Host "Reading environment from config map."
+        Write-Host "Reading environment from C:\environment.d"
         $configMap = $configuration | ConvertFrom-Json;
         foreach ($key in $configMap.PSObject.Properties) {
             $variableName = $key.Name
@@ -89,11 +100,10 @@ function SbsPrepareEnv {
 
     ##########################################################################
     # Promote process level env variables to machine level. This is the most straighforward
-    # way making these accessible ot other processes in the container such as IIS pools,
+    # way for making these accessible ot other processes in the container such as IIS pools,
     # scheduled tasks, etc.
     # Some of these contain sensible information that should not be promoted or readily available
-    # to those services (i.e. there could be 3d party software such as NR running that will
-    # have access to theses inmmediately)
+    # to those services.
     ##########################################################################
     $SBS_PROMOTE_ENV_REGEX = [System.Environment]::GetEnvironmentVariable("SBS_PROMOTE_ENV_REGEX");
     if (-not [string]::IsNullOrWhiteSpace($SBS_PROMOTE_ENV_REGEX)) {

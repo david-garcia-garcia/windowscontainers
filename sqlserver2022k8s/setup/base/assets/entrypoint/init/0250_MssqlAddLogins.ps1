@@ -1,0 +1,1 @@
+. "c:\entrypoint\refreshenv\MssqlAddLogins.ps1";
