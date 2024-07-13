@@ -1,7 +1,7 @@
 function SbsMssqlAddLogin {
     param (
         [Parameter(Mandatory = $false)]
-        [string]$instanceName,
+        [object]$instance,
         [Parameter(Mandatory = $false)]
         [string]$LoginConfiguration
     )
@@ -42,7 +42,9 @@ function SbsMssqlAddLogin {
 
     # https://github.com/dataplat/dbatools/issues/9364
     Set-DbatoolsConfig -FullName commands.connect-dbainstance.smo.computername.source -Value 'instance.ComputerName'
-    $instance = Connect-DbaInstance $instanceName;
+    if ($instance -is [string]) {
+        $instance = Connect-DbaInstance $instance;
+    }
 
     # Check if the login exists
     $loginExists = Get-DbaLogin -SqlInstance $instance -Login $loginName;
@@ -68,7 +70,7 @@ function SbsMssqlAddLogin {
     } | Select-Object -ExpandProperty Name;
 
     foreach ($db in $databases) {
-        SbsWriteDebug "Processing permissions for '$($db)'"
+        SbsWriteDebug "Processing roles for '$($db)'"
         $user = Get-DbaDbUser -SqlInstance $instance -Database $db -User $loginName;
         if ($user) {
             Remove-DbaDbOrphanUser -SqlInstance $instance -Database $db -User $user;
@@ -87,6 +89,8 @@ function SbsMssqlAddLogin {
             Role            = $roles
             Member          = $loginName
             EnableException = $true
+            Database        = $db
+            Confirm         = $false
         }
 
         SbsWriteHost "Adding roles '$($roles -Join ", ")' to '$($loginName)' in '$($db)'"

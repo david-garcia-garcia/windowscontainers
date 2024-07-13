@@ -31,7 +31,6 @@ services:
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
-      - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_PATH_SYSTEM=d:\system
       - MSSQL_BACKUP_RELEASEMEMORY=400
       - SBS_TEMPORARY=d:\temp

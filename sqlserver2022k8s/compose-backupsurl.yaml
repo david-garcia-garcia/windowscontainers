@@ -58,7 +58,6 @@ services:
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
-      - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_CLEARDATAPATHS=True
       #- MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
       - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx

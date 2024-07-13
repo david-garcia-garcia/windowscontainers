@@ -1,5 +1,6 @@
 Describe 'compose-persistent.yaml' {
     BeforeAll {
+        . ./../bootstraptest.ps1
         # Set environment variable for connection string
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";

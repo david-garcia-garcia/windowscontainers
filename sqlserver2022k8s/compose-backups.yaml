@@ -58,7 +58,6 @@ services:
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
-      - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_CLEARDATAPATHS=True
       # Database info
       - MSSQL_DB_NAME=mytestdatabase

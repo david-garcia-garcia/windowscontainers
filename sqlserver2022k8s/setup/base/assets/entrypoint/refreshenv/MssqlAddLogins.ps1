@@ -11,7 +11,7 @@ $errors = New-Object -TypeName System.Collections.ArrayList;
 foreach ($login in $logins) {
     try {
         SbsWriteDebug "Adding Login"
-        SbsMssqlAddLogin -instanceName "localhost" -LoginConfiguration $login.Value;
+        SbsMssqlAddLogin -instance "localhost" -LoginConfiguration $login.Value;
     }
     catch {
         SbsWriteWarning $_.Message;
