@@ -18,8 +18,8 @@ function SbsPrepareEnv {
         $confFiles = Get-ChildItem -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | Sort-Object Name
     
         foreach ($file in $confFiles) {
+            SbsWriteDebug "Reading environment configuration file $file"
             $fileContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Yaml
-    
             foreach ($key in $fileContent.Keys) {
                 $mergedConfig[$key] = $fileContent[$key];
             }
