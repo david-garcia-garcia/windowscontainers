@@ -11,20 +11,21 @@ function SbsPrepareEnv {
     $configDir = "C:\environment.d";
 
     if (Test-Path $configDir) {
-        $mergedJson = @{}
-
-        # We make this recursive to allo mounting full configmap without subpaths in K8S
-        # see 
-        $confFiles = Get-ChildItem -Recurse -Path $configDir -Filter *.json | Sort-Object Name
-
+        $mergedConfig = @{}
+    
+        # We make this recursive to allow mounting full configmap without subpaths in K8S
+        # see https://github.com/Azure/AKS/issues/4309
+        $confFiles = Get-ChildItem -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | Sort-Object Name
+    
         foreach ($file in $confFiles) {
-            $jsonContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
-            foreach ($key in $jsonContent.PSObject.Properties.Name) {
-                $mergedJson[$key] = $jsonContent.$key
+            $fileContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Yaml
+    
+            foreach ($key in $fileContent.Keys) {
+                $mergedConfig[$key] = $fileContent[$key];
             }
         }
-
-        $configuration = $mergedJson | ConvertTo-Json -Depth 100;
+    
+        $configuration = $mergedConfig | ConvertTo-Json -Depth 100;
     }
 
     $hashFilePath = "c:\env.json.hash";
