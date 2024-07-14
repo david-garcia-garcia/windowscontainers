@@ -1,5 +1,6 @@
 Describe 'compose-error.yaml' {
     BeforeAll {
+        . ./../bootstraptest.ps1
         docker compose -f servercore2022/compose-error.yaml up -d;
     }
         

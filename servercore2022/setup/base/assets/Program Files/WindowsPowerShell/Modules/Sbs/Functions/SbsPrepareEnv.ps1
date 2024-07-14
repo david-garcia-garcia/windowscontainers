@@ -12,7 +12,10 @@ function SbsPrepareEnv {
 
     if (Test-Path $configDir) {
         $mergedJson = @{}
-        $confFiles = Get-ChildItem -Path $configDir -Filter *.json | Sort-Object Name
+
+        # We make this recursive to allo mounting full configmap without subpaths in K8S
+        # see 
+        $confFiles = Get-ChildItem -Recurse -Path $configDir -Filter *.json | Sort-Object Name
 
         foreach ($file in $confFiles) {
             $jsonContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Json
