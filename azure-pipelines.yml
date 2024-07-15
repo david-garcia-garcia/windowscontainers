@@ -17,7 +17,7 @@ stages:
     displayName: Build
     pool:
       vmImage: $(vmImageName)
-      name: Azure pipelines
+      name: Default
     steps:
     - script: powershell .\buildall.ps1 -Test $true
       # Only build if [build] is present
@@ -28,9 +28,9 @@ stages:
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
-    - script: powershell .\buildall.ps1 -Push $true
-      # Only build if [build] is present
-      condition: contains(variables['Build.SourceVersionMessage'], '[push]')
+    - script: powershell .\pushall.ps1 -Push $true
+      # Only push if this is a tag, and the tests passed
+      condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       env:
         MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
         MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)

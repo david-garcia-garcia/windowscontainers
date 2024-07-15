@@ -56,7 +56,6 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database restoreArchivedBackpack -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
-    ### TODO: Needs to be fixed and moved to it's own test suite?
     It 'SbsMssqlRunBackups FULL and restore SbsRestoreFull from .bak' {
         # SqlPackage should work from within the image itself
         docker exec $Env:instanceName powershell "Import-Module Sbs;SbsMssqlRunBackups -backupType FULL -sqlInstance localhost";
