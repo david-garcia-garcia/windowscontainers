@@ -46,7 +46,7 @@ if ($test) {
 
 # Core Server, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SERVERCORE2022)"
-docker compose -f servercore2022/compose.yaml build
+docker compose -f servercore2022/compose.yaml build --quiet
 ThrowIfError
 
 if ("servercore2022" -match $Images) {
@@ -62,7 +62,7 @@ if ("servercore2022" -match $Images) {
 
 # IIS Base, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
-docker compose -f servercore2022iis/compose.yaml build
+docker compose -f servercore2022iis/compose.yaml build --quiet
 ThrowIfError
 
 if ("servercore2022iis" -match $Images) {
@@ -79,7 +79,7 @@ if ("servercore2022iis" -match $Images) {
 # IIS NET 48
 if ("servercore2022iisnet48" -match $Images) {
     Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
-    docker compose -f servercore2022iisnet48/compose.yaml build
+    docker compose -f servercore2022iisnet48/compose.yaml build --quiet
     ThrowIfError
 
     if ($push) { 
@@ -90,7 +90,7 @@ if ("servercore2022iisnet48" -match $Images) {
 
 # SQL Server Base, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SQLSERVER2022BASE)"
-docker compose -f sqlserver2022base/compose.yaml build
+docker compose -f sqlserver2022base/compose.yaml build --quiet
 ThrowIfError
 
 if ("sqlserver2022base" -match $Images) {
@@ -104,7 +104,7 @@ if ("sqlserver2022k8s" -match $Images) {
 
     # SQL Server K8S
     Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
-    docker compose -f sqlserver2022k8s/compose.yaml build
+    docker compose -f sqlserver2022k8s/compose.yaml build --quiet
     ThrowIfError
 
     if ($test) {
@@ -120,7 +120,7 @@ if ("sqlserver2022k8s" -match $Images) {
 if ("sqlserver2022as" -match $Images) {
     # SQL Server Analysis Services
     Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
-    docker compose -f sqlserver2022as/compose.yaml build
+    docker compose -f sqlserver2022as/compose.yaml build --quiet
     ThrowIfError
 
     if ($test) {
@@ -134,7 +134,7 @@ if ("sqlserver2022as" -match $Images) {
 if ("sqlserver2022is" -match $Images) {
     # SQL Server Integration Services
     Write-Host "Building $($Env:IMG_SQLSERVER2022IS)"
-    docker compose -f sqlserver2022is/compose.yaml build
+    docker compose -f sqlserver2022is/compose.yaml build --quiet
     ThrowIfError
 
     if ($test) {
