@@ -17,7 +17,7 @@ stages:
     displayName: Build
     pool:
       vmImage: $(vmImageName)
-      name: Default
+      name: Azure pipelines
     steps:
     - script: powershell .\buildall.ps1 -Test $true
       # Only build if [build] is present
