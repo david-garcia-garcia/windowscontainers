@@ -22,6 +22,11 @@ function ThrowIfError() {
     }
 }
 
+if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
+    Write-Host "Container registry credentiales through environment provided."
+    docker login -u="$($Env:REGISTRY_USER)" -p="$($Env:REGISTRY_PWD)"
+}
+
 if ($test) {
 
     # Check if the 'container_default' network exists
