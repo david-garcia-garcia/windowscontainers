@@ -12,7 +12,10 @@ function WaitForLog {
 
     while ($sw.Elapsed -lt $timeout) {
         Start-Sleep -Seconds 2
-        $logs = docker logs $containerName --tail 150 2>&1
+        $logs = Invoke-Command -Script {
+            $ErrorActionPreference="silentlycontinue"
+            docker logs $containerName --tail 150 2>&1
+        } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {
             return;
         }
