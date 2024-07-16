@@ -62,7 +62,6 @@ stages:
         #buildPlatform: # string. Alias: platform. Build Platform. 
         #buildConfiguration: # string. Alias: configuration. Build Configuration. 
         publishRunAttachments: true
-        condition: succeededOrFailed()
     - pwsh: .\buildall.ps1 -Push
       name: push_containers
       # Only push if this is a tag, and the tests passed
