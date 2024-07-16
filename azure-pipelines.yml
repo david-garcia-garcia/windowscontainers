@@ -2,11 +2,10 @@ trigger:
   branches:
     include:
     - '*'
-  # Do not auto-trigger on pull request
-  pr:
-    branches:
-      exclude:
-        - '*'
+pr:
+  branches:
+    exclude:
+      - '*'
 resources:
 - repo: self
 variables:
