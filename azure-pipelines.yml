@@ -28,7 +28,7 @@ stages:
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
 
-    - script: pwsh -Command ".\buildall.ps1 -Test \$true"
+    - script: pwsh -Command ".\buildall.ps1 -Test"
       # Only build if [build] is present
       condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
       env:
@@ -40,7 +40,7 @@ stages:
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
         
-    - script: pwsh -Command ".\buildall.ps1 -Push \$true"
+    - script: pwsh -Command ".\buildall.ps1 -Push"
       # Only push if this is a tag, and the tests passed
       condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       env:

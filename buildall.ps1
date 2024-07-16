@@ -3,8 +3,8 @@
 # due to MSSQL EULA you will have to use your own repo
 
 param (
-    [bool]$Push = $false,
-    [bool]$Test = $false,
+    [switch]$Push = $false,
+    [switch]$Test = $false,
     [string]$Images = ".*"
 )
 
