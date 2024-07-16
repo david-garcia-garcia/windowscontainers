@@ -19,6 +19,7 @@ $PesterPreference.Output.Verbosity = 'Detailed'
 $PesterPreference.Output.StackTraceVerbosity = 'Filtered'
 $PesterPreference.TestResult.Enabled = $true
 $PesterPreference.TestResult.OutputFormat = "NUnitXml"
+$PesterPreference.Run.Exit = $true
 
 $TESTDIR = $Env:TESTDIR;
 if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
