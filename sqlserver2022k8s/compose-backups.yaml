@@ -71,6 +71,7 @@ services:
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
       - MSSQL_MAXMEMORY=300
+      - SBS_DEBUG=True
 networks:
   container_default:
     external: true
