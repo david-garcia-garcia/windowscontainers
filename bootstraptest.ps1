@@ -20,7 +20,9 @@ function WaitForLog {
             return;
         }
     }
-    Write-Host ($logs -join "`r`n")
+    Write-Output "---------------- LOGSTART"
+    Write-Output ($logs -join "`r`n")
+    Write-Output "---------------- LOGEND"
     Write-Error "Timeout reached without detecting '$($logContains)' in logs."
 }
 
