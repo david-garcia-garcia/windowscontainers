@@ -45,7 +45,7 @@ stages:
     - task: PublishTestResults@2
       name: public_tests_results
       inputs:
-        testResultsFormat: 'VSTest' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
+        testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
         testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
         searchFolder: '$(System.DefaultWorkingDirectory)' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
         mergeTestResults: true
