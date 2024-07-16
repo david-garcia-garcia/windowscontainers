@@ -19,7 +19,7 @@ stages:
       name: Default
     steps:
     - pwsh: .\buildall.ps1
-      name: Build Images
+      name: build_images
       env:
         REGISTRY_USER: $(REGISTRY_USER)
         REGISTRY_PWD: $(REGISTRY_PWD)
@@ -30,6 +30,7 @@ stages:
         IMAGE_VERSION: $(Build.SourceBranchName)
 
     - pwsh: .\buildall.ps1 -Test
+      name: run_tests
       # Only build if [build] is present
       condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
       env:
@@ -56,6 +57,7 @@ stages:
         #buildConfiguration: # string. Alias: configuration. Build Configuration. 
         publishRunAttachments: true
     - pwsh: .\buildall.ps1 -Push
+      name: push_containers
       # Only push if this is a tag, and the tests passed
       condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       env:
