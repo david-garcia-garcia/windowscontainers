@@ -21,7 +21,7 @@ foreach ($envVarName in $envVarsToCheck) {
     $envVarValue = [System.Environment]::GetEnvironmentVariable($envVarName)
     
     if ([string]::IsNullOrWhiteSpace($envVarValue)) {
-        throw "Environment variable '$envVarName' is empty or not set. Rename envsettings.ps1.template to envsettings.ps1 and complete the environment variables."
+        throw "Environment variable '$envVarName' is empty or not set. Rename envsettings.ps1.template to envsettings.ps1 and complete the environment variables or set them for the current environment."
     }
 }
 
