@@ -14,27 +14,23 @@ stages:
   - job: Build
     timeoutInMinutes: 120
     displayName: Build
+    env:
+      MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+      MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+      MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+      REGISTRY_PATH: $(REGISTRY_PATH)
+      IMAGE_VERSION: $(Build.SourceBranchName)
     pool:
       vmImage: $(vmImageName)
       name: Default
     steps:
+    - script: powershell .\buildall.ps1
     - script: powershell .\buildall.ps1 -Test $true
       # Only build if [build] is present
-      condition: contains(variables['Build.SourceVersionMessage'], '[build]')
-      env:
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
+      condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
     - script: powershell .\pushall.ps1 -Push $true
       # Only push if this is a tag, and the tests passed
       condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       env:
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
         REGISTRY_USER: $(REGISTRY_USER)
         REGISTRY_PWD: $(REGISTRY_PWD)
-        IMAGE_VERSION: $(Build.SourceBranchName)
