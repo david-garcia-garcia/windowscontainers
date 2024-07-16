@@ -20,6 +20,6 @@ function WaitForLog {
             return;
         }
     }
-
-    Write-Error "Timeout reached without detecting '$($logContains)' in logs. $($logs)"
+    Write-Error "Timeout reached without detecting '$($logContains)' in logs."
+    Write-Host $logs
 }
