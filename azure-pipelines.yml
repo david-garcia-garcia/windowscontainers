@@ -18,7 +18,7 @@ stages:
       vmImage: $(vmImageName)
       name: Default
     steps:
-    - script: pwsh .\buildall.ps1 -Test $true
+    - script: powershell .\buildall.ps1 -Test $true
       # Only build if [build] is present
       condition: contains(variables['Build.SourceVersionMessage'], '[build]')
       env:
@@ -27,7 +27,7 @@ stages:
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
-    - script: pwsh .\pushall.ps1 -Push $true
+    - script: powershell .\pushall.ps1 -Push $true
       # Only push if this is a tag, and the tests passed
       condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       env:
