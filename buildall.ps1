@@ -17,10 +17,8 @@ Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
 $PesterPreference.Output.StackTraceVerbosity = 'Filtered'
-$PesterPreference.Output.CIFormat = "AzureDevops"
 $PesterPreference.TestResult.Enabled = $true
 $PesterPreference.TestResult.OutputFormat = "NUnitXml"
-
 
 $TESTDIR = $Env:TESTDIR;
 if ([string]::IsNullOrWhiteSpace($TESTDIR)) {

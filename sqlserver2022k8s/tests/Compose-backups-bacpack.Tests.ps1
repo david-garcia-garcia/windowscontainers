@@ -70,7 +70,7 @@ CREATE TABLE dbo.TestTable (
         Remove-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase -EnableException -Confirm:$false
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase | Should -Be $null;
 
-        $containerPath = $lastBackup.FullName.ToLower() -Replace "$env:BUILD_TEMP\\datavolume\\backup", "d:\backup"
+        $containerPath = $lastBackup.FullName.ToLower() -Replace "$env:BUILD_TEMP\datavolume\backup", "d:\backup"
 
         # Restore from bacpac using SbsRestoreFull
         docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($containerPath)'"
