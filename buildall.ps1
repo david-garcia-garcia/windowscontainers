@@ -20,7 +20,6 @@ $PesterPreference.Output.StackTraceVerbosity = 'Full'
 $PesterPreference.Output.CIFormat = "AzureDevops"
 $PesterPreference.TestResult.Enabled = $true
 $PesterPreference.TestResult.OutputFormat = "NUnitXml"
-$PesterPreference.TestResult.OutputPath = $true
 
 
 $TESTDIR = $Env:TESTDIR;
