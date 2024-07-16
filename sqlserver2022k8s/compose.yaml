@@ -16,12 +16,13 @@ services:
         IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        TEMP: ${BUILD_TEMP}
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
-      - "c:/datavolume/data:d:"
-      - "c:/datavolume/backup:e:"
-      - "c:/datavolume/control:c:/SQLControl"
-      - "c:/windows/temp:f:"
+      - "${BUILD_TEMP}/datavolume/data:d:"
+      - "${BUILD_TEMP}/datavolume/backup:e:"
+      - "${BUILD_TEMP}/datavolume/control:c:/SQLControl"
+      - "${BUILD_TEMP}/temp:f:"
     networks:
       container_default:
         ipv4_address: 172.18.8.8

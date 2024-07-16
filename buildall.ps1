@@ -27,7 +27,8 @@ if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
     $TESTDIR = Get-Location;
 }
 
-Write-Output "Current temporary directory: $($env:TEMP)"
+Write-Output "Current temporary directory: $($env:TEMP)";
+$Env:BUILD_TEMP = $Env:TEMP;
 
 if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
     Write-Output "Container registry credentials through environment provided."
