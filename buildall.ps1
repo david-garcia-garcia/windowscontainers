@@ -16,6 +16,12 @@ $global:ErrorActionPreference = 'Stop';
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
+$PesterPreference.Output.StackTraceVerbosity = 'Full'
+$PesterPreference.Output.CIFormat = "AzureDevops"
+$PesterPreference.TestResult.Enabled = $true
+$PesterPreference.TestResult.OutputFormat = "NUnitXml"
+$PesterPreference.TestResult.OutputPath = $true
+
 
 $TESTDIR = $Env:TESTDIR;
 if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
@@ -63,9 +69,8 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        $testOutputFile = "$TESTDIR\\NUNIT\\servercore2022.xml";
-        Write-Output "Test output file: $testOutputFile"
-        Invoke-Pester -Path "servercore2022\tests\" -OutputFile $testOutputFile  -OutputFormat NUnitXml
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\servercore2022.xml";
+        Invoke-Pester -Path "servercore2022\tests\"
     }
 
     if ($push) {
@@ -83,7 +88,8 @@ ThrowIfError
 
 if ("servercore2022iis" -match $Images) {
     if ($test) {
-        Invoke-Pester -Path "servercore2022iis\tests" -OutputFile "$TESTDIR\\NUNIT\\servercore2022iis.xml" -OutputFormat NUnitXml
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\servercore2022iis.xml";
+        Invoke-Pester -Path "servercore2022iis\tests"
     }
 
     if ($push) { 
@@ -124,7 +130,8 @@ if ("sqlserver2022k8s" -match $Images) {
     ThrowIfError
 
     if ($test) {
-        Invoke-Pester -Path "sqlserver2022k8s\tests" -OutputFile "$TESTDIR\\NUNIT\\sqlserver2022k8s.xml" -OutputFormat NUnitXml
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2022k8s.xml";
+        Invoke-Pester -Path "sqlserver2022k8s\tests"
     }
 
     if ($push) {
