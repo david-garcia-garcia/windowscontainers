@@ -1,5 +1,19 @@
 . ./imagenames.ps1
 
+function OutputLog {
+    param (
+        [string]$containerName
+    )
+
+    $logs = Invoke-Command -Script {
+        $ErrorActionPreference = "silentlycontinue"
+        docker logs $containerName --tail 150 2>&1
+    } -ErrorAction SilentlyContinue
+    Write-Output "---------------- LOGSTART"
+    Write-Output ($logs -join "`r`n")
+    Write-Output "---------------- LOGEND"
+}
+
 function WaitForLog {
     param (
         [string]$containerName,
@@ -13,7 +27,7 @@ function WaitForLog {
     while ($sw.Elapsed -lt $timeout) {
         Start-Sleep -Seconds 2
         $logs = Invoke-Command -Script {
-            $ErrorActionPreference="silentlycontinue"
+            $ErrorActionPreference = "silentlycontinue"
             docker logs $containerName --tail 150 2>&1
         } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {

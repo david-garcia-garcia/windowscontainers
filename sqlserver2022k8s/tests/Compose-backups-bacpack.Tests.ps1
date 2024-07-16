@@ -81,6 +81,7 @@ CREATE TABLE dbo.TestTable (
     }
 
     AfterAll {
+        OutputLog "sqlserver2022k8s-mssql-1"
         docker compose -f sqlserver2022k8s/compose-backups.yaml down;
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*", "$env:BUILD_TEMP\datavolume\bacpac\*" -Recurse -Force
     }
