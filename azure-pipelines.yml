@@ -18,7 +18,8 @@ stages:
       vmImage: $(vmImageName)
       name: Default
     steps:
-    - script: pwsh -Command ".\buildall.ps1"
+    - pwsh: .\buildall.ps1
+      name: Build Images
       env:
         REGISTRY_USER: $(REGISTRY_USER)
         REGISTRY_PWD: $(REGISTRY_PWD)
@@ -28,7 +29,7 @@ stages:
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
 
-    - script: pwsh -Command ".\buildall.ps1 -Test"
+    - pwsh: .\buildall.ps1 -Test
       # Only build if [build] is present
       condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
       env:
@@ -54,7 +55,7 @@ stages:
         #buildPlatform: # string. Alias: platform. Build Platform. 
         #buildConfiguration: # string. Alias: configuration. Build Configuration. 
         publishRunAttachments: true
-    - script: pwsh -Command ".\buildall.ps1 -Push"
+    - pwsh: .\buildall.ps1 -Push
       # Only push if this is a tag, and the tests passed
       condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
       env:

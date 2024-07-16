@@ -68,7 +68,9 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        Invoke-Pester -Path "servercore2022\tests\" -OutputFile "$TESTDIR\\NUNIT\\servercore2022.xml" -OutputFormat NUnitXml
+        $testOutputFile = "$TESTDIR\\NUNIT\\servercore2022.xml";
+        Write-Host "Test output file: $testOutputFile"
+        Invoke-Pester -Path "servercore2022\tests\" -OutputFile $testOutputFil  -OutputFormat NUnitXml
     }
 
     if ($push) {
@@ -76,6 +78,8 @@ if ("servercore2022" -match $Images) {
         ThrowIfError
     }
 }
+
+return;
 
 # IIS Base, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
