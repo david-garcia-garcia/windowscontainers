@@ -16,6 +16,9 @@ Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
 
+#$PesterPreference.TestResult.OutputFormat = "NUnitXml"
+#$PesterPreference.TestResult.OutputPath = "c:\windows\Test.xml"
+
 function ThrowIfError() {
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Last exit code was NOT 0.";
@@ -153,3 +156,7 @@ if ("sqlserver2022is" -match $Images) {
         ThrowIfError
     }
 }
+
+if ($PesterPreference.Run.Exit.Value -and 'Failed' -eq $run.Result) { 
+    exit ($run.FailedCount + $run.FailedBlocksCount + $run.FailedContainersCount) 
+} 
