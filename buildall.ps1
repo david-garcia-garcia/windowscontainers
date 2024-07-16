@@ -18,13 +18,22 @@ $PesterPreference.Output.Verbosity = 'Detailed'
 
 function ThrowIfError() {
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Error.";
+        Write-Error "Last exit code was NOT 0.";
     }
 }
 
 if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
-    Write-Host "Container registry credentiales through environment provided."
-    docker login -u="$($Env:REGISTRY_USER)" -p="$($Env:REGISTRY_PWD)"
+    Write-Host "Container registry credentials through environment provided."
+    
+    # Identify the registry
+    $registryHost = $Env:REGISTRY_PATH;
+    if ($registryHost -and $registryHost -match '^((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})') {
+        $registryHost = $matches[1];
+        Write-Host "Remote registry host: $($registryHost)";
+    }
+
+    docker login "$($registryHost)" -u="$($Env:REGISTRY_USER)" -p="$($Env:REGISTRY_PWD)"
+    ThrowIfError
 }
 
 if ($test) {
