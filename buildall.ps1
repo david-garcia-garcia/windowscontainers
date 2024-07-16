@@ -9,6 +9,7 @@ param (
 )
 
 .\imagenames.ps1
+.\bootstraptest.ps1
 
 $global:ErrorActionPreference = 'Stop';
 
