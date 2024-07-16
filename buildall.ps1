@@ -27,9 +27,6 @@ if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
     $TESTDIR = Get-Location;
 }
 
-#$PesterPreference.TestResult.OutputFormat = "NUnitXml"
-#$PesterPreference.TestResult.OutputPath = "c:\windows\Test.xml"
-
 if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
     Write-Output "Container registry credentials through environment provided."
     
@@ -77,8 +74,6 @@ if ("servercore2022" -match $Images) {
         ThrowIfError
     }
 }
-
-return;
 
 # IIS Base, always build as it is a dependency to other images
 Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
