@@ -47,7 +47,7 @@ stages:
       inputs:
         testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
         testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
-        searchFolder: '$(System.DefaultWorkingDirectory)' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
+        searchFolder: '$(System.DefaultWorkingDirectory)/NUnit' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
         mergeTestResults: true
         failTaskOnFailedTests: true
         failTaskOnFailureToPublishResults: true
