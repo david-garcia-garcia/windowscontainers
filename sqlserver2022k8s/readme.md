@@ -150,6 +150,32 @@ SBS_SRVENSURE=SQLSERVERAGENT
 
 Full text search services are installed and enabled in the image.
 
+## Users
+
+You can create users as part of the startup process through multiple MSSQL_LOGIN_ environment variables.
+
+```bash
+- 'MSSQL_LOGIN_APP={"Login":"monitoring", "Password":"MyP@assword", "DefaultDatabase":null, "DatabasesRegex":".*", "Permissions": "CONNECT SQL, VIEW SERVER STATE, VIEW ANY DEFINITION", "Roles":"db_datareader"}'
+- 'MSSQL_LOGIN_APP2={"Login":"dbuser_readonly", "Password":"MyP@assword", "DefaultDatabase":"mydatabase", "DatabasesRegex":"^mydatabase$", "Permissions": "CONNECT SQL", "Roles":"db_datareader"}'
+- 'MSSQL_LOGIN_APP3={"Login":"dbuser_full", "Password":"MyP@assword", "DefaultDatabase":"mydatabase", "DatabasesRegex":"^mydatabase$", "Permissions": "CONNECT SQL", "Roles":"db_datawriter,db_ddladmin,db_datareader"}'
+```
+
+This setting refreshes itself without having to restart the image if using a K8S configmap, but it is not idempotent. It is only incremental, if any roles or databases are removed, the removal will not take effect until the container is restarted.
+
+Or in terraform format, this creates a user with sufficient permissions for the New Relic MSSQL database monitor:
+
+```powershell
+    MSSQL_LOGIN_APP = yamlencode(
+      {
+        "Login"           = "monitoring",
+        "Password"        = "MyP@assword",
+        "DefaultDatabase" = null,
+        "DatabasesRegex"  = ".*",
+        "Permissions"     = "CONNECT SQL, VIEW SERVER STATE, VIEW ANY DEFINITION",
+        "Roles"           = "db_datareader"
+    })
+```
+
 ## Lifecycle
 
 The lifecycle determines "how" the image intends to treat persistent data and configuration. I.E. you might totally want to have a configuration-free MSSQL setup where the only persistent things are the data files themselves. On the other hand, you might want to have total control on the SQL Instance and have any config change you make to it persisted.
