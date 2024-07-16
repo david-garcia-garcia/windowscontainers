@@ -118,7 +118,7 @@ function SbsRestoreFull {
         # Restore
         if ($isBacpac -eq $false) {
             SbsWriteHost "Restoring '$($localFilePath)' as '$($DatabaseName)' with dbatools"
-            Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $DatabaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose -EnableException;
+            Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $DatabaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -ReplaceDbNameInFile -Verbose -EnableException;
         }
         else {
             SbsWriteHost "Preparing connection string for SQL Package"
