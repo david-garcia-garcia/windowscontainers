@@ -40,7 +40,7 @@ Function SbsRunScriptsInDirectory {
 
         # Check if the state is 'Failed' or if there are error records in the results
         if ($job.State -eq 'Failed') {
-            SbsWriteWarning "Found exception while runnign async entrypoint scripts."
+            SbsWriteWarning "Found exception while running async entrypoint scripts."
             $reason = $job.ChildJobs[0].JobStateInfo.Reason;
             $stack = $reason.ErrorRecord.ScriptStackTrace;
             $message = $reason.Message;
