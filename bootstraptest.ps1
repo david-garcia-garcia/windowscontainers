@@ -9,9 +9,9 @@ function OutputLog {
         $ErrorActionPreference = "silentlycontinue"
         docker logs $containerName --tail 150 2>&1
     } -ErrorAction SilentlyContinue
-    Write-Output "---------------- LOGSTART"
-    Write-Output ($logs -join "`r`n")
-    Write-Output "---------------- LOGEND"
+    Write-Host "---------------- LOGSTART"
+    Write-Host ($logs -join "`r`n")
+    Write-Host "---------------- LOGEND"
 }
 
 function WaitForLog {
@@ -34,10 +34,10 @@ function WaitForLog {
             return;
         }
     }
-    Write-Output "---------------- LOGSTART"
-    Write-Output ($logs -join "`r`n")
-    Write-Output "---------------- LOGEND"
-    Write-Error "Timeout reached without detecting '$($logContains)' in logs."
+    Write-Host "---------------- LOGSTART"
+    Write-Host ($logs -join "`r`n")
+    Write-Host "---------------- LOGEND"
+    Write-Host "Timeout reached without detecting '$($logContains)' in logs."
 }
 
 function ThrowIfError() {
