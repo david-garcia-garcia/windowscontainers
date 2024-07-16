@@ -23,3 +23,9 @@ function WaitForLog {
     Write-Error "Timeout reached without detecting '$($logContains)' in logs."
     Write-Host $logs
 }
+
+function ThrowIfError() {
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Last exit code was NOT 0.";
+    }
+}

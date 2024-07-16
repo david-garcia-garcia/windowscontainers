@@ -24,20 +24,14 @@ if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
 #$PesterPreference.TestResult.OutputFormat = "NUnitXml"
 #$PesterPreference.TestResult.OutputPath = "c:\windows\Test.xml"
 
-function ThrowIfError() {
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Last exit code was NOT 0.";
-    }
-}
-
 if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
-    Write-Host "Container registry credentials through environment provided."
+    Write-Output "Container registry credentials through environment provided."
     
     # Identify the registry
     $registryHost = $Env:REGISTRY_PATH;
     if ($registryHost -and $registryHost -match '^((?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})') {
         $registryHost = $matches[1];
-        Write-Host "Remote registry host: $($registryHost)";
+        Write-Output "Remote registry host: $($registryHost)";
     }
 
     docker login "$($registryHost)" -u="$($Env:REGISTRY_USER)" -p="$($Env:REGISTRY_PWD)"
@@ -51,26 +45,26 @@ if ($test) {
     $existingNetwork = docker network ls --format "{{.Name}}" | Where-Object { $_ -eq $networkName }
 
     if (-not $existingNetwork) {
-        Write-Host "Network '$networkName' does not exist. Creating..."
+        Write-Output "Network '$networkName' does not exist. Creating..."
         docker network create $networkName --driver nat --subnet=172.18.8.0/24;
-        Write-Host "Network '$networkName' created."
+        Write-Output "Network '$networkName' created."
     }
     else {
-        Write-Host "Network '$networkName' already exists."
+        Write-Output "Network '$networkName' already exists."
     }
 }
 
 
 # Core Server, always build as it is a dependency to other images
-Write-Host "Building $($Env:IMG_SERVERCORE2022)"
+Write-Output "Building $($Env:IMG_SERVERCORE2022)"
 docker compose -f servercore2022/compose.yaml build --quiet
 ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
         $testOutputFile = "$TESTDIR\\NUNIT\\servercore2022.xml";
-        Write-Host "Test output file: $testOutputFile"
-        Invoke-Pester -Path "servercore2022\tests\" -OutputFile $testOutputFil  -OutputFormat NUnitXml
+        Write-Output "Test output file: $testOutputFile"
+        Invoke-Pester -Path "servercore2022\tests\" -OutputFile $testOutputFile  -OutputFormat NUnitXml
     }
 
     if ($push) {
@@ -99,7 +93,7 @@ if ("servercore2022iis" -match $Images) {
 
 # IIS NET 48
 if ("servercore2022iisnet48" -match $Images) {
-    Write-Host "Building $($Env:IMG_SERVERCORE2022IISNET48)"
+    Write-Output "Building $($Env:IMG_SERVERCORE2022IISNET48)"
     docker compose -f servercore2022iisnet48/compose.yaml build --quiet
     ThrowIfError
 
@@ -110,7 +104,7 @@ if ("servercore2022iisnet48" -match $Images) {
 }
 
 # SQL Server Base, always build as it is a dependency to other images
-Write-Host "Building $($Env:IMG_SQLSERVER2022BASE)"
+Write-Output "Building $($Env:IMG_SQLSERVER2022BASE)"
 docker compose -f sqlserver2022base/compose.yaml build --quiet
 ThrowIfError
 
@@ -124,7 +118,7 @@ if ("sqlserver2022base" -match $Images) {
 if ("sqlserver2022k8s" -match $Images) {
 
     # SQL Server K8S
-    Write-Host "Building $($Env:IMG_SQLSERVER2022K8S)"
+    Write-Output "Building $($Env:IMG_SQLSERVER2022K8S)"
     docker compose -f sqlserver2022k8s/compose.yaml build --quiet
     ThrowIfError
 
@@ -140,7 +134,7 @@ if ("sqlserver2022k8s" -match $Images) {
 
 if ("sqlserver2022as" -match $Images) {
     # SQL Server Analysis Services
-    Write-Host "Building $($Env:IMG_SQLSERVER2022AS)"
+    Write-Output "Building $($Env:IMG_SQLSERVER2022AS)"
     docker compose -f sqlserver2022as/compose.yaml build --quiet
     ThrowIfError
 
@@ -154,7 +148,7 @@ if ("sqlserver2022as" -match $Images) {
 
 if ("sqlserver2022is" -match $Images) {
     # SQL Server Integration Services
-    Write-Host "Building $($Env:IMG_SQLSERVER2022IS)"
+    Write-Output "Building $($Env:IMG_SQLSERVER2022IS)"
     docker compose -f sqlserver2022is/compose.yaml build --quiet
     ThrowIfError
 
