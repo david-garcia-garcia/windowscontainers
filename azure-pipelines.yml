@@ -14,7 +14,7 @@ stages:
   - job: Build
     timeoutInMinutes: 120
     displayName: Build
-    env:
+    variables:
       MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
       MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
       MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
