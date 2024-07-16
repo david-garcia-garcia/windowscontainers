@@ -16,6 +16,11 @@ Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
 
+$TESTDIR = $Env:TESTDIR;
+if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
+    $TESTDIR = Get-Location;
+}
+
 #$PesterPreference.TestResult.OutputFormat = "NUnitXml"
 #$PesterPreference.TestResult.OutputPath = "c:\windows\Test.xml"
 
@@ -63,7 +68,7 @@ ThrowIfError
 
 if ("servercore2022" -match $Images) {
     if ($test) {
-        Invoke-Pester -Path "servercore2022\tests\"
+        Invoke-Pester -Path "servercore2022\tests\" -OutputFile "$TESTDIR\\NUNIT\\servercore2022.xml" -OutputFormat NUnitXml
     }
 
     if ($push) {
@@ -79,7 +84,7 @@ ThrowIfError
 
 if ("servercore2022iis" -match $Images) {
     if ($test) {
-        Invoke-Pester -Path "servercore2022iis\tests"
+        Invoke-Pester -Path "servercore2022iis\tests" -OutputFile "$TESTDIR\\NUNIT\\servercore2022iis.xml" -OutputFormat NUnitXml
     }
 
     if ($push) { 
@@ -120,7 +125,7 @@ if ("sqlserver2022k8s" -match $Images) {
     ThrowIfError
 
     if ($test) {
-        Invoke-Pester -Path "sqlserver2022k8s\tests"
+        Invoke-Pester -Path "sqlserver2022k8s\tests" -OutputFile "$TESTDIR\\NUNIT\\sqlserver2022k8s.xml" -OutputFormat NUnitXml
     }
 
     if ($push) {

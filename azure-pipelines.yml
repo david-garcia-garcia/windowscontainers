@@ -39,7 +39,21 @@ stages:
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
-        
+        TESTDIR: $(System.DefaultWorkingDirectory)
+    - task: PublishTestResults@2
+      inputs:
+        testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
+        testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
+        searchFolder: '$(System.DefaultWorkingDirectory)' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
+        mergeTestResults: true
+        failTaskOnFailedTests: true
+        failTaskOnFailureToPublishResults: true
+        failTaskOnMissingResultsFile: true
+        #testRunTitle: # string. Test run title. 
+      # Advanced
+        #buildPlatform: # string. Alias: platform. Build Platform. 
+        #buildConfiguration: # string. Alias: configuration. Build Configuration. 
+        publishRunAttachments: true
     - script: pwsh -Command ".\buildall.ps1 -Push"
       # Only push if this is a tag, and the tests passed
       condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
