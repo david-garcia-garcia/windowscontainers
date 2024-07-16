@@ -38,9 +38,9 @@ CREATE TABLE dbo.TestTable (
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
     }
 
-    It 'Has exactly one .bak file in c:/datavolume/backups (recursive)' {
+    It "Has exactly one .bak file in $env:BUILD_TEMP/datavolume/backups (recursive)" {
         # Because there is no backup history, we start with exactly one full backup file
-        $backupFiles = Get-ChildItem -Path "$env:TEMP\datavolume\backup" -Recurse -Filter "*.bak"
+        $backupFiles = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup" -Recurse -Filter "*.bak"
         $backupFiles.Count | Should -Be 1
     }
 
