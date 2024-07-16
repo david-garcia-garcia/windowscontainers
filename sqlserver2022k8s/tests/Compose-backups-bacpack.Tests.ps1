@@ -69,8 +69,8 @@ CREATE TABLE dbo.TestTable (
         # Database has been deleted
         Remove-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase -EnableException -Confirm:$false
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase | Should -Be $null;
-
-        $containerPath = $lastBackup.FullName.ToLower() -Replace [Regex]::Escape("$env:BUILD_TEMP\datavolume\backup"), "d:\backup"
+        $normalizedPath = "$env:BUILD_TEMP\datavolume\backup" -Replace "/", "\"
+        $containerPath = $lastBackup.FullName.ToLower() -Replace [Regex]::Escape($normalizedPath), "d:\backup"
 
         # Restore from bacpac using SbsRestoreFull
         docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($containerPath)'"

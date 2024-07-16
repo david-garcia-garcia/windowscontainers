@@ -7,7 +7,7 @@ function OutputLog {
 
     $logs = Invoke-Command -Script {
         $ErrorActionPreference = "silentlycontinue"
-        docker logs $containerName --tail 150 2>&1
+        docker logs $containerName --tail 225 2>&1
     } -ErrorAction SilentlyContinue
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
@@ -28,7 +28,7 @@ function WaitForLog {
         Start-Sleep -Seconds 2
         $logs = Invoke-Command -Script {
             $ErrorActionPreference = "silentlycontinue"
-            docker logs $containerName --tail 150 2>&1
+            docker logs $containerName --tail 225 2>&1
         } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {
             return;
