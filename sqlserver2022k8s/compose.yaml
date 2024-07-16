@@ -21,7 +21,6 @@ services:
     volumes:
       - "${BUILD_TEMP}/datavolume/data:d:"
       - "${BUILD_TEMP}/datavolume/backup:e:"
-      - "${BUILD_TEMP}/datavolume/control:c:/SQLControl"
       - "${BUILD_TEMP}/temp:f:"
     networks:
       container_default:
