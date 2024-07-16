@@ -4,8 +4,8 @@ Describe 'compose-backups.yaml' {
         # Set environment variable for connection string
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
-        New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup", "c:\datavolume\bacpac\*" -Force
-        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*", "c:\datavolume\bacpac\*" -Recurse -Force
+        New-Item -ItemType Directory -Path "$env:TEMP\datavolume\data", "$env:TEMP\datavolume\log", "$env:TEMP\datavolume\backup", "$env:TEMP\datavolume\bacpac\*" -Force
+        Remove-Item -Path "$env:TEMP\datavolume\data\*", "$env:TEMP\datavolume\log\*", "$env:TEMP\datavolume\backup\*", "$env:TEMP\datavolume\bacpac\*" -Recurse -Force
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
         WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
     }
@@ -82,7 +82,7 @@ CREATE TABLE dbo.TestTable (
 
     AfterAll {
         docker compose -f sqlserver2022k8s/compose-backups.yaml down;
-        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*", "c:\datavolume\bacpac\*" -Recurse -Force
+        Remove-Item -Path "$env:TEMP\datavolume\data\*", "$env:TEMP\datavolume\log\*", "$env:TEMP\datavolume\backup\*", "$env:TEMP\datavolume\bacpac\*" -Recurse -Force
     }
 }
 
