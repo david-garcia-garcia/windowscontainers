@@ -32,7 +32,7 @@ stages:
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
-
+        TEMP: $(Agent.TempDirectory)
     - pwsh: .\buildall.ps1 -Test
       name: run_tests
       # Only build if [build] is present
@@ -46,6 +46,7 @@ stages:
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
         TESTDIR: $(System.DefaultWorkingDirectory)
+        TEMP: $(Agent.TempDirectory)
     - task: PublishTestResults@2
       name: publish_tests_results
       inputs:
@@ -74,3 +75,4 @@ stages:
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
+        TEMP: $(Agent.TempDirectory)
