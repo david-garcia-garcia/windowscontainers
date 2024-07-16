@@ -52,14 +52,14 @@ function SbsMssqlRunBackups {
 	  SbsWriteDebug "Defaulting to LOCALHOST as database.";
 	}
 
-	$serverName = Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name" -EnableException;
+	$serverName = (Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name")["name"];
 
 	if ($null -eq $serverName) {
 		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
 		return;
 	}
 
-	SbsWriteDebug "Server name: $($serverName['name'])";
+	SbsWriteDebug "Server name: $($serverName)";
 
 	$backupUrl = SbsParseSasUrl -Url $Env:MSSQL_PATH_BACKUPURL;
 	if ($null -ne $backupUrl) {

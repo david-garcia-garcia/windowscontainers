@@ -94,7 +94,7 @@ This does NOT protect the information from being decoded by any other process ru
 The image can use a JSON file in disk to read the environment from:
 
 ```
-c:\environment.d\env.json
+c:\environment.d\**.json
 ```
 
 Changes to this file are checked every 8 seconds in the entry point, and environment variables updated accordingly. Note that this **does not** mean that whatever this environment variables controls or affects is going to be updated, it depends on each specific setting and how it is used.
@@ -371,9 +371,9 @@ Relevant locations
 
 | Path                                                     | Usage                                                        |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
-| c:\environment.d\env.json                                | Provide environment variables as a json file/s                |
+| c:\environment.d\**.json|**.yaml                         | Provide environment variables as a json or yaml file/s       |
 | c:\entrypoint\init\                                      | Path for initialization scripts                              |
-| c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed |
+| c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed|
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
 | c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
 | c:\configmap_logmonitor\config.json                      | Default location for the LogMonitor configuration file.      |

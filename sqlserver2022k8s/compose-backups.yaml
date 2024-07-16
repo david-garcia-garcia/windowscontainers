@@ -18,9 +18,10 @@ services:
         IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        BUILD_TEMP: ${BUILD_TEMP}
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
-      - "c:/datavolume:d:"
+      - "${BUILD_TEMP}/datavolume:d:"
     networks:
       container_default:
         ipv4_address: 172.18.8.8
@@ -58,7 +59,6 @@ services:
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
-      - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_CLEARDATAPATHS=True
       # Database info
       - MSSQL_DB_NAME=mytestdatabase
@@ -71,6 +71,7 @@ services:
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
       - MSSQL_MAXMEMORY=300
+      - SBS_DEBUG=True
 networks:
   container_default:
     external: true

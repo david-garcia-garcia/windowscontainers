@@ -214,12 +214,6 @@ You can also tune the Max Server Memory for the instance through MSSQL_SPCONFIGU
 MSSQL_MAXMEMORY=512
 ```
 
-## Control Operations
-
-You can place a "startup.yaml" file in the SSQL_PATH_CONTROL path, the contents of this path will be processed once on container startup, and once done, the file renamed for archiving so it will not be processed again.
-
-In this yaml you can have one or more operations, that will execute sequentially on boot.
-
 **Perform a full restore**
 
 ```yaml

@@ -16,9 +16,10 @@ services:
         IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        BUILD_TEMP: ${BUILD_TEMP}
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
-      - "f:/databases/example/data:d:"
+      - "${BUILD_TEMP}/datavolume:d:"
     networks:
       container_default:
         ipv4_address: 172.18.8.8
@@ -31,9 +32,9 @@ services:
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
-      - MSSQL_PATH_CONTROL=d:\control
       - MSSQL_PATH_SYSTEM=d:\system
       - MSSQL_BACKUP_RELEASEMEMORY=400
+      - SBS_DEBUG=True
       - SBS_TEMPORARY=d:\temp
       - SBS_ENTRYPOINTERRORACTION=Stop
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]

@@ -1,10 +1,11 @@
 Describe 'compose-backups.yaml' {
     BeforeAll {
+        . ./../bootstraptest.ps1
         # Set environment variable for connection string
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;Database=mytestdatabase;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
-        New-Item -ItemType Directory -Path "c:\datavolume\data", "c:\datavolume\log", "c:\datavolume\backup" -Force
-        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
+        New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\log", "$env:BUILD_TEMP\datavolume\backup" -Force
+        Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
         WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
     }
@@ -37,9 +38,9 @@ CREATE TABLE dbo.TestTable (
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
     }
 
-    It 'Has exactly one .bak file in c:/datavolume/backups (recursive)' {
+    It "Has exactly one .bak file in $env:BUILD_TEMP/datavolume/backups (recursive)" {
         # Because there is no backup history, we start with exactly one full backup file
-        $backupFiles = Get-ChildItem -Path "c:\datavolume\backup" -Recurse -Filter "*.bak"
+        $backupFiles = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup" -Recurse -Filter "*.bak"
         $backupFiles.Count | Should -Be 1
     }
 
@@ -86,9 +87,9 @@ CREATE TABLE dbo.TestTable (
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
     }
 
-    It 'Has exactly two .trn files in c:/datavolume/backups (recursive)' {
+    It "Has exactly two .trn files in $env:TEMP/datavolume/backups (recursive)" {
         # The second shutdown, there should be one .bak and one .trn file
-        $backupFiles = Get-ChildItem -Path "c:\datavolume\backup" -Recurse -Filter "*.trn"
+        $backupFiles = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup" -Recurse -Filter "*.trn"
         $backupFiles.Count | Should -Be 2
     }
 
@@ -105,13 +106,13 @@ CREATE TABLE dbo.TestTable (
         WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 40;
         docker exec $Env:instanceName powershell "SbsMssqlRunBackups DIFF";
         WaitForLog $Env:instanceName "backups finished" -TimeoutSeconds 60;
-        $backupFiles = Get-ChildItem -Path "c:\datavolume\backup\mytestdatabase\DIFF" -Recurse -Filter "*.bak"
+        $backupFiles = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup\mytestdatabase\DIFF" -Recurse -Filter "*.bak"
         $backupFiles.Count | Should -Be 1
     }
 
     AfterAll {
         docker compose -f sqlserver2022k8s/compose-backups.yaml down;
-        Remove-Item -Path "c:\datavolume\data\*", "c:\datavolume\log\*", "c:\datavolume\backup\*" -Recurse -Force
+        Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
     }
 }
 

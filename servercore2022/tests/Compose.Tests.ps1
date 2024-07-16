@@ -1,5 +1,6 @@
 Describe 'compose.yaml' {
     BeforeAll {
+        . ./../bootstraptest.ps1
         docker compose -f servercore2022/compose.yaml up -d;
         WaitForLog "servercore2022-servercore-1" "Initialization Completed"
     }

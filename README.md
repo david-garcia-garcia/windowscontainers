@@ -1,4 +1,4 @@
-[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/FTP17q9GoCxp3a3xg3Vspr/VGK8Tj7T1QCqXF1jj6EbV5/tree/master.svg?style=svg&circle-token=CCIPRJ_FAcVmNUHi3TkT94TCgUykb_2c6c5b5e60bc6ebaf24fba3bb47e7784bce34a6d)](https://dl.circleci.com/status-badge/redirect/circleci/FTP17q9GoCxp3a3xg3Vspr/VGK8Tj7T1QCqXF1jj6EbV5/tree/master)
+[![Build Status](https://dev.azure.com/easytechglobal/windows-containers/_apis/build/status%2Fdavid-garcia-garcia.windowscontainers?branchName=refs%2Fpull%2F20%2Fmerge)](https://dev.azure.com/easytechglobal/windows-containers/_build/latest?definitionId=1&branchName=master)
 
 # Windows Containers
 

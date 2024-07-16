@@ -2,10 +2,12 @@ trigger:
   branches:
     include:
     - '*'
-
+pr:
+  branches:
+    exclude:
+      - '*'
 resources:
 - repo: self
-
 variables:
   tag: '$(Build.BuildId)'
   vmImageName: 'windows-2022'
@@ -14,15 +16,63 @@ stages:
   displayName: Build and push stage
   jobs:
   - job: Build
+    timeoutInMinutes: 120
     displayName: Build
     pool:
       vmImage: $(vmImageName)
       name: Default
     steps:
-    - script: powershell .\buildall.ps1 -Test $true
+    - pwsh: .\buildall.ps1
+      name: build_images
       env:
+        REGISTRY_USER: $(REGISTRY_USER)
+        REGISTRY_PWD: $(REGISTRY_PWD)
         MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
         MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
         MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
         REGISTRY_PATH: $(REGISTRY_PATH)
         IMAGE_VERSION: $(Build.SourceBranchName)
+        TEMP: $(Agent.TempDirectory)
+    - pwsh: .\buildall.ps1 -Test
+      name: run_tests
+      # Only build if [build] is present
+      condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+      env:
+        REGISTRY_USER: $(REGISTRY_USER)
+        REGISTRY_PWD: $(REGISTRY_PWD)
+        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+        REGISTRY_PATH: $(REGISTRY_PATH)
+        IMAGE_VERSION: $(Build.SourceBranchName)
+        TESTDIR: $(System.DefaultWorkingDirectory)
+        TEMP: $(Agent.TempDirectory)
+    - task: PublishTestResults@2
+      name: publish_tests_results
+      inputs:
+        testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
+        testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
+        searchFolder: '$(System.DefaultWorkingDirectory)/NUnit' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
+        # mergeTestResults: true
+        failTaskOnFailedTests: true
+        failTaskOnFailureToPublishResults: true
+        failTaskOnMissingResultsFile: true
+        testRunTitle: Pester
+      # Advanced
+        #buildPlatform: # string. Alias: platform. Build Platform. 
+        #buildConfiguration: # string. Alias: configuration. Build Configuration. 
+        publishRunAttachments: true
+        condition: succeededOrFailed()
+    - pwsh: .\buildall.ps1 -Push
+      name: push_containers
+      # Only push if this is a tag, and the tests passed
+      condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+      env:
+        REGISTRY_USER: $(REGISTRY_USER)
+        REGISTRY_PWD: $(REGISTRY_PWD)
+        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+        REGISTRY_PATH: $(REGISTRY_PATH)
+        IMAGE_VERSION: $(Build.SourceBranchName)
+        TEMP: $(Agent.TempDirectory)
