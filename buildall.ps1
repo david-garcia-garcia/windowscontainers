@@ -16,7 +16,7 @@ $global:ErrorActionPreference = 'Stop';
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'
-$PesterPreference.Output.StackTraceVerbosity = 'Full'
+$PesterPreference.Output.StackTraceVerbosity = 'Filtered'
 $PesterPreference.Output.CIFormat = "AzureDevops"
 $PesterPreference.TestResult.Enabled = $true
 $PesterPreference.TestResult.OutputFormat = "NUnitXml"

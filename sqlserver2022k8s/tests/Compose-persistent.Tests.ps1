@@ -4,8 +4,8 @@ Describe 'compose-persistent.yaml' {
         # Set environment variable for connection string
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
-        New-Item -ItemType Directory -Path "$env:TEMP\datavolume\data", "$env:TEMP\datavolume\log", "$env:TEMP\datavolume\backup" -Force
-        Remove-Item -Path "$env:TEMP\datavolume\data\*", "$env:TEMP\datavolume\log\*", "$env:TEMP\datavolume\backup\*" -Recurse -Force
+        New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\log", "$env:BUILD_TEMP\datavolume\backup" -Force
+        Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
         WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 15
     }
@@ -87,7 +87,7 @@ CREATE TABLE dbo.TestTable (
 
     AfterAll {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml down;
-        Remove-Item -Path "$env:TEMP\datavolume\data\*", "$env:TEMP\datavolume\log\*", "$env:TEMP\datavolume\backup\*" -Recurse -Force
+        Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
     }
 }
 
