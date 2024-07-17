@@ -94,7 +94,7 @@ if ($newServerName) {
     SbsWriteHost "Starting MSSQL in minimal mode to change @@servername to $($newServerName)"
     Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\$($id)\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\mssql_stdout.txt -RedirectStandardError c:\mssql_stderr.txt
 
-    $processId = (Get-Process -Name SQLSERVR).Id
+    $processId = (Get-Process -Name "SQLSERVR").Id
     SbsWriteHost "MSSQL process id $($processId)"
 
     $safetyStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
