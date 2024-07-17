@@ -6,8 +6,11 @@ Describe 'compose-backups.yaml' {
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
         New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\log", "$env:BUILD_TEMP\datavolume\backup" -Force
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
+    }
+
+    It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 30
     }
 
     It 'Can connect to the SQL Server' {

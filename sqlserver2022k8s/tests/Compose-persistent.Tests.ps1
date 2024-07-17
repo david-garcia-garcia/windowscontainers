@@ -6,8 +6,12 @@ Describe 'compose-persistent.yaml' {
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
         New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\log", "$env:BUILD_TEMP\datavolume\backup", "$env:BUILD_TEMP\datavolume\system", "$env:BUILD_TEMP\datavolume\temp" -Force
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*", "$env:BUILD_TEMP\datavolume\system\*", "$env:BUILD_TEMP\datavolume\temp\*" -Recurse -Force
+
+    }
+
+    It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 20
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 20
     }
 
     It 'Can connect to the SQL Server' {
