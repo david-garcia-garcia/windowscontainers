@@ -30,15 +30,10 @@ if ($null -ne $Env:MSSQL_PATH_BACKUP) {
     Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver') -name "BackupDirectory" -value $Env:MSSQL_PATH_BACKUP;
 }
 
-# Make sure we set permissions for the system databases directory
-if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
-    New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM | Out-Null;
-    icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
-}
-
 if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
     SbsWriteHost "System Path Override: $($Env:MSSQL_PATH_SYSTEM)";
+    New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM | Out-Null;
 
     # Determine the current location of the master database files
     $currentMasterPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg0 -replace '-d', ''
@@ -69,6 +64,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
         Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
         Copy-Item -Path $currentLogPath -Destination $newMasterLog;
+        icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
     }
     else {
         SbsWriteHost "System databases already found at destionation path, skipping system database initialization.";
@@ -187,6 +183,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
             SbsWriteHost "Moving $($sourcePath) to $($destinationPath)";
             Move-Item -Path $sourcePath -Destination $destinationPath
         }
+        icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
         Start-Service 'MSSQLSERVER';
     }
 }
