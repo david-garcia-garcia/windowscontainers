@@ -14,6 +14,7 @@ services:
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_INITASYNC=True
       - SBS_TESTERROR=true
+      - SBS_DEBUG=True
     networks:
       - container_default
     # Environment completely wiped out on purpose, to test
