@@ -30,12 +30,15 @@ if ($null -ne $Env:MSSQL_PATH_BACKUP) {
     Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver') -name "BackupDirectory" -value $Env:MSSQL_PATH_BACKUP;
 }
 
+# Make sure we set permissions for the system databases directory
+if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
+    New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM | Out-Null;
+    icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
+}
+
 if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
     SbsWriteHost "System Path Override: $($Env:MSSQL_PATH_SYSTEM)";
-
-    # Create the directories if they don't exist
-    New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM | Out-Null;
 
     # Determine the current location of the master database files
     $currentMasterPath = (Get-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters").SQLArg0 -replace '-d', ''
@@ -55,24 +58,17 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
     # Update the registry to point to the new locations
     Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf"
+    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
 
     # Check if the master database files exist in the new location
-    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf")) {
+    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.ldf")) {
         SbsWriteHost "Moving existing system databases to new system path";
         # Move the master database files to the new location if this is the first setup
         $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf"
+        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
 
         Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
         Copy-Item -Path $currentLogPath -Destination $newMasterLog;
-
-        # Not yet clear what to do here, if the image is updated the
-        # SID for these accounts will change, and this will probably
-        # break reattaching (which can be manually fixed by tampering with permissions on the actual storage).
-        # This is also influenced by the actual storage backend and it' support for ACL (azure files works OK as it won't propagate ACL, azure disk won't)
-        icacls $newMasterPath /grant "NT Service\MSSQLSERVER:F"
-        icacls $newMasterLog /grant "NT Service\MSSQLSERVER:F"
     }
     else {
         SbsWriteHost "System databases already found at destionation path, skipping system database initialization.";
