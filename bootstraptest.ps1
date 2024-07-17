@@ -37,7 +37,7 @@ function WaitForLog {
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
     Write-Host "---------------- LOGEND"
-    Write-Host "Timeout reached without detecting '$($logContains)' in logs."
+    Write-Error "Timeout reached without detecting '$($logContains)' in logs."
 }
 
 function ThrowIfError() {

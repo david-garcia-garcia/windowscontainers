@@ -78,14 +78,14 @@ CREATE TABLE dbo.TestTable (
         # Restore from bacpac using SbsRestoreFull
         docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($containerPath)'"
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database renamedDatabase2 | Should -Not -BeNullOrEmpty;
-        WaitForLog "sqlserver2022k8s-mssql-1" "Restored database from" -TimeoutSeconds 10
+        WaitForLog $Env:instanceName "Restored database from" -TimeoutSeconds 10
 
         # Test that the database has the table we created before
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database renamedDatabase2 -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
     AfterAll {
-        OutputLog "sqlserver2022k8s-mssql-1"
+        OutputLog $Env:instanceName
         docker compose -f sqlserver2022k8s/compose-backups.yaml down;
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*", "$env:BUILD_TEMP\datavolume\bacpac\*" -Recurse -Force
     }
