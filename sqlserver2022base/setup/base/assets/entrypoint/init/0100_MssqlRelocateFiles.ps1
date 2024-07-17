@@ -67,6 +67,10 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
         Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
         Copy-Item -Path $currentLogPath -Destination $newMasterLog;
 
+        # Not yet clear what to do here, if the image is updated the
+        # SID for these accounts will change, and this will probably
+        # break reattaching (which can be manually fixed by tampering with permissions on the actual storage).
+        # This is also influenced by the actual storage backend and it' support for ACL (azure files works OK as it won't propagate ACL, azure disk won't)
         icacls $newMasterPath /grant "NT Service\MSSQLSERVER:F"
         icacls $newMasterLog /grant "NT Service\MSSQLSERVER:F"
     }
