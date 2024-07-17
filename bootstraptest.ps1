@@ -45,3 +45,24 @@ function ThrowIfError() {
         Write-Error "Last exit code was NOT 0.";
     }
 }
+
+function HoldBuild() {
+    # This method should create a file, and hold in a loop with a sleep 
+    # until the file is deleted
+    # $Env:BUILD_TEMP this is the directory where the file should be crated
+    # Define the full path for the file
+    $filePath = Join-Path -Path $Env:BUILD_TEMP -ChildPath "holdbuild.txt"
+
+    # Create the file
+    New-Item -ItemType File -Path $filePath -Force
+
+    Write-Host "Created file: $filePath"
+
+    # Hold in a loop until the file is deleted
+    while (Test-Path $filePath) {
+        Start-Sleep -Seconds 10
+        Write-Host "Build held until file is deleted: $filePath "
+    }
+
+    Write-Host "File deleted: $filePath"
+}
