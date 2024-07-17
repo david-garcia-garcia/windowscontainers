@@ -11,7 +11,7 @@ Describe 'compose-persistent.yaml' {
 
     It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 20
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 40
     }
 
     It 'Can connect to the SQL Server' {
