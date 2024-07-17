@@ -184,11 +184,13 @@ try {
                 SbsWriteHost "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
             }
 
+            
             if ($null -ne $logConf -and $parentProcessIsLogMonitor -eq $false) {
+                $nextLastCheck = Get-Date;
                 SbsFilteredEventLog -After $lastCheck -Configurations $logConf;
+                $lastCheck = $nextLastCheck;
             }
 
-            $lastCheck = Get-Date;
             $stopwatchLogRefresh.Restart();
         }
 
