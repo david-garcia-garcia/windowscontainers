@@ -17,14 +17,6 @@ Describe 'compose.yaml' {
         Connect-DbaInstance "Server=172.18.8.8;User Id=monitoring;Password=MyP@assword;" | Should -Not -BeNullOrEmpty;
     }
 
-    It 'Servername has been changed' {
-        # TODO: NOT WORKING :()
-        #$instance = Connect-DbaInstance "Server=172.18.8.8;User Id=monitoring;Password=MyP@assword;" ;
-        #$instance | Should -Not -BeNullOrEmpty;
-        #$serverName = Invoke-DbaQuery -SqlInstance $instance -Query "SELECT @@servername AS ServerName";
-        #$serverName.ServerName | Should -Be "MYTESTSERVER";
-    }
-
     It 'Can connect with full app user and create a table' {
 
         $instance = Connect-DbaInstance "Server=172.18.8.8;User Id=dbuser_full;Password=MyP@assword;";
@@ -62,7 +54,6 @@ CREATE TABLE dbo.TestTableNotAllowed (
     }
 
     AfterAll {
-        OutputLog $Env:containerName
         docker compose -f sqlserver2022k8s/compose.yaml down;
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
     }

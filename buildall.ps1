@@ -113,6 +113,12 @@ docker compose -f sqlserver2022base/compose.yaml build --quiet
 ThrowIfError
 
 if ("sqlserver2022base" -match $Images) {
+
+    if ($test) {
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2022base.xml";
+        Invoke-Pester -Path "sqlserver2022base\tests"
+    }
+
     if ($push) { 
         docker push "$($Env:IMG_SQLSERVER2022BASE)"
         ThrowIfError
