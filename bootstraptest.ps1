@@ -24,7 +24,7 @@ function WaitForLog {
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
-    while ($sw.Elapsed -lt $timeout) {
+    while ($sw.Elapsed -le $timeout) {
         Start-Sleep -Seconds 2
         $logs = Invoke-Command -Script {
             $ErrorActionPreference = "silentlycontinue"
@@ -37,7 +37,7 @@ function WaitForLog {
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
     Write-Host "---------------- LOGEND"
-    Write-Error "Timeout reached without detecting '$($logContains)' in logs."
+    Write-Error "Timeout reached without detecting '$($logContains)' in logs after $($sw.Elapsed.TotalSeconds)s"
 }
 
 function ThrowIfError() {
