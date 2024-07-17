@@ -124,6 +124,7 @@ if ($newServerName) {
     SbsWriteDebug "Addserver $($newServerName)"
     sqlcmd -S localhost -Q "EXEC sp_addserver '$($newServerName)', 'local';"
     
+    SbsWriteHost "Stopping MSSQL process $($processId)"
     Stop-Process -Id $processId
 }
 
