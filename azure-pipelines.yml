@@ -49,6 +49,7 @@ stages:
         TEMP: $(Agent.TempDirectory)
     - task: PublishTestResults@2
       name: publish_tests_results
+      condition: not(canceled())
       inputs:
         testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
         testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
@@ -62,7 +63,6 @@ stages:
         #buildPlatform: # string. Alias: platform. Build Platform. 
         #buildConfiguration: # string. Alias: configuration. Build Configuration. 
         publishRunAttachments: true
-        condition: succeededOrFailed()
     - pwsh: .\buildall.ps1 -Push
       name: push_containers
       # Only push if this is a tag, and the tests passed

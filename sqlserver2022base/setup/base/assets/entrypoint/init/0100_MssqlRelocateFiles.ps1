@@ -33,8 +33,6 @@ if ($null -ne $Env:MSSQL_PATH_BACKUP) {
 if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
     SbsWriteHost "System Path Override: $($Env:MSSQL_PATH_SYSTEM)";
-
-    # Create the directories if they don't exist
     New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_SYSTEM | Out-Null;
 
     # Determine the current location of the master database files
@@ -55,14 +53,18 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
     # Update the registry to point to the new locations
     Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf"
+    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
 
     # Check if the master database files exist in the new location
-    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf")) {
+    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.ldf")) {
         SbsWriteHost "Moving existing system databases to new system path";
         # Move the master database files to the new location if this is the first setup
-        Copy-Item -Path $currentMasterPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\master.mdf";
-        Copy-Item -Path $currentLogPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf";
+        $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
+        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
+
+        Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
+        Copy-Item -Path $currentLogPath -Destination $newMasterLog;
+        icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
     }
     else {
         SbsWriteHost "System databases already found at destionation path, skipping system database initialization.";
@@ -84,7 +86,7 @@ if ($newServerName) {
     SbsWriteHost "Starting MSSQL in minimal mode to change @@servername to $($newServerName)"
     Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\$($id)\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\mssql_stdout.txt -RedirectStandardError c:\mssql_stderr.txt
 
-    $processId = (Get-Process -Name SQLSERVR).Id
+    $processId = (Get-Process -Name "SQLSERVR").Id
     SbsWriteHost "MSSQL process id $($processId)"
 
     $safetyStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
@@ -181,6 +183,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
             SbsWriteHost "Moving $($sourcePath) to $($destinationPath)";
             Move-Item -Path $sourcePath -Destination $destinationPath
         }
+        icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
         Start-Service 'MSSQLSERVER';
     }
 }

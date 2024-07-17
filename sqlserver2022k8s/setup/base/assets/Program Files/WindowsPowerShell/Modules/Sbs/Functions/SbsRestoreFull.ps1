@@ -96,6 +96,7 @@ function SbsRestoreFull {
             $uniqueName = [System.Guid]::NewGuid().ToString()
             $tempDir = Join-Path -Path $tempPath -ChildPath $uniqueName
             Start-Process 7z.exe -ArgumentList "x `"$localFilePath`" -o`"$tempDir`" -y" -Wait;
+            SbsWriteDebug "File extracted to $($tempDir)"
             $newLocalFilePath = Get-ChildItem -Path $tempDir -Recurse -Include "*.bacpac", "*.bak" -File | Select-Object -ExpandProperty FullName -First 1
             if ($null -eq $newLocalFilePath) {
                 Remove-Item $tempDir -Recurse;
@@ -108,6 +109,7 @@ function SbsRestoreFull {
             $localFilePath = $newLocalFilePath;
         }
 
+        SbsWriteDebug "Local backup file: $($localFilePath)"
         $isBacpac = ($localFilePath -Like "*.bacpac");
 
         # Grant permissions
@@ -115,8 +117,8 @@ function SbsRestoreFull {
 
         # Restore
         if ($isBacpac -eq $false) {
-            SbsWriteHost "Restoring with dbatools"
-            Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $DatabaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -Verbose;
+            SbsWriteHost "Restoring '$($localFilePath)' as '$($DatabaseName)' with dbatools"
+            Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $DatabaseName -Path $localFilePath -WithReplace -UseDestinationDefaultDirectories -ReplaceDbNameInFile -Verbose -EnableException;
         }
         else {
             SbsWriteHost "Preparing connection string for SQL Package"

@@ -6,8 +6,11 @@ Describe 'compose-backups.yaml' {
         $Env:instanceName = "sqlserver2022k8s-mssql-1";
         New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\log", "$env:BUILD_TEMP\datavolume\backup", "$env:BUILD_TEMP\datavolume\bacpac\*" -Force
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*", "$env:BUILD_TEMP\datavolume\bacpac\*" -Recurse -Force
+    }
+
+    It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 30
+        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 30
     }
 
     It 'Can connect to the SQL Server' {
@@ -69,19 +72,19 @@ CREATE TABLE dbo.TestTable (
         # Database has been deleted
         Remove-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase -EnableException -Confirm:$false
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase | Should -Be $null;
-
-        $containerPath = $lastBackup.FullName.ToLower() -Replace "$env:BUILD_TEMP\datavolume\backup", "d:\backup"
+        $normalizedPath = "$env:BUILD_TEMP\datavolume\backup" -Replace "/", "\"
+        $containerPath = $lastBackup.FullName.ToLower() -Replace [Regex]::Escape($normalizedPath), "d:\backup"
 
         # Restore from bacpac using SbsRestoreFull
         docker exec $Env:instanceName powershell "Import-Module Sbs;Import-Module dbatools;SbsRestoreFull -SqlInstance localhost -DatabaseName renamedDatabase2 -Path '$($containerPath)'"
         Get-DbaDatabase -SqlInstance $Env:connectionString -Database renamedDatabase2 | Should -Not -BeNullOrEmpty;
+        WaitForLog $Env:instanceName "Restored database from" -TimeoutSeconds 10
 
         # Test that the database has the table we created before
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database renamedDatabase2 -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
     AfterAll {
-        OutputLog "sqlserver2022k8s-mssql-1"
         docker compose -f sqlserver2022k8s/compose-backups.yaml down;
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*", "$env:BUILD_TEMP\datavolume\bacpac\*" -Recurse -Force
     }

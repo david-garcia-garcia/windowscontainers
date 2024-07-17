@@ -36,7 +36,8 @@ services:
       - MSSQL_BACKUP_RELEASEMEMORY=400
       - SBS_DEBUG=True
       - SBS_TEMPORARY=d:\temp
-      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_INITASYNC=True
+      - SBS_ENTRYPOINTERRORACTION=Continue
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
       - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
 networks:

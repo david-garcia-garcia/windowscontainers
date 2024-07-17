@@ -8,7 +8,7 @@ As part of the boostrapping, a random master key is automatically provisioned if
 
 The image takes care automatically of moving al storage through env variables.
 
-| Name                 | Default Value       | Description                                                  | Supports live refresh (changes are applied without restaring the container) |
+| Name                 | Default Value       | Description                                                  | Supports live refresh (changes are applied without restarting the container) |
 | -------------------- | ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | MSSQL_ADMIN_USERNAME | null                | Admin username, reconfigured every time when container starts | Yes                                                          |
 | MSSQL_ADMIN_PWD      | null                | Admin password, reconfigured every time when container starts | Yes                                                          |

@@ -26,7 +26,7 @@ function SbsRestoreDatabase {
         return $false;
     }
 
-    $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -Verbose;
+    $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -ReplaceDbNameInFile -Verbose;
     
     $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
     

@@ -1,35 +1,39 @@
 Describe 'compose-basic.yaml' {
     BeforeAll {
         . ./../bootstraptest.ps1
-        docker compose -f servercore2022/compose-basic.yaml up -d;
-        WaitForLog "servercore2022-servercore-1" "Initialization Completed"
+        $Env:ImageName = "servercore2022-servercore-1"
     }
         
+    It 'Container initializes' {
+        docker compose -f servercore2022/compose-basic.yaml up -d;
+        WaitForLog $Env:ImageName "Initialization Completed"
+    }
+
     It 'Booted synchronously' {
-        WaitForLog "servercore2022-servercore-1" "init scripts synchronously"
+        WaitForLog $Env:ImageName "init scripts synchronously"
     }
 
     It 'LogRotate is enabled by default' {
-        docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
+        docker exec $Env:ImageName powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
     }
 
     It 'Timezone is set' {
-        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Match "Alaskan Standard Time";
+        docker exec $Env:ImageName powershell "(Get-TimeZone).Id" | Should -Match "Alaskan Standard Time";
     }
 
     It 'sshd service is stopped' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Stopped"
+        docker exec $Env:ImageName powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Stopped"
     }
 
     It 'sshd service is disabled' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Disabled"
+        docker exec $Env:ImageName powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Disabled"
     }
 
     It 'Shutdown not called twice' {
-        docker exec servercore2022-servercore-1 powershell "powershell -File c:\entrypoint\shutdown.ps1"
-        WaitForLog "servercore2022-servercore-1" "SHUTDOWN END"
+        docker exec $Env:ImageName powershell "powershell -File c:\entrypoint\shutdown.ps1"
+        WaitForLog $Env:ImageName "SHUTDOWN END" -timeoutSeconds 40
         docker compose -f servercore2022/compose-basic.yaml stop;
-        WaitForLog "servercore2022-servercore-1" "Integrated shutdown skipped"
+        WaitForLog $Env:ImageName "Integrated shutdown skipped"
     }
 
     AfterAll {

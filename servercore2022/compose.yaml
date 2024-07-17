@@ -24,6 +24,8 @@ services:
       - SBS_SRVSTOP=ssh-agent;sshd
       # Do not run in ASYNC boot mode
       - SBS_INITASYNC=false
+      # Debug level
+      - SBS_DEBUG=True
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
       - SBS_LOCALADMINPWD_PROTECT=P@ssw0rd

@@ -7,7 +7,7 @@ function OutputLog {
 
     $logs = Invoke-Command -Script {
         $ErrorActionPreference = "silentlycontinue"
-        docker logs $containerName --tail 150 2>&1
+        docker logs $containerName --tail 225 2>&1
     } -ErrorAction SilentlyContinue
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
@@ -28,7 +28,7 @@ function WaitForLog {
         Start-Sleep -Seconds 2
         $logs = Invoke-Command -Script {
             $ErrorActionPreference = "silentlycontinue"
-            docker logs $containerName --tail 150 2>&1
+            docker logs $containerName --tail 225 2>&1
         } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {
             return;
@@ -37,11 +37,32 @@ function WaitForLog {
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
     Write-Host "---------------- LOGEND"
-    Write-Host "Timeout reached without detecting '$($logContains)' in logs."
+    Write-Error "Timeout reached without detecting '$($logContains)' in logs."
 }
 
 function ThrowIfError() {
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Last exit code was NOT 0.";
     }
+}
+
+function HoldBuild() {
+    # This method should create a file, and hold in a loop with a sleep 
+    # until the file is deleted
+    # $Env:BUILD_TEMP this is the directory where the file should be crated
+    # Define the full path for the file
+    $filePath = Join-Path -Path $Env:BUILD_TEMP -ChildPath "holdbuild.txt"
+
+    # Create the file
+    New-Item -ItemType File -Path $filePath -Force
+
+    Write-Host "Created file: $filePath"
+
+    # Hold in a loop until the file is deleted
+    while (Test-Path $filePath) {
+        Start-Sleep -Seconds 10
+        Write-Host "Build held until file is deleted: $filePath "
+    }
+
+    Write-Host "File deleted: $filePath"
 }
