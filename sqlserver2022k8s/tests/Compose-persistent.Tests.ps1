@@ -90,7 +90,6 @@ CREATE TABLE dbo.TestTable (
     }
 
     AfterAll {
-        OutputLog $Env:instanceName
         docker compose -f sqlserver2022k8s/compose-persistent.yaml down;
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*", "$env:BUILD_TEMP\datavolume\system\*" -Recurse -Force
     }

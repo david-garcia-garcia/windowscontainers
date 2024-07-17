@@ -61,8 +61,14 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf")) {
         SbsWriteHost "Moving existing system databases to new system path";
         # Move the master database files to the new location if this is the first setup
-        Copy-Item -Path $currentMasterPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\master.mdf";
-        Copy-Item -Path $currentLogPath -Destination "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf";
+        $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
+        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\mastlog.ldf"
+
+        Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
+        Copy-Item -Path $currentLogPath -Destination $newMasterLog;
+
+        icacls $newMasterPath /grant "NT Service\MSSQLSERVER:F"
+        icacls $newMasterLog /grant "NT Service\MSSQLSERVER:F"
     }
     else {
         SbsWriteHost "System databases already found at destionation path, skipping system database initialization.";
