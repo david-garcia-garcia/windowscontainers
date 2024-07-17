@@ -63,6 +63,8 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
         SbsWriteHost "Moving docker master data file to new system path $($newMasterPath)";
         SbsWriteHost "Moving docker master log file to new system path $($newMasterLog)";
 
+        New-Item -ItemType Directory -Force -Path "$($Env:MSSQL_PATH_SYSTEM)\master";
+
         Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
         Copy-Item -Path $currentLogPath -Destination $newMasterLog;
 

@@ -28,7 +28,7 @@ RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 COPY "setup\\base" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN c:\setup\setup.ps1
+RUN echo "setup/base"; c:\setup\setup.ps1
 RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 SHELL ["cmd.exe"]

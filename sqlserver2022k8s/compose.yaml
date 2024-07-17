@@ -38,6 +38,7 @@ services:
       - MSSQL_PATH_BACKUP=e:\backup
       - MSSQL_INSTANCENAME=myinstance
       - MSSQL_MAXMEMORY=286
+      - MSSQL_SERVERNAME=MYSERVERNAME
       - SBS_DEBUG=True
       # For debugging timeout at 40s
       - SBS_SHUTDOWNTIMEOUT=40
