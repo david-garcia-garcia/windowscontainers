@@ -1,7 +1,10 @@
 trigger:
   branches:
     include:
-    - '*'
+      - '*'
+  tags:
+    include:
+      - '*'
 pr:
   branches:
     exclude:
