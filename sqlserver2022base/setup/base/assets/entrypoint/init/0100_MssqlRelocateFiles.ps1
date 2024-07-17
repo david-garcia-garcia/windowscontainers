@@ -25,7 +25,6 @@ if ($null -ne $Env:MSSQL_PATH_LOG) {
 }
 
 if ($null -ne $Env:MSSQL_PATH_BACKUP) {
-
     New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_BACKUP;
     Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver') -name "BackupDirectory" -value $Env:MSSQL_PATH_BACKUP;
 }
@@ -52,18 +51,22 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     }
 
     # Update the registry to point to the new locations
-    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
+    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master\master.mdf"
+    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\master\master.ldf"
 
     # Check if the master database files exist in the new location
-    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.ldf")) {
-        SbsWriteHost "Moving existing system databases to new system path";
+    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master\master.ldf")) {
         # Move the master database files to the new location if this is the first setup
-        $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
+        $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master\master.mdf"
+        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\master\master.ldf"
+
+        SbsWriteHost "Moving docker master data file to new system path $($newMasterPath)";
+        SbsWriteHost "Moving docker master log file to new system path $($newMasterLog)";
 
         Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
         Copy-Item -Path $currentLogPath -Destination $newMasterLog;
+
+        # Make sure we set permissions
         icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
     }
     else {
