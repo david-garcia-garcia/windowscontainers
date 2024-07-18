@@ -1,7 +1,7 @@
 Describe 'compose.yaml' {
     BeforeAll {
         . ./../bootstraptest.ps1
-        New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\backup", "$env:BUILD_TEMP\log" -Force
+        New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\backup", "$env:BUILD_TEMP\datavolume\log" -Force
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:containerName = "sqlserver2022base-mssql-1"
