@@ -52,7 +52,7 @@ stages:
         TEMP: $(Agent.TempDirectory)
     - task: PublishTestResults@2
       name: publish_tests_results
-      condition: not(canceled())
+      condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
       inputs:
         testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
         testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
