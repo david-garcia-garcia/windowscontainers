@@ -24,11 +24,11 @@ function WaitForLog {
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
-    while ($sw.Elapsed -lt $timeout) {
-        Start-Sleep -Seconds 2
+    while ($sw.Elapsed -le $timeout) {
+        Start-Sleep -Seconds 1
         $logs = Invoke-Command -Script {
             $ErrorActionPreference = "silentlycontinue"
-            docker logs $containerName --tail 225 2>&1
+            docker logs $containerName --tail 50 2>&1
         } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {
             return;
@@ -37,7 +37,7 @@ function WaitForLog {
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
     Write-Host "---------------- LOGEND"
-    Write-Error "Timeout reached without detecting '$($logContains)' in logs."
+    Write-Error "Timeout reached without detecting '$($logContains)' in logs after $($sw.Elapsed.TotalSeconds)s"
 }
 
 function ThrowIfError() {

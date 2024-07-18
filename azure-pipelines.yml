@@ -1,7 +1,10 @@
 trigger:
   branches:
     include:
-    - '*'
+      - '*'
+  tags:
+    include:
+      - '*'
 pr:
   branches:
     exclude:
@@ -49,7 +52,7 @@ stages:
         TEMP: $(Agent.TempDirectory)
     - task: PublishTestResults@2
       name: publish_tests_results
-      condition: not(canceled())
+      condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
       inputs:
         testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
         testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
@@ -66,7 +69,7 @@ stages:
     - pwsh: .\buildall.ps1 -Push
       name: push_containers
       # Only push if this is a tag, and the tests passed
-      condition: and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/'))
+      condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       env:
         REGISTRY_USER: $(REGISTRY_USER)
         REGISTRY_PWD: $(REGISTRY_PWD)

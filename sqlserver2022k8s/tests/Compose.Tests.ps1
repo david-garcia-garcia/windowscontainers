@@ -54,7 +54,6 @@ CREATE TABLE dbo.TestTableNotAllowed (
     }
 
     AfterAll {
-        OutputLog $Env:containerName
         docker compose -f sqlserver2022k8s/compose.yaml down;
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
     }

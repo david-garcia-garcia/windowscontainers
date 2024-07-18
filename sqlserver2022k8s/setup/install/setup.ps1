@@ -46,7 +46,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
 Write-Host "-----------------------------------------`n"
 
-Install-Module -Name Az.Storage -RequiredVersion 6.2.0 -Force;
+Install-Module -Name Az.Storage -RequiredVersion 7.1.0 -Force;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install SqlPackage"

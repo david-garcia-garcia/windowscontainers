@@ -79,3 +79,26 @@ To debug the powershell code in the different images, you use the helper method 
 ```
 
 Just remember to call this method again every time you change the implementation of any of the helper functions.
+
+## Azure Pipelines Integration
+
+The included azure pipeline integration needs the following variables:
+
+| Name                   | Description                                                  |
+| ---------------------- | ------------------------------------------------------------ |
+| MSSQLINSTALL_CU_URL    | Url to the cumulative update fix package                     |
+| MSSQLINSTALL_CUFIX_URL | Url to the cumulative update installer                       |
+| MSSQLINSTALL_ISO_URL   | Url to the MS SQL Server ISO image                           |
+| REGISTRY_USER          | Container registry username                                  |
+| REGISTRY_PWD           | Container registry password                                  |
+| REGISTRY_PATH          | Container registry URL with prefix, i.e. "myimages.azurecr.io/core" |
+
+The images are tagged in the registry using the branch/tag name of the current build.
+
+You can have some control of how the build works using commit messages with the following keywords
+
+| Keyword (must insert between square brackets []) | Purpose                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| notest                                           | Skips the testing step                                       |
+| push                                             | Pushes the images to the container registry. Not needed for tags, which are automatically pushed. |
+

@@ -25,7 +25,6 @@ if ($null -ne $Env:MSSQL_PATH_LOG) {
 }
 
 if ($null -ne $Env:MSSQL_PATH_BACKUP) {
-
     New-Item -ItemType Directory -Force -Path $Env:MSSQL_PATH_BACKUP;
     Set-itemproperty -path ('HKLM:\software\microsoft\microsoft sql server\' + $id + '\mssqlserver') -name "BackupDirectory" -value $Env:MSSQL_PATH_BACKUP;
 }
@@ -52,18 +51,24 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     }
 
     # Update the registry to point to the new locations
-    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
+    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg0" -Value "-d$($Env:MSSQL_PATH_SYSTEM)\master\master.mdf"
+    Set-ItemProperty -Path "HKLM:\software\microsoft\microsoft sql server\$id\mssqlserver\parameters" -Name "SQLArg2" -Value "-l$($Env:MSSQL_PATH_SYSTEM)\master\master.ldf"
 
     # Check if the master database files exist in the new location
-    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master.ldf")) {
-        SbsWriteHost "Moving existing system databases to new system path";
+    if (-not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master\master.mdf") -and -not (Test-Path "$($Env:MSSQL_PATH_SYSTEM)\master\master.ldf")) {
         # Move the master database files to the new location if this is the first setup
-        $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master.mdf"
-        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\master.ldf"
+        $newMasterPath = "$($Env:MSSQL_PATH_SYSTEM)\master\master.mdf"
+        $newMasterLog = "$($Env:MSSQL_PATH_SYSTEM)\master\master.ldf"
+
+        SbsWriteHost "Moving docker master data file to new system path $($newMasterPath)";
+        SbsWriteHost "Moving docker master log file to new system path $($newMasterLog)";
+
+        New-Item -ItemType Directory -Force -Path "$($Env:MSSQL_PATH_SYSTEM)\master";
 
         Copy-Item -Path $currentMasterPath -Destination $newMasterPath;
         Copy-Item -Path $currentLogPath -Destination $newMasterLog;
+
+        # Make sure we set permissions
         icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
     }
     else {
@@ -71,23 +76,28 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     }
 }
 
-########################################################
-# START IN MINIMAL MODE TO BE ABLE TO SET SERVERNAME,
-# THIS MIGHT MAKE NO SENSE WHEN MASTER IS PRESERVED
-# BETWEEN USAGES, BUT IN K8S STATE-LESS BACKUP BASED
-# RECREATION, WE NEED TO SET THIS UP EVERY TIME
-# THE SERVER BOOTS AS ONLY THE ACTUAL USER DATABASE DATA
-# IS PRESERVED
-########################################################
+###############################
+# START THE SERVER
+###############################
+SbsWriteHost "MSSQLSERVER Service Starting...";
+Start-Service 'MSSQLSERVER';
+SbsWriteHost "MSSQLSERVER Service started";
+
+$sqlNeedsRestart = $false;
+
+$sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
 $newServerName = SbsGetEnvString -Name "MSSQL_SERVERNAME" -DefaultValue $null;
 
 if ($newServerName) {
-    SbsWriteHost "Starting MSSQL in minimal mode to change @@servername to $($newServerName)"
-    Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\$($id)\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\mssql_stdout.txt -RedirectStandardError c:\mssql_stderr.txt
 
-    $processId = (Get-Process -Name "SQLSERVR").Id
-    SbsWriteHost "MSSQL process id $($processId)"
+    # TODO: In order to use the minimal mode, we need to manually repoint the master data and log files according to what
+    # is defined in the registry?
+
+    #SbsWriteHost "Starting MSSQL in minimal mode to change @@servername to $($newServerName)"
+    #Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\$($id)\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\mssql_stdout.txt -RedirectStandardError c:\mssql_stderr.txt
+    #$processId = (Get-Process -Name "SQLSERVR").Id
+    #SbsWriteHost "MSSQL process id $($processId)"
 
     $safetyStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
@@ -102,32 +112,30 @@ if ($newServerName) {
     } while ([string]::IsNullOrWhiteSpace($oldServerName))
     $oldServerName = ($oldServerName -split "`n")[0].Replace("`r", '').Replace("`n", '')
 
-    SbsWriteHost "Renaming $($oldServerName) to $($newServerName)"
+    if ($oldServerName -ne $newServerName) {
+        SbsWriteHost "Renaming $($oldServerName) to $($newServerName)"
+        # Define the server name change command
+        do {
+            Start-Sleep -Milliseconds 1000;
+            SbsWriteHost "Attempting sp_dropserver $($oldServerName)..."
+            $res = sqlcmd -S localhost -Q "EXEC sp_dropserver '$($oldServerName)'" | Out-String
+            SbsWriteDebug $res;
+            if ($safetyStopwatch.Elapsed.TotalSeconds -gt 10) {
+                SbsWriteWarning "sp_dropserver retrieval back off";
+                break;
+            }
+        } while (-not [string]::IsNullOrWhiteSpace($res))
 
-    # Define the server name change command
-    do {
-        Start-Sleep -Milliseconds 1000;
-        SbsWriteHost "Attempting sp_dropserver $($oldServerName)..."
-        $res = sqlcmd -S localhost -Q "EXEC sp_dropserver $($oldServerName)" | Out-String
-        SbsWriteDebug $res;
-        if ($safetyStopwatch.Elapsed.TotalSeconds -gt 10) {
-            SbsWriteWarning "sp_dropserver retrieval back off";
-            break;
-        }
-    } while (-not [string]::IsNullOrWhiteSpace($res))
+        SbsWriteDebug "Addserver $($newServerName)"
+        sqlcmd -S localhost -Q "EXEC sp_addserver '$($newServerName)', 'local';"
 
-    SbsWriteDebug "Addserver $($newServerName)"
-    sqlcmd -S localhost -Q "EXEC sp_addserver '$($newServerName)', 'local';"
-    
-    Stop-Process -Id $processId
+        # Restart
+        $sqlNeedsRestart = $true;
+    }
+
+    #SbsWriteHost "Stopping MSSQL process $($processId)"
+    #Stop-Process -Id $processId
 }
-
-###############################
-# START THE SERVER
-###############################
-SbsWriteHost "MSSQLSERVER Service Starting...";
-Start-Service 'MSSQLSERVER';
-SbsWriteHost "MSSQLSERVER Service started";
 
 $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
@@ -184,8 +192,12 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
             Move-Item -Path $sourcePath -Destination $destinationPath
         }
         icacls $Env:MSSQL_PATH_SYSTEM /grant "NT Service\MSSQLSERVER:F" /t
-        Start-Service 'MSSQLSERVER';
+        $sqlNeedsRestart = $true;
     }
+}
+
+if ($sqlNeedsRestart) {
+  Restart-Service 'MSSQLSERVER';
 }
 
 # Prepare path for data, log, backup, temporary and control

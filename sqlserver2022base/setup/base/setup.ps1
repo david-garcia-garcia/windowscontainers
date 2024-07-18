@@ -1,9 +1,15 @@
+$global:ErrorActionPreference = 'Stop'
+
+Start-Service 'MSSQLSERVER';
+Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register;
+$sqlInstance = Connect-DbaInstance -SqlInstance localhost;
+
 #################################
 # Admin groups
 #################################
 
-New-DbaLogin -SqlInstance 'localhost' -Login 'BUILTIN\Administrators' -Force
-Add-DbaServerRoleMember -SqlInstance 'localhost' -ServerRole sysadmin, public -Login 'BUILTIN\Administrators'
+New-DbaLogin -SqlInstance $sqlInstance -Login 'BUILTIN\Administrators' -Force -EnableException
+Add-DbaServerRoleMember -SqlInstance $sqlInstance -ServerRole sysadmin -Login 'BUILTIN\Administrators' -EnableException -Confirm:$false
 
 #################################
 # Basic MSSQL configuration
@@ -13,9 +19,6 @@ Add-DbaServerRoleMember -SqlInstance 'localhost' -ServerRole sysadmin, public -L
 Set-ItemProperty -Path "HKLM:\Software\Microsoft\Microsoft SQL Server\MSSQLServer\" -Name "LoginMode" -Value 2;
 
 # Enable TCP IP
-Start-Service 'MSSQLSERVER';
-Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register;
-$sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
 Set-DbaNetworkConfiguration -SqlInstance $sqlInstance -EnableProtocol TcpIp -Confirm:$false;
 

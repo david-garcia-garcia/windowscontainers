@@ -10,7 +10,6 @@ Describe 'compose-persistent.yaml' {
 
     It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
-        HoldBuild
         WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 40
     }
 
