@@ -1,39 +1,43 @@
 Describe 'compose.yaml' {
     BeforeAll {
         . ./../bootstraptest.ps1
+        $Env:imageName = "servercore2022-servercore-1";
+    }
+
+    It 'Container starts' {
         docker compose -f servercore2022/compose.yaml up -d;
-        WaitForLog "servercore2022-servercore-1" "Initialization Completed"
+        WaitForLog $Env:imageName "Initialization Completed"
     }
 
     It 'LogRotate runs at 5AM Daily' {
-        docker exec servercore2022-servercore-1 powershell "(Get-ScheduledTask LogRotate).Triggers[0].DaysInterval" | Should -Be "1";
-        docker exec servercore2022-servercore-1 powershell "[DateTime]::Parse((Get-ScheduledTask LogRotate).Triggers[0].StartBoundary).ToLocalTime().ToString('s')" | Should -Be "2023-01-01T05:00:00";
+        docker exec $Env:imageName powershell "(Get-ScheduledTask LogRotate).Triggers[0].DaysInterval" | Should -Be "1";
+        docker exec $Env:imageName powershell "[DateTime]::Parse((Get-ScheduledTask LogRotate).Triggers[0].StartBoundary).ToLocalTime().ToString('s')" | Should -Be "2023-01-01T05:00:00";
     }
 
     It 'Env variable is protected' {
-        $sbsTestProtect = docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT';
-        $sbsTestProtectProtected = docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT_PROTECTED';
+        $sbsTestProtect = docker exec $Env:imageName powershell '$Env:SBS_TESTPROTECT';
+        $sbsTestProtectProtected = docker exec $Env:imageName powershell '$Env:SBS_TESTPROTECT_PROTECTED';
         $sbsTestProtect | Should -Not -Be $sbsTestProtectProtected;
         $sbsTestProtectProtected | Should -Be -Empty;
     }
 
     It 'Timezone is set' {
-        docker exec servercore2022-servercore-1 powershell "(Get-TimeZone).Id" | Should -Be "Pacific Standard Time";
+        docker exec $Env:imageName powershell "(Get-TimeZone).Id" | Should -Be "Pacific Standard Time";
     }
 
     It 'sshd service is started' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Running"
+        docker exec $Env:imageName powershell "(Get-Service -Name 'sshd').Status" | Should -Be "Running"
     }
 
     It 'sshd service has automatic startup' {
-        docker exec servercore2022-servercore-1 powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Automatic"
+        docker exec $Env:imageName powershell "(Get-Service -Name 'sshd').StartType" | Should -Be "Automatic"
     }
 
     It 'DPAPI encode/decode works' {
-        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT_PROTECT' | Should -Be "supersecretekey"
-        $encoded = docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTPROTECT'
+        docker exec $Env:imageName powershell '$Env:SBS_TESTPROTECT_PROTECT' | Should -Be "supersecretekey"
+        $encoded = docker exec $Env:imageName powershell '$Env:SBS_TESTPROTECT'
         $encoded | Should -Not -Be "supersecretekey"
-        $decoded = docker exec servercore2022-servercore-1 powershell 'Import-Module Sbs; return SbsDpapiDecode -EncodedValue $Env:SBS_TESTPROTECT';
+        $decoded = docker exec $Env:imageName powershell 'Import-Module Sbs; return SbsDpapiDecode -EncodedValue $Env:SBS_TESTPROTECT';
         $decoded | Should -Be "supersecretekey"
     }
 
@@ -63,44 +67,47 @@ Describe 'compose.yaml' {
     It 'Env warm reload' {
         $jsonString = @{
             "SBS_TESTVALUE" = "value1"
-            "SBS_OVERRIDE" = "originalValue"
+            "SBS_OVERRIDE"  = "originalValue"
         } | ConvertTo-Json
 
         # Create directory and set environment
-        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env0.json' -Value '$jsonString'"
+        docker exec $Env:imageName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env0.json' -Value '$jsonString'"
+
+        WaitForLog $Env:imageName "Configuration change count 1"
 
         $jsonString2 = @{
             "SBS_TESTVALUE2" = "value2"
-            "SBS_OVERRIDE" = "overridenValue"
+            "SBS_OVERRIDE"   = "overridenValue"
         } | ConvertTo-Json
 
         # Create directory and set environment
-        docker exec servercore2022-servercore-1 powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env1.json' -Value '$jsonString2'"
+        docker exec $Env:imageName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\env1.json' -Value '$jsonString2'"
 
-        # Force refresh
-        docker exec servercore2022-servercore-1 powershell "Import-Module Sbs; SbsPrepareEnv;"
+        # Refresh should happen automatically, wait for it
+        WaitForLog $Env:imageName "Configuration change count 2"
 
-        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
-        docker exec servercore2022-servercore-1 powershell '$Env:SBS_TESTVALUE2' | Should -Be "value2"
-        docker exec servercore2022-servercore-1 powershell '$Env:SBS_OVERRIDE' | Should -Be "overridenValue"
+        docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
+        docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE2' | Should -Be "value2"
+        docker exec $Env:imageName powershell '$Env:SBS_OVERRIDE' | Should -Be "overridenValue"
     }
 
-    #It 'Can SSH to container' {
-    #    docker exec servercore2022-servercore-1 powershell "Set-Service -Name sshd -StartupType Manual; Start-Service -Name sshd; net user localadmin ""@MyP@assw0rd"";"
-    #    # Define the SSH parameters
-    #    $Server = "172.18.8.8"
-    #    $UserName = "localadmin"
-    #    $Password = "@MyP@assw0rd" | ConvertTo-SecureString -AsPlainText -Force
-    #    $Credential = New-Object System.Management.Automation.PSCredential ($UserName, $Password)
-    #    Import-Module Posh-SSH
-    #    # Create SSH session
-    #    try {
-    #        $Session = New-SSHSession -ComputerName $Server -Credential $Credential -AcceptKey
-    #        Write-Host "SSH session created successfully."
-    #    } catch {
-    #        Write-Host "Failed to create SSH session: $_"
-    #    }
-    #}
+    It 'Can SSH to container' {
+        docker exec $Env:imageName powershell "Set-Service -Name sshd -StartupType Manual; Start-Service -Name sshd; net user localadmin ""@MyP@assw0rd"";"
+        # Define the SSH parameters
+        $Server = "172.18.8.8"
+        $UserName = "localadmin"
+        $Password = "@MyP@assw0rd" | ConvertTo-SecureString -AsPlainText -Force
+        $Credential = New-Object System.Management.Automation.PSCredential ($UserName, $Password)
+        Import-Module Posh-SSH
+        # Create SSH session
+        try {
+            $Session = New-SSHSession -ComputerName $Server -Credential $Credential -AcceptKey
+            Write-Host "SSH session created successfully."
+        }
+        catch {
+            Write-Host "Failed to create SSH session: $_"
+        }
+    }
 
     AfterAll {
         docker compose -f servercore2022/compose.yaml down;
