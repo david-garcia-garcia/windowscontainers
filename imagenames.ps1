@@ -28,6 +28,9 @@ foreach ($envVarName in $envVarsToCheck) {
 $version = $ENV:IMAGE_VERSION;
 $containerregistry = $ENV:REGISTRY_PATH;
 
+Write-Host "Environment IMAGE_VERSION: $($version)"
+Write-Host "Environment REGISTRY_PATH: $($containerregistry)"
+
 if (-not $containerregistry.EndsWith('/')) {
     # Add a slash to the end of $containerregistry
     $containerregistry = "$containerregistry/"

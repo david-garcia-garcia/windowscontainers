@@ -240,26 +240,24 @@ You can also tune the Max Server Memory for the instance through MSSQL_SPCONFIGU
 MSSQL_MAXMEMORY=512
 ```
 
-**Perform a full restore**
+## Included functions
 
-```yaml
-steps:
-  - type: 'restore_full'
-    url: 'https://urltomyfullbackup.bak'
-    name: 'MyDatabase' # leavy empty to use ENV MSSQL_DATABASE
-    cert: 'https://urltocertificatezipprotectingbackup.zip'
-```
+The image itself needs some PS functions to work, you can use them to manually manage restores (these are the most useful ones, there are some more in the image):
 
-If the restore is huge, you can the the progress from the container output or the event viewer.
+**SbsRestoreCertificateFromZip**
 
-**Restore from bacpack**
+* [DbaInstanceParameter] $SqlInstance: a dbatools connection to a sql server.
 
-```yaml
-steps:
-  - type: 'restore_bacpac'
-    url: 'https://urltomyfullbackup.bacpac'
-    name: 'MyDatabase' # leavy empty to use ENV MSSQL_DATABASE
-```
+* [string] $zipPath: the path or url to a zip or 7z file that has a certificate, private key and password in it. The certificate will be restored in Mssql.
+
+**SbsRestoreFull**
+
+* [DbaInstanceParameter] $SqlInstance: a dbatools connection to a sql server.
+
+* [string] $DatabaseName: the target database name for the restores.
+* [string] $Path: url or local path to a SQL backup or a BACPAC file. This can be a SAS URL to a blob storage.
+* [string] $CertificatePath: url or local path to an archive containing a certificate, private key and password in it. This certificate will be restored prior to the database restore operation.
+* [string] $TempPath: temporary directory for file operations. When possible, the restore will be performed remotely. But if it needs to download first (bacpac file, remote encrypted backup, etc.) you need sufficiently big temporary path to manipulate the files depending on your database backup size.  If you specifiy nothing, the default temporary directory in the container will be used.
 
 ## Benchmarks
 
