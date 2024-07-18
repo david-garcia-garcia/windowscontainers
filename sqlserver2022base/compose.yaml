@@ -11,9 +11,10 @@ services:
         MSSQLINSTALL_ISO_URL: ${MSSQLINSTALL_ISO_URL}
         MSSQLINSTALL_CU_URL: ${MSSQLINSTALL_CU_URL}
         MSSQLINSTALL_CUFIX_URL: ${MSSQLINSTALL_CUFIX_URL}
+        TEMP: ${BUILD_TEMP}
     image: ${IMG_SQLSERVER2022BASE}
     volumes:
-      - "f:/databases/example/data:d:"
+      - "${BUILD_TEMP}:d:"
     networks:
       container_default:
         ipv4_address: 172.18.8.8

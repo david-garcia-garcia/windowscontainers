@@ -5,6 +5,9 @@ Describe 'compose.yaml' {
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:containerName = "sqlserver2022base-mssql-1"
+    }
+
+    It 'Server starts' {
         docker compose -f sqlserver2022base/compose.yaml up -d;
         WaitForLog $Env:containerName "Initialization Completed" -TimeoutSeconds 30
     }
