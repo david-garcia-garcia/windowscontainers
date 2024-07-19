@@ -24,7 +24,7 @@ function WaitForLog {
     $timeoutSeconds = 20;
 
     if ($extendedTimeout) {
-        $timeoutSeconds = 60:
+        $timeoutSeconds = 60;
     }
 
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
