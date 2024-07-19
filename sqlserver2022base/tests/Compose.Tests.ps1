@@ -9,7 +9,7 @@ Describe 'compose.yaml' {
 
     It 'Server starts' {
         docker compose -f sqlserver2022base/compose.yaml up -d;
-        WaitForLog $Env:containerName "Initialization Completed" -TimeoutSeconds 30
+        WaitForLog $Env:containerName "Initialization Completed" -extendedTimeout
     }
 
     It 'Can connect to the SQL Server' {

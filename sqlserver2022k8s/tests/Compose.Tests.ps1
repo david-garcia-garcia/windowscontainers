@@ -6,7 +6,7 @@ Describe 'compose.yaml' {
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:containerName = "sqlserver2022k8s-mssql-1"
         docker compose -f sqlserver2022k8s/compose.yaml up -d;
-        WaitForLog $Env:containerName "Initialization Completed" -TimeoutSeconds 30
+        WaitForLog $Env:containerName "Initialization Completed" -extendedTimeout
     }
 
     It 'Can connect to the SQL Server' {

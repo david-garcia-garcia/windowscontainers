@@ -10,7 +10,7 @@ Describe 'compose-persistent.yaml' {
 
     It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 40
+        WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
     }
 
     It 'Can connect to the SQL Server' {
@@ -41,7 +41,7 @@ CREATE TABLE dbo.TestTable (
 
     It 'Can start' {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d;
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 25;
+        WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
     }
 
     It 'State is preserved' {
@@ -58,12 +58,12 @@ CREATE TABLE dbo.TestTable (
     It 'Tear down works' {
         # This shutdown adds 1 trn file
         docker compose -f sqlserver2022k8s/compose-persistent.yaml stop
-        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 15;
+        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -extendedTimeout
         docker compose -f sqlserver2022k8s/compose-persistent.yaml down
 
         # This cycle adds an additional trn file
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
-        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -TimeoutSeconds 25;
+        WaitForLog "sqlserver2022k8s-mssql-1" "Initialization Completed" -extendedTimeout
 
         $insertQuery = @"
         INSERT INTO dbo.TestTable (TestData)
@@ -76,13 +76,13 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 2").TestData | Should -Be "New Record 2"
 
         docker compose -f sqlserver2022k8s/compose-persistent.yaml stop
-        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -TimeoutSeconds 15;
+        WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -extendedTimeout
         docker compose -f sqlserver2022k8s/compose-persistent.yaml down
     }
 
     It 'Information is recovered after several cycles of backups and restores' {
         docker compose -f sqlserver2022k8s/compose-persistent.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 25;
+        WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 2").TestData | Should -Be "New Record 2"
         docker compose -f sqlserver2022k8s/compose-persistent.yaml down

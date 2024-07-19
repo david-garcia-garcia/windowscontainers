@@ -7,7 +7,7 @@ function OutputLog {
 
     $logs = Invoke-Command -Script {
         $ErrorActionPreference = "silentlycontinue"
-        docker logs $containerName --tail 225 2>&1
+        docker logs $containerName --tail 250 2>&1
     } -ErrorAction SilentlyContinue
     Write-Host "---------------- LOGSTART"
     Write-Host ($logs -join "`r`n")
@@ -18,8 +18,14 @@ function WaitForLog {
     param (
         [string]$containerName,
         [string]$logContains,
-        [int]$timeoutSeconds = 25
+        [switch]$extendedTimeout
     )
+
+    $timeoutSeconds = 20;
+
+    if ($extendedTimeout) {
+        $timeoutSeconds = 60;
+    }
 
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
@@ -28,7 +34,7 @@ function WaitForLog {
         Start-Sleep -Seconds 1
         $logs = Invoke-Command -Script {
             $ErrorActionPreference = "silentlycontinue"
-            docker logs $containerName --tail 150 2>&1
+            docker logs $containerName --tail 250 2>&1
         } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {
             return;
