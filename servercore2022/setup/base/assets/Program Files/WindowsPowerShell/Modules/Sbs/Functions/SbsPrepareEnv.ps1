@@ -9,17 +9,19 @@ function SbsPrepareEnv {
 
     $configuration = "";
     $configDir = "C:\environment.d";
+    $confFiles = @();
 
     if (Test-Path $configDir) {
         $mergedConfig = @{}
     
         # We make this recursive to allow mounting full configmap without subpaths in K8S
         # see https://github.com/Azure/AKS/issues/4309
-        $confFiles = Get-ChildItem -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | Sort-Object Name
+        $confFiles = Get-ChildItem -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | `
+        Where-object { -not ($_.Name -match "^\.") } | `
+        Sort-Object Name | Select-Object -ExpandProperty "FullName";
     
         foreach ($file in $confFiles) {
-            SbsWriteDebug "Reading environment configuration file $file"
-            $fileContent = Get-Content -Path $file.FullName -Raw | ConvertFrom-Yaml
+            $fileContent = Get-Content -Path $file -Raw | ConvertFrom-Yaml
             foreach ($key in $fileContent.Keys) {
                 $mergedConfig[$key] = $fileContent[$key];
             }
@@ -41,6 +43,14 @@ function SbsPrepareEnv {
     # the container is preserved. So we use ENVHASH to coordinate that.
     if ($md5HashString -eq $currentHash -and $md5HashString -eq $Env:ENVHASH) {
         return $false;
+    }
+
+    $configChangeCount = SbsGetEnvInt -name "SBS_CONFIG_CHANGECOUNT" -defaultValue 0
+    Write-Host "Configuration change count $($configChangeCount)"
+    $Env:SBS_CONFIG_CHANGECOUNT = ($configChangeCount + 1);
+    
+    foreach ($file in $confFiles) {
+        Write-Host "Read environment configuration file $file"
     }
     
     # Store to avoid reprocessing
