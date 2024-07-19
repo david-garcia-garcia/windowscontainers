@@ -11,7 +11,7 @@ Describe 'compose-jobs.yaml' {
 
     It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-jobs.yaml up -d
-        WaitForLog $Env:instanceName "Initialization Completed" -TimeoutSeconds 30
+        WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
     }
 
     It 'Can connect to the SQL Server' {

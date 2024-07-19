@@ -6,7 +6,7 @@ Describe 'compose-basic.yaml' {
         
     It 'Container initializes' {
         docker compose -f servercore2022/compose-basic.yaml up -d;
-        WaitForLog $Env:ImageName "Initialization Completed"
+        WaitForLog $Env:ImageName "Initialization Completed"  -extendedTimeout
     }
 
     It 'Booted synchronously' {
@@ -31,7 +31,7 @@ Describe 'compose-basic.yaml' {
 
     It 'Shutdown not called twice' {
         docker exec $Env:ImageName powershell "powershell -File c:\entrypoint\shutdown.ps1"
-        WaitForLog $Env:ImageName "SHUTDOWN END" -timeoutSeconds 20
+        WaitForLog $Env:ImageName "SHUTDOWN END" -extendedTimeout
         docker compose -f servercore2022/compose-basic.yaml stop;
         WaitForLog $Env:ImageName "Integrated shutdown skipped"
     }

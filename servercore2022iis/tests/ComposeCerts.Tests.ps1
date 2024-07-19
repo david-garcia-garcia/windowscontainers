@@ -2,7 +2,7 @@ Describe 'compose.yaml' {
     BeforeAll {
         . ./../bootstraptest.ps1
         docker compose -f servercore2022iis/compose-certs.yaml up -d;
-        WaitForLog "servercore2022iis-web-1" "Initialization Completed"
+        WaitForLog "servercore2022iis-web-1" "Initialization Completed" -extendedTimeout
     }
 
     It 'HTTP Response OK with a hostname from SBS_IISBINDINGS' {

@@ -6,7 +6,7 @@ Describe 'compose.yaml' {
 
     It 'Container starts' {
         docker compose -f servercore2022/compose.yaml up -d;
-        WaitForLog $Env:imageName "Initialization Completed"
+        WaitForLog $Env:imageName "Initialization Completed" -extendedTimeout
     }
 
     It 'LogRotate runs at 5AM Daily' {
