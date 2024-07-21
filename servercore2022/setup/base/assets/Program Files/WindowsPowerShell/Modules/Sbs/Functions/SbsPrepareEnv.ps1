@@ -7,35 +7,58 @@ function SbsPrepareEnv {
     param (
     )
 
-    $configuration = "";
-    $configDir = "C:\environment.d";
     $confFiles = @();
+    $secretFiles = @();
+
+    # Configmaps and files
+    $configDir = "C:\environment.d";
+    $mergedConfig = @{}
 
     if (Test-Path $configDir) {
-        $mergedConfig = @{}
-    
+        
         # We make this recursive to allow mounting full configmap without subpaths in K8S
         # see https://github.com/Azure/AKS/issues/4309
-        $confFiles = Get-ChildItem -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | `
-        Where-object { -not ($_.Name -match "^\.") } | `
-        Sort-Object Name | Select-Object -ExpandProperty "FullName";
+        $confFiles = Get-ChildItem -File -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | `
+            Where-object { -not ($_.FullName -match "\\\.") } | `
+            Sort-Object Name;
     
-        foreach ($file in $confFiles) {
-            $fileContent = Get-Content -Path $file -Raw | ConvertFrom-Yaml
+        foreach ($configFile in $confFiles) {
+            $fileContent = Get-Content -Path $configFile.FullName -Raw | ConvertFrom-Yaml
             foreach ($key in $fileContent.Keys) {
-                $mergedConfig[$key] = $fileContent[$key];
+                $mergedConfig["$key"] = $fileContent[$key];
             }
         }
+    }
+
+    # Secrets
+    $secretsDir = "c:\secrets.d";
     
-        $configuration = $mergedConfig | ConvertTo-Json -Depth 100;
+    if (Test-Path $secretsDir) {
+        # We make this recursive to allow mounting full configmap without subpaths in K8S
+        # see https://github.com/Azure/AKS/issues/4309
+        $secretFiles = Get-ChildItem -File -Recurse -Path $secretsDir | `
+        Where-object { -not ($_.FullName -match "\\\.") } | `
+            Sort-Object Name;
+        
+        # With secrets, every file is a value, and the file name is the secret name
+        foreach ($secretFile in $secretFiles) {
+            $fileContent = Get-Content -Path $secretFile.FullName -Raw;
+            Write-Host "secret name: $($secretFile.Name)"
+            Write-Host "secret value: $($fileContent)"
+            # This TRIM here is just convenience...
+            $mergedConfig["$($secretFile.Name)"] = "$($fileContent)".Trim();
+        }
     }
 
     $hashFilePath = "c:\env.json.hash";
+
+    Write-Host "$($mergedConfig | ConvertTo-Json -Depth 10)"
 
     if (Test-Path $hashFilePath) {
         $currentHash = Get-Content -Path $hashFilePath;
     }
 
+    $configuration = $mergedConfig | ConvertTo-Json -Depth 50;
     $md5Hash = [System.Security.Cryptography.HashAlgorithm]::Create("MD5").ComputeHash([System.Text.Encoding]::UTF8.GetBytes($configuration))
     $md5HashString = [System.BitConverter]::ToString($md5Hash);
 
@@ -50,7 +73,11 @@ function SbsPrepareEnv {
     $Env:SBS_CONFIG_CHANGECOUNT = ($configChangeCount + 1);
     
     foreach ($file in $confFiles) {
-        Write-Host "Read environment configuration file $file"
+        Write-Host "Read environment configuration file $($file.FullName)"
+    }
+
+    foreach ($file in $secretFiles) {
+        Write-Host "Read secret from file $($file.FullName)"
     }
     
     # Store to avoid reprocessing
