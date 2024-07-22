@@ -36,7 +36,7 @@ function SbsMssqlAddLogin {
     $defaultDatabase = $parsedLoginConfiguration["DefaultDatabase"];
     $databasesRegex = $parsedLoginConfiguration["DatabasesRegex"];
     $permissions = ($parsedLoginConfiguration["Permissions"] -split ",") | Where-Object { $allowedPermissions -contains $_.Trim() }
-    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | Where-Object { $allowedRoles -contains $_ }
+    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | Where-Object { $allowedRoles -contains $_.Trim() }
 
     SbsWriteDebug "Setting up MSSQL server login '$($loginName)'";
 
