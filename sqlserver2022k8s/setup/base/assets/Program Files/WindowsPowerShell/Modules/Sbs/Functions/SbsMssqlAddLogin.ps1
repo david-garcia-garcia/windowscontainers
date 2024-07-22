@@ -35,8 +35,8 @@ function SbsMssqlAddLogin {
     $password = $parsedLoginConfiguration["Password"];
     $defaultDatabase = $parsedLoginConfiguration["DefaultDatabase"];
     $databasesRegex = $parsedLoginConfiguration["DatabasesRegex"];
-    $permissions = ($parsedLoginConfiguration["Permissions"] -split ",") | Select-Object { $_.Trim().ToLower() } | Where-Object { $allowedPermissions -contains $_ }
-    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | Select-Object { $_.Trim().ToLower() } | Where-Object { $allowedRoles -contains $_ }
+    $permissions = ($parsedLoginConfiguration["Permissions"] -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedPermissions -contains $_ }
+    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedRoles -contains $_ }
 
     SbsWriteDebug "Setting up MSSQL server login '$($loginName)'";
 
@@ -93,10 +93,11 @@ function SbsMssqlAddLogin {
         Add-DbaDbRoleMember @addDbaRolesArguments;
 
         # Now remove roles
-        $rolesToDelete = Get-DbaDbRoleMember -SqlInstance $instance -Database $db -ExcludeRole $roles 
-        | Where-Object { $_.Login -eq $loginName } 
-        | Select-object -ExpandProperty "Role"
-        | Where-Object { -not($roles -contains $_.Role) };
+        $rolesToDelete = Get-DbaDbRoleMember -SqlInstance $instance -Database $db -ExcludeRole $roles | Where-Object { 
+            $_.Login -eq $loginName
+        } | Select-object -ExpandProperty "Role" | Where-Object { 
+            -not($roles -contains $_.Role) 
+        };
 
         if ($rolesToDelete) {
             SbsWriteWarning "Removing roles '$($rolesToDelete -Join ", ")' to '$($loginName)' in '$($db)'"

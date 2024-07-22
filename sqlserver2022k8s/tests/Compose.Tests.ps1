@@ -5,6 +5,9 @@ Describe 'compose.yaml' {
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
         $Env:connectionString = "Server=172.18.8.8;User Id=sa;Password=sapwd;";
         $Env:containerName = "sqlserver2022k8s-mssql-1"
+    }
+
+    It 'Server starts' {
         docker compose -f sqlserver2022k8s/compose.yaml up -d;
         WaitForLog $Env:containerName "Initialization Completed" -extendedTimeout
     }
@@ -51,6 +54,31 @@ CREATE TABLE dbo.TestTableNotAllowed (
 "@
         Invoke-DbaQuery -SqlInstance $instance -Database mydatabase -Query $query
         (Invoke-DbaQuery -SqlInstance $instance -Database mydatabase -Query "SELECT OBJECT_ID('dbo.TestTableNotAllowed')").Column1 | Should -BeNullOrEmpty
+    }
+
+    It 'Create a user from configuration' {
+        $instance = Connect-DbaInstance $Env:connectionString
+        $instance | Should -Not -BeNullOrEmpty;
+
+        $userConfig1 = @{
+            "MSSQL_LOGIN_NEWUSER" = '{"Login":"newuser", "Password":"MyP@assword", "DefaultDatabase":"mydatabase", "DatabasesRegex":"^mydatabase$", "Permissions": "CONNECT SQL", "Roles":"db_datawriter,db_ddladmin,db_datareader"}'
+        } | ConvertTo-Json
+
+        docker exec $Env:containerName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\testuser.json' -Value '$userConfig1'"
+
+        Get-DbaDbUser -SqlInstance $instance | Should -Not -BeNullOrEmpty
+
+        # User should be automatically created
+        WaitForLog $Env:containerName "Creating database user newuser"
+
+        # Remove a role
+        $userConfig1 = @{
+            "MSSQL_LOGIN_NEWUSER" = '{"Login":"newuser", "Password":"MyP@assword", "DefaultDatabase":"mydatabase", "DatabasesRegex":"^mydatabase$", "Permissions": "CONNECT SQL", "Roles":"db_datawriter,db_datareader"}'
+        } | ConvertTo-Json
+
+        docker exec $Env:containerName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\testuser.json' -Value '$userConfig1'"
+    
+        WaitForLog $Env:containerName "Removing roles 'db_ddladmin'"
     }
 
     AfterAll {
