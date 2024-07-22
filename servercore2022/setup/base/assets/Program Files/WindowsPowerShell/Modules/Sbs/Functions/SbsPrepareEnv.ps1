@@ -43,16 +43,13 @@ function SbsPrepareEnv {
         # With secrets, every file is a value, and the file name is the secret name
         foreach ($secretFile in $secretFiles) {
             $fileContent = Get-Content -Path $secretFile.FullName -Raw;
-            Write-Host "secret name: $($secretFile.Name)"
-            Write-Host "secret value: $($fileContent)"
             # This TRIM here is just convenience...
+            # See https://github.com/kubernetes/kubernetes/issues/23404
             $mergedConfig["$($secretFile.Name)"] = "$($fileContent)".Trim();
         }
     }
 
     $hashFilePath = "c:\env.json.hash";
-
-    Write-Host "$($mergedConfig | ConvertTo-Json -Depth 10)"
 
     if (Test-Path $hashFilePath) {
         $currentHash = Get-Content -Path $hashFilePath;
