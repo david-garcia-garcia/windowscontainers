@@ -36,5 +36,8 @@ function SbsRestoreDatabase {
     }
  
     SbsWriteHost "Database $($databaseName) restored successfully."
+
+    Repair-DbaDbOrphanUser -SqlInstance $SqlInstance -Database $databaseName -RemoveNotExisting -Confirm:$false;
+
     return $true
 }

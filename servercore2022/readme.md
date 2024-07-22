@@ -89,15 +89,25 @@ This uses Machine Level DPAPI encryption, and this is just designed to avoid lea
 
 This does NOT protect the information from being decoded by any other process running inside the container. That is totally possible.
 
-## Environment hot reload and K8S config maps
+## Environment hot reload and K8S config maps + secrets
 
-The image can use a JSON file in disk to read the environment from:
+The image can process json configmaps mounted anywhere in:
 
+```powershell
+c:\environment.d\
 ```
-c:\environment.d\**.json
+
+It will parse any file with the JSON, YAML and YML extension, recognizing both JSON and YAML Formats.
+
+You can also mount any secrets as volumes in:
+
+```powershell
+c:\secrets.d\
 ```
 
-Changes to this file are checked every 8 seconds in the entry point, and environment variables updated accordingly. Note that this **does not** mean that whatever this environment variables controls or affects is going to be updated, it depends on each specific setting and how it is used.
+where the secret filename will be the environment variable name, and the file contents the environment variable value.
+
+Changes to these files are checked every 8 seconds in the entry point, and **environment variables updated accordingly**. Note that this **does not** mean that whatever this environment variables controls or affects is going to be updated, it depends on each specific setting and how it is used.
 
 Configuring environment through a Json file has some advantages:
 
@@ -148,9 +158,13 @@ resource "kubernetes_config_map" "env_config" {
 
 When the environment configuration is refreshed, all powershell scripts in the refresh folder will be invoked
 
-```
+```powershell
 c:\entrypoint\refreshenv
 ```
+
+If you want to support hot-reloading of configuration in your application, place your configuration script in refreshenv.
+
+Note that these scripts are **NOT** executed on container initial startup, only after the system detects changes in the configuration values.
 
 ## Memory and CPU footprint
 

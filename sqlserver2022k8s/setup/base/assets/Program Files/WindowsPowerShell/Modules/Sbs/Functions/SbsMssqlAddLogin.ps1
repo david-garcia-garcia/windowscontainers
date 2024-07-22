@@ -35,8 +35,8 @@ function SbsMssqlAddLogin {
     $password = $parsedLoginConfiguration["Password"];
     $defaultDatabase = $parsedLoginConfiguration["DefaultDatabase"];
     $databasesRegex = $parsedLoginConfiguration["DatabasesRegex"];
-    $permissions = ($parsedLoginConfiguration["Permissions"] -split ",") | Where-Object { $allowedPermissions -contains $_.Trim() }
-    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | Where-Object { $allowedRoles -contains $_ }
+    $permissions = ($parsedLoginConfiguration["Permissions"] -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedPermissions -contains $_ }
+    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedRoles -contains $_ }
 
     SbsWriteDebug "Setting up MSSQL server login '$($loginName)'";
 
@@ -70,11 +70,7 @@ function SbsMssqlAddLogin {
     } | Select-Object -ExpandProperty Name;
 
     foreach ($db in $databases) {
-        SbsWriteDebug "Processing roles for '$($db)'"
-        $user = Get-DbaDbUser -SqlInstance $instance -Database $db -User $loginName;
-        if ($user) {
-            Remove-DbaDbOrphanUser -SqlInstance $instance -Database $db -User $user;
-        }
+        Repair-DbaDbOrphanUser -SqlInstance $instance -Database $db -User $loginName -Confirm:$false;
         $user = Get-DbaDbUser -SqlInstance $instance -Database $db -User $loginName;
         if (-not $user) {
             SbsWriteDebug "Creating database user $loginName for '$($db)'"
@@ -95,5 +91,17 @@ function SbsMssqlAddLogin {
 
         SbsWriteHost "Adding roles '$($roles -Join ", ")' to '$($loginName)' in '$($db)'"
         Add-DbaDbRoleMember @addDbaRolesArguments;
+
+        # Now remove roles
+        $rolesToDelete = Get-DbaDbRoleMember -SqlInstance $instance -Database $db -ExcludeRole $roles | Where-Object { 
+            $_.Login -eq $loginName
+        } | Select-object -ExpandProperty "Role" | Where-Object { 
+            -not($roles -contains $_.Role) 
+        };
+
+        if ($rolesToDelete) {
+            SbsWriteWarning "Removing roles '$($rolesToDelete -Join ", ")' to '$($loginName)' in '$($db)'"
+            Remove-DbaDbRoleMember -SqlInstance $instance -Database $db -User $loginName -Role $rolesToDelete -Confirm:$false;
+        }
     }
 }
