@@ -30,10 +30,10 @@ $ENV:IMAGE_VERSION = "1.0.32";
 .\buildall.ps1
 
 # Build and push to the registry
-.\buildall.ps1 -Push $true
+.\buildall.ps1 -Push
 
 # Build and run tests
-.\buildall.ps1 -Test $true
+.\buildall.ps1 -Test
 ```
 
 ## Image List
