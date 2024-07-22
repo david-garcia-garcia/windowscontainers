@@ -150,20 +150,18 @@ try {
 
         # Warm refresh environment configuration
         if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
-
-            $changed = SbsPrepareEnv;
-
-            if ($true -eq $changed) {
-                SbsWriteHost "Environment refreshed.";
-                try {
+            try {
+                $changed = SbsPrepareEnv;
+                if ($true -eq $changed) {
+                    SbsWriteHost "Environment refreshed.";
                     SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
                 }
-                catch {
-                    # Set a random ENVHASH so that the ENV is refresh on next loop again, we WANT to flood the
-                    # logs, but we don't want to stop the pods.
-                    [System.Environment]::SetEnvironmentVariable("ENVHASH", (Get-Date).ToString("o"), [System.EnvironmentVariableTarget]::Process);
-                    SbsWriteHost "Error running environment update $($_.Message). Will retry later.";
-                }
+            }
+            catch {
+                # Set a random ENVHASH so that the ENV is refresh on next loop again, we WANT to flood the
+                # logs, but we don't want to stop the pods.
+                [System.Environment]::SetEnvironmentVariable("ENVHASH", (Get-Date).ToString("o"), [System.EnvironmentVariableTarget]::Process);
+                SbsWriteHost "Error running environment update $($_.Message). Will retry later.";
             }
 
             $stopwatchEnvRefresh.Restart();

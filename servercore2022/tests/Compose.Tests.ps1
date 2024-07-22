@@ -100,6 +100,12 @@ Describe 'compose.yaml' {
         docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE2' | Should -Be "value2"
         docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE3' | Should -Be "value3"
         docker exec $Env:imageName powershell '$Env:SBS_OVERRIDE' | Should -Be "overridenValue"
+
+        # Add a secret
+        docker exec $Env:imageName powershell "New-Item -ItemType Directory -Force -Path 'C:\secrets.d\mysecret'; Set-Content -Path 'C:\secrets.d\mysecret\SBS_MYSECRETNAME' -NoNewline -Value 'mysecretvalue1'"
+        WaitForLog $Env:imageName "Configuration change count 4"
+
+        docker exec $Env:imageName powershell '$Env:SBS_MYSECRETNAME' | Should -Be "mysecretvalue1"
     }
 
     It 'Can SSH to container' {
