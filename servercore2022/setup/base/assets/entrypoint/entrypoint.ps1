@@ -140,6 +140,11 @@ if ($parentProcess -eq "LogMonitor.exe") {
 
 SbsWriteHost "Parent process: $parentProcess";
 
+$refreshEnvThresholdRegular = 6;
+$refreshEnvThresholdWhenError = 30;
+
+$refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
+
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
@@ -149,19 +154,21 @@ try {
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
         # Warm refresh environment configuration
-        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
+        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt $refreshEnvThresholdCurrent) {
             try {
                 $changed = SbsPrepareEnv;
                 if ($true -eq $changed) {
                     SbsWriteHost "Environment refreshed.";
                     SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
                 }
+                $refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
             }
             catch {
                 # Set a random ENVHASH so that the ENV is refresh on next loop again, we WANT to flood the
                 # logs, but we don't want to stop the pods.
+                $refreshEnvThresholdCurrent = $refreshEnvThresholdWhenError;
                 [System.Environment]::SetEnvironmentVariable("ENVHASH", (Get-Date).ToString("o"), [System.EnvironmentVariableTarget]::Process);
-                SbsWriteHost "Error running environment update $($_.Message). Will retry later.";
+                SbsWriteHost "Error running environment update $($_.Exception.Message). Will retry in $($refreshEnvThresholdCurrent)s";
             }
 
             $stopwatchEnvRefresh.Restart();
