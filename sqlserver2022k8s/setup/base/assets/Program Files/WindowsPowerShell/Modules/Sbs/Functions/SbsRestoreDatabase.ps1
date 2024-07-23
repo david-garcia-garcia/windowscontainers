@@ -12,14 +12,13 @@ function SbsRestoreDatabase {
 
     SbsWriteHost "Starting database restore...";
 
-    $files = @();
-
-    $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Path -DatabaseName $databaseName;
-
     $parsedUrl = SbsParseSasUrl -Url $Path;
     if ($null -ne $parsedUrl) {
         SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Path;
     }
+
+    $files = @();
+    $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Path -DatabaseName $databaseName;
 
     if ($null -eq $files -or $files.Count -eq 0) {
         SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";
