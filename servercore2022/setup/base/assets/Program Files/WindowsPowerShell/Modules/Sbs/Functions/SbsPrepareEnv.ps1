@@ -21,11 +21,11 @@ function SbsPrepareEnv {
         $confFiles = Get-ChildItem -File -Recurse -Path $configDir -Include *.json | `
             Where-object { -not ($_.FullName -match "\\\.") } | `
             Sort-Object Name;
-    
+        
         foreach ($configFile in $confFiles) {
             $fileContent = Get-Content -Path $configFile.FullName -Raw | ConvertFrom-Json
-            foreach ($key in $fileContent.Keys) {
-                $mergedConfig["$key"] = $fileContent[$key];
+            foreach ($key in $fileContent.PSObject.Properties.Name) {
+                $mergedConfig[$key] = $fileContent.$key
             }
         }
     }
@@ -37,7 +37,7 @@ function SbsPrepareEnv {
         # We make this recursive to allow mounting full configmap without subpaths in K8S
         # see https://github.com/Azure/AKS/issues/4309
         $secretFiles = Get-ChildItem -File -Recurse -Path $secretsDir | `
-        Where-object { -not ($_.FullName -match "\\\.") } | `
+            Where-object { -not ($_.FullName -match "\\\.") } | `
             Sort-Object Name;
         
         # With secrets, every file is a value, and the file name is the secret name
