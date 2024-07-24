@@ -6,5 +6,5 @@ if ($MSSQL_AGENT_ENABLED) {
 }
 else {
     SbsStopServiceWithTimeout -ServiceName "SQLSERVERAGENT"
-    Set-Service -name WMSVC -StartupType Disabled;
+    Set-Service -name "SQLSERVERAGENT" -StartupType Disabled;
 }
