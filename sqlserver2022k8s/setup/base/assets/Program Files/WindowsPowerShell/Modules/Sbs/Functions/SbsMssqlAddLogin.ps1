@@ -7,7 +7,7 @@ function SbsMssqlAddLogin {
     )
 
     # Parse the login configuration
-    $parsedLoginConfiguration = $LoginConfiguration | ConvertFrom-Yaml -ErrorAction Stop;
+    $parsedLoginConfiguration = $LoginConfiguration | ConvertFrom-Json -ErrorAction Stop;
 
     # Let's be safe on what an application can do
     $allowedPermissions = @(
@@ -62,7 +62,7 @@ function SbsMssqlAddLogin {
     if ($permissions) {
         $permissionsLiteral = $permissions -Join ", "
         SbsWriteDebug "Granting $($permissionsLiteral) to $loginName";
-        Invoke-DbaQuery -SqlInstance $instance -Query "GRANT $permissionsLiteral TO [$(SbsMssqlEscapeIdentifier -identifier $loginName )]"
+        Invoke-DbaQuery -SqlInstance $instance -Query "GRANT $permissionsLiteral TO [$(SbsMssqlEscapeIdentifier -identifier $loginName)]"
     }
 
     $databases = Get-DbaDatabase -SqlInstance $instance -ExcludeSystem | Where-Object { 

@@ -18,12 +18,12 @@ function SbsPrepareEnv {
         
         # We make this recursive to allow mounting full configmap without subpaths in K8S
         # see https://github.com/Azure/AKS/issues/4309
-        $confFiles = Get-ChildItem -File -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | `
+        $confFiles = Get-ChildItem -File -Recurse -Path $configDir -Include *.json | `
             Where-object { -not ($_.FullName -match "\\\.") } | `
             Sort-Object Name;
     
         foreach ($configFile in $confFiles) {
-            $fileContent = Get-Content -Path $configFile.FullName -Raw | ConvertFrom-Yaml
+            $fileContent = Get-Content -Path $configFile.FullName -Raw | ConvertFrom-Json
             foreach ($key in $fileContent.Keys) {
                 $mergedConfig["$key"] = $fileContent[$key];
             }

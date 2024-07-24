@@ -1,11 +1,11 @@
 # Function to check and create or update the credential
 function SbsEnsureSqlCredential {
     param (
-        [DbaInstanceParameter]$SqlInstance,
+        [object]$SqlInstance,
         [string]$CredentialName,
         [string]$SasToken
     )
-    
+
     # Check if the CredentialName ends with "/"
     $CredentialName = $CredentialName.TrimEnd('/');
 
@@ -15,6 +15,6 @@ IF NOT EXISTS (SELECT * FROM sys.credentials WHERE name = '$CredentialName')
 ELSE
     ALTER CREDENTIAL [$CredentialName] WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = '$SasToken';
 "@
-    Invoke-DbaQuery -SqlInstance $SqlInstance -Query $sqlQuery
+    SbsMssqlRunQuery -SqlInstance $Instance -CommandText $sqlQuery
     Write-Host "Credential '$CredentialName' upserted."
 }

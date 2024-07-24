@@ -4,7 +4,7 @@ function SbsEnsureCredentialForSasUrl {
         [Parameter(Mandatory = $true)]
         [string]$Url,
         [parameter(Mandatory = $true)]
-        [DbaInstanceParameter] $SqlInstance
+        [object] $SqlInstance
     )
 
     $parsedUrl = sbsParseSasUrl -Url $Url;

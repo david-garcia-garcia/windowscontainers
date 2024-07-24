@@ -7,7 +7,6 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 * Chocolatey ([Chocolatey Software | Chocolatey - The package manager for Windows](https://chocolatey.org/))
 * 7zip ([Chocolatey Software | 7-Zip (Install) 23.1.0](https://community.chocolatey.org/packages/7zip.install))
 * Nuget package provider for Powershell
-* Powershell-yaml ([cloudbase/powershell-yaml: PowerShell CmdLets for YAML format manipulation (github.com)](https://github.com/cloudbase/powershell-yaml))
 * Log Source for event viewer "SbsContainer" in the "Application" category
 * Enabled Long Path Support through windows registry
 * Disable IEEnhancedSecurity through windows reigstry
@@ -385,7 +384,7 @@ Relevant locations
 
 | Path                                                     | Usage                                                        |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
-| c:\environment.d\**.json|**.yaml                         | Provide environment variables as a json or yaml file/s       |
+| c:\environment.d\**.json                                 | Provide environment variables as a json       |
 | c:\entrypoint\init\                                      | Path for initialization scripts                              |
 | c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed|
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |

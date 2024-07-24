@@ -9,25 +9,19 @@ function SbsMssqlRunBackups {
 		[ValidateSet('FULL', 'DIFF', 'LOG', 'SYSTEM', 'LOGNOW')]
 		[string]$backupType,
 
-		# The database instance, default to localhost
+		# The database instance (dbatools), a connection string or a server name.
 		[Object]
 		$sqlInstance = $null
 	)
 
+	#########################################################
+	# Avoid at all costs using BDATOOLS here, because
+	# it uses TOO much CPU, and this script is called
+	# i.e. for transaction log backups very frequently
+	#########################################################
+
 	$backupType = $backupType.ToUpper();
 	
-	# Workaround for https://github.com/dataplat/dbatools/issues/9335
-	# Import-Module Az.Accounts, Az.Storage
-	Import-Module dbatools;
-
-	Set-DbatoolsConfig -FullName logging.errorlogenabled -Value $false
-	Set-DbatoolsConfig -FullName logging.errorlogfileenabled -Value $false
-	Set-DbatoolsConfig -FullName logging.messagelogenabled -Value $false
-	Set-DbatoolsConfig -FullName logging.messagelogfileenabled -Value $false
-
-	Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
-	Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register 
-
 	$certificateBackupDirectory = $Env:MSSQL_PATH_BACKUP;
 	$databaseBackupDirectory = $Env:MSSQL_PATH_BACKUP;
 	$backupCertificate = $Env:MSSQL_BACKUP_CERT;
@@ -47,13 +41,16 @@ function SbsMssqlRunBackups {
 	$mirrorUrl = $null;
 
 	if (($null -eq $sqlInstance) -or ($sqlInstance -eq "")) {
-	  # "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
-	  $sqlInstance = Connect-DbaInstance "localhost";
-	  SbsWriteDebug "Defaulting to LOCALHOST as database.";
+		# "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
+		$sqlInstance = SbsEnsureConnectionString -SqlInstanceOrConnectionString "localhost";
+		SbsWriteDebug "Defaulting to LOCALHOST as database.";
 	}
 
-	$serverName = (Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name")["name"];
+	$connectionString = SbsEnsureConnectionString -SqlInstanceOrConnectionString $sqlInstance;
 
+	# Get server name
+	$r = (SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT @@SERVERNAME AS name");
+	$serverName = $r.name
 	if ($null -eq $serverName) {
 		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
 		return;
@@ -71,16 +68,10 @@ function SbsMssqlRunBackups {
 	$StopWatch.Start();
 		
 	SbsWriteHost "Starting '$($backupType)' backup generation for '$($serverName)'"
-	$systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeUser;
-
-	# Recorremos todas las bases de datos
-	# Check for null and determine count
-	$excludeUser = $backupType -eq "SYSTEM";
-	$excludeSystem = $backupType -ne "SYSTEM";
-	$dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal') -ExcludeUser:$excludeUser -ExcludeSystem:$excludeSystem ;
+	$databases = SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT name FROM sys.databases WHERE state_desc = 'ONLINE'"
 
 	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
-		$dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
+		$databases = $databases | Where-Object { $_.name -eq $Env:MSSQL_DATABASE };
 		if ($dbs.Count -eq 0) {
 			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($serverName)";
 			return;
@@ -90,8 +81,8 @@ function SbsMssqlRunBackups {
 	# Check for null and determine count
 	$dbCount = 0;
 
-	if ($null -ne $dbs) {
-		$dbCount = $dbs.Count;
+	if ($null -ne $databases) {
+		$dbCount = $databases.Count;
 	}
 	else {
 		SbsWriteWarning "Could not obtain databases to backup in instance: $($serverName)";
@@ -103,19 +94,14 @@ function SbsMssqlRunBackups {
 
 	$exceptions = @();
 
-	foreach ($db in $dbs) {
+	foreach ($db in $databases) {
 
 		Try {
 					
-			$isSystemDb = $systemDatabases.Name -contains $db.Name;
+			$r = SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT recovery_model_desc FROM sys.databases WHERE name = @name" -Parameters @{ name = $db.name }
+			$recoveryModel = $r.recovery_model_desc
 
-			if (($backupType -ne "SYSTEM") -and ($isSystemDb -eq $true)) {
-				continue;
-			}
-
-			$recoveryModel = (Get-DbaDbRecoveryModel -SqlInstance $sqlInstance -Database $db.Name).RecoveryModel;
-
-			SbsWriteHost "Backup '$db' isSystemDatabase '$($isSystemDb)' with recovery model '$($recoveryModel)'";
+			SbsWriteHost "Backup '$db' with recovery model '$($recoveryModel)'";
 
 			# Certificate rotates every year
 			$certificate = $null;
@@ -205,7 +191,7 @@ function SbsMssqlRunBackups {
 				# The documentation is available at 
 				# https://ola.hallengren.com/sql-server-backup.html.
 				if ($directoryStructure -match "\{BackupType\}") {
-				  $parameters["@CleanupTime"] = "$cleanupTime";
+					$parameters["@CleanupTime"] = "$cleanupTime";
 				}
 				else {
 					# Better a warning, than no backups at all :(
@@ -249,9 +235,8 @@ function SbsMssqlRunBackups {
 				$parameters["@LogSizeSinceLastLogBackup"] = $logSizeSinceLastLogBackup;
 				$parameters["@TimeSinceLastLogBackup"] = $timeSinceLastLogBackup;
 			}
-
 			SbsWriteDebug "Calling backup solution with arguments $(ConvertTo-Json $parameters -Depth 3)";
-			Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout 1800 -Database "master" -Query "DatabaseBackup" -SqlParameter $parameters -CommandType StoredProcedure -EnableException;
+			SbsMssqlRunQuery -Instance $connectionString -CommandType "StoredProcedure" -CommandText "dbo.Databasebackup" -CommandTimeout 1800 -Parameters $parameters;
 		} 
 		Catch {
 			$exceptions += $_.Exception

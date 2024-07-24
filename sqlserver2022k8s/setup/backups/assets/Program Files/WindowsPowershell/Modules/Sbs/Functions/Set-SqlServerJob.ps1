@@ -14,7 +14,7 @@ function Set-SqlServerJob {
     $scheduleName = $null;
 
     # Convert the JSON string to a PowerShell object
-    $jobInfo = $JobDefinition | ConvertFrom-Yaml | ConvertTo-Json | ConvertFrom-Json -ErrorAction Stop;
+    $jobInfo = $JobDefinition | ConvertFrom-Json -ErrorAction Stop;
     
     $schedulesInfo = $null;
     $jobName = $null;
