@@ -7,7 +7,7 @@
   <Triggers>
     <CalendarTrigger>
       <StartBoundary>2024-01-23T021:00:00+01:00</StartBoundary>
-      <Enabled>false</Enabled>
+      <Enabled>true</Enabled>
       <ScheduleByDay>
         <DaysInterval>1</DaysInterval>
       </ScheduleByDay>
@@ -31,7 +31,7 @@
       <RestartOnIdle>false</RestartOnIdle>
     </IdleSettings>
     <AllowStartOnDemand>true</AllowStartOnDemand>
-    <Enabled>true</Enabled>
+    <Enabled>false</Enabled>
     <Hidden>false</Hidden>
     <RunOnlyIfIdle>false</RunOnlyIfIdle>
     <DisallowStartOnRemoteAppSession>false</DisallowStartOnRemoteAppSession>

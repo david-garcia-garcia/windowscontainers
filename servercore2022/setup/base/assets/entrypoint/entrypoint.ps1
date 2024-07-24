@@ -100,7 +100,7 @@ if ([string]::IsNullOrWhiteSpace($SBS_ENTRYPOINTERRORACTION)) {
 $global:ErrorActionPreference = $SBS_ENTRYPOINTERRORACTION;
 SbsWriteHost "Start Entry Point with error action preference $global:ErrorActionPreference";
 if ($global:ErrorActionPreference -ne 'Stop') {
-    SbsWriteHost "Entry point PS Error Action Preference is not set to STOP. This will effectively allow errors to go through. Use only for debugging purposes.";
+    SbsWriteWarning "Entry point PS Error Action Preference is not set to STOP. This will effectively allow errors to go through. Use only for debugging purposes.";
 }
 
 ##########################################################################
@@ -140,7 +140,7 @@ if ($parentProcess -eq "LogMonitor.exe") {
 
 SbsWriteHost "Parent process: $parentProcess";
 
-$refreshEnvThresholdRegular = 6;
+$refreshEnvThresholdRegular = 8;
 $refreshEnvThresholdWhenError = 30;
 
 $refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
@@ -158,8 +158,14 @@ try {
             try {
                 $changed = SbsPrepareEnv;
                 if ($true -eq $changed) {
-                    SbsWriteHost "Environment refreshed.";
-                    SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
+                    # Do not refresh environment state if a shutdown is in progress
+                    if (Test-Path $shutdownFlagFile) {
+                        SbsWriteHost "Environment refreshed.";
+                        SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
+                    }
+                    else {
+                        SbsWriteHost "Environment refreshed but shutdown is in progress. c:\entrypoint\refreshenv scripts will NOT be called. ";
+                    }
                 }
                 $refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
             }
