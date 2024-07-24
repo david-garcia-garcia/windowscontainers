@@ -33,7 +33,10 @@ Describe 'compose-basic.yaml' {
         docker exec $Env:ImageName powershell "powershell -File c:\entrypoint\shutdown.ps1"
         WaitForLog $Env:ImageName "SHUTDOWN END" -extendedTimeout
         docker compose -f servercore2022/compose-basic.yaml stop;
-        WaitForLog $Env:ImageName "Integrated shutdown skipped"
+
+        # This does NOT work when using LOGMONITOR
+        # WaitForLog $Env:ImageName "Integrated shutdown skipped"
+        # https://github.com/microsoft/windows-container-tools/issues/169
     }
 
     AfterAll {
