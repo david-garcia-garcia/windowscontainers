@@ -37,6 +37,7 @@ services:
       # restores take 4 min for 70GB backups. With smaller databases, timings become
       # much more reasonable.
       - MSSQL_LIFECYCLE=BACKUP
+      - MSSQL_AGENT_ENABLED=true
       - SBS_INITASYNC=True
       - SBS_DEBUG=True
       # We need to configure backup schedules

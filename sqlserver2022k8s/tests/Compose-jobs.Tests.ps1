@@ -18,6 +18,10 @@ Describe 'compose-jobs.yaml' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
 
+    It 'SQL Server agent is enabled' {
+        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "enabled"
+    }
+
     It 'Database exists' {
         (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -Be "mytestdatabase"
     }

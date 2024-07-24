@@ -12,6 +12,10 @@ Describe 'compose.yaml' {
         WaitForLog $Env:containerName "Initialization Completed" -extendedTimeout
     }
 
+    It 'SQL Server agent is disabled' {
+        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "disabled"
+    }
+
     It 'Can connect to the SQL Server' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }

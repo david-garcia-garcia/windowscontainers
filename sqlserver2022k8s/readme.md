@@ -140,11 +140,7 @@ SELECT max(backupByDb_sinceFull) as 'H since Full' FROM MssqlCustomQuerySample w
 
 The SQL Server Agent is installed and configured, but **disabled** by default.
 
-To enable the agent add the service name to the list of start on boot services in ENV:
-
-```yaml
-SBS_SRVENSURE=SQLSERVERAGENT
-```
+To enable the agent add the service name to the list of start on boot services use MSSQL_AGENT_ENABLED=true in your environment.
 
 ## Full Text Search
 
