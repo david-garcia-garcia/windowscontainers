@@ -19,7 +19,7 @@ Describe 'compose-jobs.yaml' {
     }
 
     It 'SQL Server agent is enabled' {
-        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "enabled"
+        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "Running"
     }
 
     It 'Database exists' {
