@@ -23,14 +23,14 @@ Describe 'compose-backups.yaml' {
 
     It 'Can create a table in mytestdatabase' {
         $query = @"
-CREATE TABLE dbo.TestTable (
+CREATE TABLE TestTable (
     ID INT IDENTITY(1,1) NOT NULL,
     TestData NVARCHAR(255),
     CONSTRAINT PK_TestTable PRIMARY KEY CLUSTERED (ID)
 )
 "@
-        Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query $query
-        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
+        Invoke-DbaQuery -SqlInstance $Env:connectionString -Database "mytestdatabase" -Query $query
+        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database "mytestdatabase" -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
     It 'Make bacpac from database' {

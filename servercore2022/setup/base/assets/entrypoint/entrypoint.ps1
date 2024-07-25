@@ -120,31 +120,18 @@ $shutdownFlagFile = "C:\shutdownflags\" + [Guid]::NewGuid().ToString() + ".lock"
 Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 
 $initStopwatch.Stop();
+
 SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)s";
 
-$lastCheck = (Get-Date).AddSeconds(-1);
-
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
-$stopwatchLogRefresh = [System.Diagnostics.Stopwatch]::StartNew();
-
-$SBS_EVENTMONITORREFRESHRATE = SbsGetEnvInt -name "SBS_EVENTMONITORREFRESHRATE" -defaultValue 2;
-if ($SBS_EVENTMONITORREFRESHRATE -lt 1) {
-    SbsWriteHost "Event monitor disabled.";
-}
-else {
-    Write-Host "Event monitor refresh rate $($SBS_EVENTMONITORREFRESHRATE)s"
-}
 
 $refreshEnvThresholdRegular = 8;
 $refreshEnvThresholdWhenError = 30;
-
 $refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
 
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
-
-    $logConf = $null;
 
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
@@ -173,30 +160,6 @@ try {
             }
 
             $stopwatchEnvRefresh.Restart();
-        }
-
-        if ($SBS_EVENTMONITORREFRESHRATE -ge 1 -and $stopwatchLogRefresh.Elapsed.TotalSeconds -gt $SBS_EVENTMONITORREFRESHRATE) {
-            # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance
-            # is terrible, taking almost 1 whole CPU once published in an AKS cluster. And it's not the cmdlet going crazy,
-            # it's the Event Viewer service after the querying.
-            if (-not [string]::IsNullOrWhiteSpace($Env:SBS_GETEVENTLOG) -and ($null -eq $logConf -or $changed -eq $true)) {
-                try {
-                    $logConf = ConvertFrom-Json $Env:SBS_GETEVENTLOG;
-                }
-                catch {
-                    SbsWriteWarning "Error parsing SBS_GETEVENTLOG: $_";
-                    $logConf = @(@{ LogName = 'Application'; Source = '*'; Level = 'Warning'; });
-                }
-                SbsWriteHost "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
-            }
-            
-            if ($null -ne $logConf) {
-                $nextLastCheck = Get-Date;
-                SbsFilteredEventLog -After $lastCheck -Configurations $logConf;
-                $lastCheck = $nextLastCheck;
-            }
-
-            $stopwatchLogRefresh.Restart();
         }
 
         Start-Sleep -Milliseconds 1000;

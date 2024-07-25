@@ -35,9 +35,11 @@ CREATE TABLE dbo.TestTable (
 
     It 'Tear down makes backups' {
         # Decommission the docker
-        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
+        docker exec $Env:instanceName "powershell" "c:\entrypoint\shutdown.ps1";
         WaitForLog $Env:instanceName "Performing shutdown backups" -extendedTimeout
         WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -extendedTimeout
+
+        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
     }
 
@@ -63,11 +65,12 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
     }
 
-    It 'Tear down makes backups' {
+    It 'Tear down makes backups II' {
         # This shutdown adds 1 trn file
-        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
+        docker exec $Env:instanceName "powershell" "c:\entrypoint\shutdown.ps1";
         WaitForLog $Env:instanceName "Performing shutdown backups" -extendedTimeout
         WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -extendedTimeout
+        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
 
         # This cycle adds an additional trn file
@@ -84,9 +87,10 @@ CREATE TABLE dbo.TestTable (
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 1").TestData | Should -Be "New Record"
         (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT TestData FROM dbo.TestTable WHERE ID = 2").TestData | Should -Be "New Record 2"
 
-        docker compose -f sqlserver2022k8s/compose-backups.yaml stop
+        docker exec $Env:instanceName "powershell" "c:\entrypoint\shutdown.ps1";
         WaitForLog $Env:instanceName "Performing shutdown backups" -extendedTimeout
         WaitForLog $Env:instanceName "Entry point SHUTDOWN END" -extendedTimeout
+
         docker compose -f sqlserver2022k8s/compose-backups.yaml down
     }
 
