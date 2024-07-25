@@ -33,7 +33,7 @@ If this is not sufficient, you can use LogMonitor as a replacement
 [windows-container-tools/LogMonitor/README.md at main · microsoft/windows-container-tools (github.com)](https://github.com/microsoft/windows-container-tools/blob/main/LogMonitor/README.md)
 
 ```powershell
-CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap_logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
 The image automatically detects that LogMonitor is the container entrypoint, and will ignore any log fowarding configuration set through SBS_GETEVENTLOG.
@@ -389,6 +389,6 @@ Relevant locations
 | c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed|
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
 | c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
-| c:\configmap_logmonitor\config.json                      | Default location for the LogMonitor configuration file.      |
+| c:\logmonitor\config.json                                | Default location for the LogMonitor configuration file.      |
 | c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions               |
 
