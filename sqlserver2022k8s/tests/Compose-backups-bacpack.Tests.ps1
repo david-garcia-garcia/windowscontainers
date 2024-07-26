@@ -21,6 +21,11 @@ Describe 'compose-backups.yaml' {
         (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -Be "mytestdatabase"
     }
 
+    It 'SbsEnsureCredentialForSasUrl Works' {
+        docker exec $Env:instanceName powershell "Import-Module Sbs; SbsEnsureCredentialForSasUrl -Url 'https://myaccount.blob.core.windows.net/pictures/profile.jpg?sv=2012-02-12&st=2009-02-09&se=2009-02-10&sr=c&sp=r&si=YWJjZGVmZw%3d%3d&sig=dD80ihBh5jfNpymO5Hg1IdiJIEvHcJpCMiCMnN%2fRnbI%3d' -SqlInstance 'localhost'"
+        WaitForLog $Env:instanceName "Credential 'https://myaccount.blob.core.windows.net/pictures' upserted." -extendedTimeout
+    }
+
     It 'Can create a table in mytestdatabase' {
         $query = @"
 CREATE TABLE TestTable (
@@ -64,8 +69,8 @@ CREATE TABLE TestTable (
         docker exec $Env:instanceName powershell "Import-Module Sbs;SbsMssqlRunBackups -backupType FULL -sqlInstance localhost";
         
         $lastBackup = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup" -Recurse -Filter "*.bak" | 
-              Sort-Object LastWriteTime -Descending | 
-              Select-Object -First 1
+        Sort-Object LastWriteTime -Descending | 
+        Select-Object -First 1
 
         $lastBackup | Should -Not -BeNullOrEmpty
 
