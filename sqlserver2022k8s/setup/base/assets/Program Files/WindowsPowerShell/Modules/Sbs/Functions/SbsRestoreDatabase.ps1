@@ -1,7 +1,7 @@
 function SbsRestoreDatabase {
     param(
         [Parameter(Mandatory = $true)]
-        [DbaInstanceParameter]$SqlInstance,
+        [object]$SqlInstance,
         [Parameter(Mandatory = $true)]
         [string]$DatabaseName,
         [Parameter(Mandatory = $true)]
