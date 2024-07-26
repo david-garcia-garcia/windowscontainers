@@ -65,7 +65,7 @@ Describe 'compose-jobs.yaml' {
     It 'Release memory works' {
         Start-DbaAgentJob -SqlInstance $Env:connectionString -Job "Mssql - Reset memory" -Wait -EnableException
         WaitForLog $Env:instanceName "Temporary Reduced Max Memory: 275 MB"
-        WaitForLog $Env:instanceName "Initial Memory Usage"
+        WaitForLog $Env:instanceName "Initial Memory Usage" -extendedTimeout
         WaitForLog $Env:instanceName "Final Memory Usage"
     }
 

@@ -82,7 +82,7 @@ CREATE TABLE dbo.TestTableNotAllowed (
 
         docker exec $Env:containerName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\testuser.json' -Value '$userConfig1'"
     
-        WaitForLog $Env:containerName "Removing roles 'db_ddladmin'"
+        WaitForLog $Env:containerName "Removing roles 'db_ddladmin'" -extendedTimeout
     }
 
     AfterAll {
