@@ -3,7 +3,7 @@ function SbsMssqlPrepareRestoreFiles {
     [OutputType([array])]
     param (
         [Parameter(Mandatory = $true)]
-        [string]$SqlInstance,
+        [object]$SqlInstance,
         [Parameter(Mandatory = $true)]
         [string]$Path,
         [Parameter(Mandatory = $true)]
