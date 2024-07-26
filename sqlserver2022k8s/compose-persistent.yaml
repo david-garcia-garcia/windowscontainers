@@ -33,7 +33,7 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
       - MSSQL_PATH_SYSTEM=d:\system
-      - MSSQL_BACKUP_RELEASEMEMORY=400
+      - MSSQL_RELEASEMEMORY=400
       - SBS_DEBUG=True
       - SBS_TEMPORARY=d:\temp
       - SBS_INITASYNC=True

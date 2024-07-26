@@ -1,8 +1,8 @@
 Import-Module Sbs;
-$reduceTo = SbsGetEnvInt -Name "MSSQL_BACKUP_RELEASEMEMORY" -DefaultValue $null;
+$MSSQL_RELEASEMEMORY = SbsGetEnvInt -Name "MSSQL_RELEASEMEMORY" -DefaultValue $null;
 
-if ($null -ne $MSSQL_BACKUP_RELEASEMEMORY) {
-    SbsMssqlResetMemory -reduceTo $reduceTo;
+if ($null -ne $MSSQL_RELEASEMEMORY) {
+    SbsMssqlResetMemory -reduceTo $MSSQL_RELEASEMEMORY;
 } else {
-    SbsWriteDebug "MSSQL_BACKUP_RELEASEMEMORY not configured";
+    SbsWriteDebug "MSSQL_RELEASEMEMORY not configured";
 }

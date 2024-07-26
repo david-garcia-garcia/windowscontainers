@@ -51,7 +51,7 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
         foreach ($db in $jsonContent.databases) {
             $databaseName = $db.DatabaseName;
             $dataFiles = $db.Files | ForEach-Object { $_.PhysicalName };
-            Mount-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName -File $dataFiles;
+            Mount-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName -File $dataFiles -EnableException;
             SbsWriteHost "Successfully attached database '$databaseName'";
         }
         
@@ -104,7 +104,7 @@ $MSSQL_DONOTCREATEDATABASE = SbsGetEnvBool "MSSQL_DONOTCREATEDATABASE";
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName)) -and ($MSSQL_DONOTCREATEDATABASE -eq $false)) {
     # Create the database
     SbsWriteHost "Creating database $databaseName"
-    New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
+    New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName -EnableException;
 }
 
 if (-not [String]::IsNullOrWhiteSpace($databaseName)) {

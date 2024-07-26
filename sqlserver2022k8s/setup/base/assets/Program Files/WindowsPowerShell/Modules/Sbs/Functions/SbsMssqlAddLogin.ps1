@@ -9,6 +9,11 @@ function SbsMssqlAddLogin {
     # Parse the login configuration
     $parsedLoginConfiguration = $LoginConfiguration | ConvertFrom-Json -ErrorAction Stop;
 
+    if ($null -eq $parsedLoginConfiguration) {
+        SbsWriteError "Unable to parse login configuration.";
+        return;
+    }
+
     # Let's be safe on what an application can do
     $allowedPermissions = @(
         "CONNECT SQL",
@@ -31,12 +36,22 @@ function SbsMssqlAddLogin {
     # Prepare all the parameters from the configuration object
     SbsWriteDebug "Parsing login configuration object"
     
-    $loginName = $parsedLoginConfiguration["Login"];
-    $password = $parsedLoginConfiguration["Password"];
-    $defaultDatabase = $parsedLoginConfiguration["DefaultDatabase"];
-    $databasesRegex = $parsedLoginConfiguration["DatabasesRegex"];
-    $permissions = ($parsedLoginConfiguration["Permissions"] -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedPermissions -contains $_ }
-    $roles = ($parsedLoginConfiguration["Roles"] -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedRoles -contains $_ }
+    $loginName =  $parsedLoginConfiguration.Login;
+    $password = $parsedLoginConfiguration.Password;
+    $defaultDatabase = $parsedLoginConfiguration.DefaultDatabase;
+    $databasesRegex = $parsedLoginConfiguration.DatabasesRegex;
+    $permissions = ($parsedLoginConfiguration.Permissions -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedPermissions -contains $_ }
+    $roles = ($parsedLoginConfiguration.Roles -split ",") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $allowedRoles -contains $_ }
+
+    if ([string]::IsNullOrWhiteSpace($loginName)) {
+        SbsWriteError "Empty loginName";
+        return;
+    }
+
+    if ([string]::IsNullOrWhiteSpace($password)) {
+        SbsWriteError "Empty password";
+        return;
+    }
 
     SbsWriteDebug "Setting up MSSQL server login '$($loginName)'";
 
@@ -51,12 +66,14 @@ function SbsMssqlAddLogin {
 
     if (-not $loginExists) {
         # Create the login if it does not exist
-        New-DbaLogin -SqlInstance $instance -Login $loginName -SecurePassword (ConvertTo-SecureString $password -AsPlainText -Force) -DefaultDatabase $defaultDatabase -EnableException;
+        SbsWriteDebug "Creating $loginName login.";
+        New-DbaLogin -SqlInstance $instance -Login $loginName -SecurePassword (ConvertTo-SecureString $password -AsPlainText -Force) -DefaultDatabase $defaultDatabase;
         SbsWriteHost "Created $loginName login.";
     }
     else {
-        Set-DbaLogin -SqlInstance $instance -Login $loginName -SecurePassword (ConvertTo-SecureString $password -AsPlainText -Force) -GrantLogin:$true -DefaultDatabase $defaultDatabase -EnableException;
-        SbsWriteDebug "Login $loginName already exists."
+        SbsWriteDebug "Updating login $loginName"
+        Set-DbaLogin -SqlInstance $instance -Login $loginName -SecurePassword (ConvertTo-SecureString $password -AsPlainText -Force) -GrantLogin:$true -DefaultDatabase $defaultDatabase;
+        SbsWriteDebug "Updated login $loginName"
     }
 
     if ($permissions) {
@@ -70,6 +87,7 @@ function SbsMssqlAddLogin {
     } | Select-Object -ExpandProperty Name;
 
     foreach ($db in $databases) {
+        SbsWriteDebug "Preparing login for database $db"
         Repair-DbaDbOrphanUser -SqlInstance $instance -Database $db -User $loginName -Confirm:$false;
         $user = Get-DbaDbUser -SqlInstance $instance -Database $db -User $loginName;
         if (-not $user) {

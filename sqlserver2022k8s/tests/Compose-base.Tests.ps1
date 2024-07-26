@@ -13,7 +13,7 @@ Describe 'compose.yaml' {
     }
 
     It 'SQL Server agent is disabled' {
-        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "disabled"
+        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "Stopped"
     }
 
     It 'Can connect to the SQL Server' {

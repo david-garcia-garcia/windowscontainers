@@ -45,8 +45,8 @@ services:
       # Start services
       - SBS_SRVENSURE=SQLSERVERAGENT
       - SBS_TEMPORARY=f:\
-      - SBS_ENTRYPOINTERRORACTION=Stop
-      - SBS_INITASYNC=False
+      - SBS_ENTRYPOINTERRORACTION=Continue
+      - SBS_INITASYNC=True
       - MSSQL_DB_NAME=mydatabase 
       # Monitor from event viewer
       - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]

@@ -10,30 +10,21 @@ function SbsMssqlIndexOptimize {
     $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1 = SbsGetEnvInt -Name "MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1" -DefaultValue 30;
     $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2 = SbsGetEnvInt -Name "MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2" -DefaultValue 50;
 
-    # Workaround for https://github.com/dataplat/dbatools/issues/9335
-    # Import-Module Az.Accounts, Az.Storage
-    Import-Module dbatools;
+	if (($null -eq $sqlInstance) -or ($sqlInstance -eq "")) {
+		# "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
+		$sqlInstance = SbsEnsureConnectionString -SqlInstanceOrConnectionString "localhost";
+		SbsWriteDebug "Defaulting to LOCALHOST as database.";
+	}
 
-    Set-DbatoolsConfig -FullName logging.errorlogenabled -Value $false
-    Set-DbatoolsConfig -FullName logging.errorlogfileenabled -Value $false
-    Set-DbatoolsConfig -FullName logging.messagelogenabled -Value $false
-    Set-DbatoolsConfig -FullName logging.messagelogfileenabled -Value $false
+    $connectionString = SbsEnsureConnectionString -SqlInstanceOrConnectionString $sqlInstance;
 
-    Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
-    Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register 
-
-    if (($null -eq $sqlInstance) -or ($sqlInstance -eq "")) {
-        # "Server=$instance;Database=master;Integrated Security=True;TrustServerCertificate=True;"
-        $sqlInstance = Connect-DbaInstance "localhost";
-        SbsWriteDebug "Defaulting to LOCALHOST as database.";
-    }
-
-    $serverName = Invoke-DbaQuery -SqlInstance $sqlInstance -Query "SELECT @@SERVERNAME AS name" -EnableException;
-
-    if ($null -eq $serverName) {
-        SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
-        return;
-    }
+	# Get server name
+	$r = (SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT @@SERVERNAME AS name");
+	$serverName = $r.name
+	if ($null -eq $serverName) {
+		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
+		return;
+	}
 
     SbsWriteDebug "Server name: $($serverName['name'])";
 
@@ -44,53 +35,54 @@ function SbsMssqlIndexOptimize {
 
     # Recorremos todas las bases de datos
     # Check for null and determine count
-    $dbs = Get-DbaDatabase -SqlInstance $sqlInstance -Status @('Normal') -ExcludeSystem:$true;
+	$databases = SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT name FROM sys.databases WHERE state_desc = 'ONLINE'"
 
-    if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
-        $dbs = $dbs | Where-Object { $_.Name -eq $Env:MSSQL_DATABASE };
-        if ($dbs.Count -eq 0) {
-            SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($instanceFriendlyName)";
-            return;
-        }
-    }
+	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DB_NAME)) {
+		$databases = $databases | Where-Object { $_.name -eq $Env:MSSQL_DB_NAME };
+		if ($databases.Count -eq 0) {
+			SbsWriteHost "Database $($Env:MSSQL_DB_NAME) not found in instance $($serverName)";
+			return;
+		}
+	}
 
-    # Check for null and determine count
-    $dbCount = 0;
+	# Check for null and determine count
+	$dbCount = 0;
 
-    if ($null -ne $dbs) {
-        $dbCount = $dbs.Count;
-    }
-    else {
-        SbsWriteWarning "Could not obtain databases to IndexOptimize in instance: $($instanceFriendlyName)";
-        return;
-    }
+	if ($null -ne $databases) {
+		$dbCount = $databases.Count;
+	}
+	else {
+		SbsWriteWarning "Could not obtain databases to backup in instance: $($serverName)";
+		return;
+	}
 
     # Write to the event log
     SbsWriteHost "Found $dbCount databases for IndexOptimize";
 
     $exceptions = @();
 
-    foreach ($db in $dbs) {
+    foreach ($db in $databases) {
 
         Try {
-            SbsWriteHost "Starting IndexOptimize for $($db)";
-            $parameters2 = @{}
-            $parameters2["@Databases"] = $db.Name;
-            $parameters2["@FragmentationLevel1"] = $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1;
-            $parameters2["@FragmentationLevel2"] = $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2;
-            $parameters2["@FragmentationLow"] = $null;
-            $parameters2["@FragmentationMedium"] = 'INDEX_REORGANIZE';
-            $parameters2["@FragmentationHigh"] = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE';
-            $parameters2["@MinNumberOfPages"] = $MSSQL_OPTIMIZE_MINNUMBEROFPAGES;
-            $parameters2["@TimeLimit"] = $MSSQL_OPTIMIZE_TIMELIMIT;
-            $parameters2["@LogToTable"] = 'Y';
-            Invoke-DbaQuery -SqlInstance $sqlInstance -QueryTimeout ($MSSQL_OPTIMIZE_TIMELIMIT + 120) -Database "master" -Query "IndexOptimize" -SqlParameter $parameters2 -CommandType StoredProcedure -EnableException;
-            SbsWriteHost "Finished IndexOptimize for $($db)";
+            SbsWriteHost "Starting IndexOptimize for $($db.Name)";
+            $parameters = @{}
+            $parameters["@Databases"] = $db.Name;
+            $parameters["@FragmentationLevel1"] = $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL1;
+            $parameters["@FragmentationLevel2"] = $MSSQL_OPTIMIZE_FRAGMENTATIONLEVEL2;
+            $parameters["@FragmentationLow"] = $null;
+            $parameters["@FragmentationMedium"] = 'INDEX_REORGANIZE';
+            $parameters["@FragmentationHigh"] = 'INDEX_REBUILD_ONLINE,INDEX_REBUILD_OFFLINE';
+            $parameters["@MinNumberOfPages"] = $MSSQL_OPTIMIZE_MINNUMBEROFPAGES;
+            $parameters["@TimeLimit"] = $MSSQL_OPTIMIZE_TIMELIMIT;
+            $parameters["@LogToTable"] = 'Y';
+            SbsWriteHost "Calling IndexOptimize for $($db.Name)";
+            SbsMssqlRunQuery -Instance $connectionString -CommandType "StoredProcedure" -CommandText "dbo.IndexOptimize" -CommandTimeout ($MSSQL_OPTIMIZE_TIMELIMIT + 120) -Parameters $parameters;
+            SbsWriteHost "Finished IndexOptimize for $($db.Name)";
 			
         } 
         Catch {
             $exceptions += $_.Exception
-            SbsWriteWarning "Error performing IndexOptimize for the database $($db) and instance $($serverName): $($_.Exception.Message)"
+            SbsWriteWarning "Error performing IndexOptimize for the database $($db.Name) and instance $($serverName): $($_.Exception.Message)"
             SbsWriteWarning "Exception Stack Trace: $($_.Exception.StackTrace)"
         }
     }

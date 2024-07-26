@@ -5,24 +5,12 @@ $logins = Get-ChildItem env: | Where-Object { $_.Name -match '^MSSQL_LOGIN_(.*)$
 
 Import-Module dbatools;
 
-$errors = New-Object -TypeName System.Collections.ArrayList;
-
 # Loop through each found environment variable
 foreach ($login in $logins) {
-    try {
-        SbsWriteDebug "Adding Login"
-        SbsMssqlAddLogin -instance "localhost" -LoginConfiguration $login.Value;
+    if ([string]::IsNullOrWhiteSpace($login.Value)) {
+        SbsWriteError "Empty config for login $($login.Name)";
+        continue;
     }
-    catch {
-        SbsWriteWarning $_.Message;
-        $errors.Add($_);
-    }
-}
-
-if ($errors.Length -gt 1) {
-    throw [System.AggregateException]::new($errors);
-}
-
-if ($errors.Length -gt 0) {
-    throw $errors[0];
+    SbsWriteDebug "Adding Login $($login.Name)"
+    SbsMssqlAddLogin -instance "localhost" -LoginConfiguration $login.Value;
 }

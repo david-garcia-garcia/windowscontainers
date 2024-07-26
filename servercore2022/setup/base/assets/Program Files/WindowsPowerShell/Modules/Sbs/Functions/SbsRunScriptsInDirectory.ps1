@@ -6,10 +6,11 @@ Function SbsRunScriptsInDirectory {
         [bool]$Async)
  
     if (-not (Test-Path -Path $Path)) {
-        SbsWriteWarning "Path does not exist: $Path"
+        SbsWriteWarning "SbsRunScriptsInDirectory Path does not exist: $Path";
+        return;
     }
 
-    SbsWriteHost "Running scripts in directory $Path";
+    SbsWriteHost "SbsRunScriptsInDirectory run scripts in directory $Path";
 
     if ($Async -eq $true) {
         # We run this asynchronously for multiple reasons:
@@ -53,11 +54,18 @@ Function SbsRunScriptsInDirectory {
         $scripts = Get-ChildItem -Path $Path -Filter *.ps1 | Sort-Object Name;
         SbsWriteHost "Running $($scripts.count) init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
         Import-Module Sbs;
-        foreach ($script in $scripts) {
-            $sw = [System.Diagnostics.Stopwatch]::StartNew();
-            SbsWriteHost "$($script.Name): START";
-            & $script.FullName;
-            SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+        try {
+            foreach ($script in $scripts) {
+                $sw = [System.Diagnostics.Stopwatch]::StartNew();
+                SbsWriteHost "$($script.Name): START";
+                & $script.FullName;
+                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+            }
+        }
+        catch {
+            # We use this to convert the terminating to a non terminating error,
+            # so that Error-Action influences startup behaviour the way we expect it to be.
+            SbsWriteError $_.Exception.Message;
         }
     }
 }

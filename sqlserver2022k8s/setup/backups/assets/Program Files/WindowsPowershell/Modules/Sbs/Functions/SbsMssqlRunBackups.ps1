@@ -70,10 +70,10 @@ function SbsMssqlRunBackups {
 	SbsWriteHost "Starting '$($backupType)' backup generation for '$($serverName)'"
 	$databases = SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT name FROM sys.databases WHERE state_desc = 'ONLINE'"
 
-	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DATABASE)) {
-		$databases = $databases | Where-Object { $_.name -eq $Env:MSSQL_DATABASE };
-		if ($dbs.Count -eq 0) {
-			SbsWriteHost "Database $($Env:MSSQL_DATABASE) not found in instance: $($serverName)";
+	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DB_NAME)) {
+		$databases = $databases | Where-Object { $_.name -eq $Env:MSSQL_DB_NAME };
+		if ($databases.Count -eq 0) {
+			SbsWriteHost "Database $($Env:MSSQL_DB_NAME) not found in instance $($serverName)";
 			return;
 		}
 	}
@@ -105,14 +105,14 @@ function SbsMssqlRunBackups {
 
 			# Certificate rotates every year
 			$certificate = $null;
-
+			# This needs more love: do not use DBATOOLS + certificate backup should support cloud storage
 			# Do not encrypt backups for system databases
-			if (($isSystemDb -eq $false) -and ($backupCertificate -eq "AUTO")) {
-				$certificate = "$($db.Name)_$((Get-Date).year)";
-				if (($null -eq (Get-DbaDbCertificate -SqlInstance $sqlInstance -Certificate $certificate))) {
-					SbsMssqlEnsureCert -Name $certificate -BackupLocation $certificateBackupDirectory;
-				}
-			}
+			#if (($isSystemDb -eq $false) -and ($backupCertificate -eq "AUTO")) {
+			#	$certificate = "$($db.Name)_$((Get-Date).year)";
+		    #		if (($null -eq (Get-DbaDbCertificate -SqlInstance $sqlInstance -Certificate $certificate))) {
+		    #			SbsMssqlEnsureCert -Name $certificate -BackupLocation $certificateBackupDirectory;
+			#	}
+			#}
 			
 			$solutionBackupType = $backupType;
 

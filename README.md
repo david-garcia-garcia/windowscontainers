@@ -20,6 +20,7 @@ Make sure to replace the URL to your private repository in the script, and that 
 
 ```powershell
 # Rename envsettings.ps1.template to envsettings.ps1 and complete build params
+# https://github.com/microsoft/mssql-docker/issues/540
 $Env:MSSQLINSTALL_ISO_URL = "https://xx.blob.core.windows.net/software/mssql.iso";
 $Env:MSSQLINSTALL_CU_URL = "https://xx.blob.core.windows.net/software/cu.exe";
 $Env:MSSQLINSTALL_CUFIX_URL = "https://xx.blob.core.windows.net/software/cufix.7z";
@@ -86,8 +87,8 @@ The included azure pipeline integration needs the following variables:
 
 | Name                   | Description                                                  |
 | ---------------------- | ------------------------------------------------------------ |
-| MSSQLINSTALL_CU_URL    | Url to the cumulative update fix package                     |
-| MSSQLINSTALL_CUFIX_URL | Url to the cumulative update installer                       |
+| MSSQLINSTALL_CU_URL    | Url to the cumulative update installer                       |
+| MSSQLINSTALL_CUFIX_URL | Url to the cumulative update fix package (https://github.com/microsoft/mssql-docker/issues/540) |
 | MSSQLINSTALL_ISO_URL   | Url to the MS SQL Server ISO image                           |
 | REGISTRY_USER          | Container registry username                                  |
 | REGISTRY_PWD           | Container registry password                                  |
