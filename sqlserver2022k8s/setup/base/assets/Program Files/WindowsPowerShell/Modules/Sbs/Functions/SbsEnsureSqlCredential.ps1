@@ -15,6 +15,6 @@ IF NOT EXISTS (SELECT * FROM sys.credentials WHERE name = '$CredentialName')
 ELSE
     ALTER CREDENTIAL [$CredentialName] WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = '$SasToken';
 "@
-    SbsMssqlRunQuery -SqlInstance $Instance -CommandText $sqlQuery
+    SbsMssqlRunQuery -SqlInstance $SqlInstance -CommandText $sqlQuery
     Write-Host "Credential '$CredentialName' upserted."
 }
