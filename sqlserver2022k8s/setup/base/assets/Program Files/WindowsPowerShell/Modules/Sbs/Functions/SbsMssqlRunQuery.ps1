@@ -30,7 +30,9 @@ General notes
 #>
 function SbsMssqlRunQuery {
     param(
+        [Parameter(Mandatory = $true)]
         [object]$Instance,
+        [Parameter(Mandatory = $true)]
         [string]$CommandText,
         [System.Data.CommandType]$CommandType = 'Text',
         [int]$CommandTimeout = 1800,
