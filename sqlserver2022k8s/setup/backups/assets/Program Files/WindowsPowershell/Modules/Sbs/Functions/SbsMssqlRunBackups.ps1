@@ -52,7 +52,7 @@ function SbsMssqlRunBackups {
 	$r = (SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT @@SERVERNAME AS name");
 	$serverName = $r.name
 	if ($null -eq $serverName) {
-		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
+		SbsWriteError "SbsMssqlRunBackups: could not obtain @@SERVERNAME. Verify the connection to the database.";
 		return;
 	}
 
@@ -85,7 +85,7 @@ function SbsMssqlRunBackups {
 		$dbCount = $databases.Count;
 	}
 	else {
-		SbsWriteWarning "Could not obtain databases to backup in instance: $($serverName)";
+		SbsWriteWarning "SbsMssqlRunBackups: no databases to backup in instance: $($serverName)";
 		return;
 	}
 
@@ -240,8 +240,8 @@ function SbsMssqlRunBackups {
 		} 
 		Catch {
 			$exceptions += $_.Exception
-			SbsWriteWarning "Error performing $($backupType) backup for the database $($db) and instance $($serverName): $($_.Exception.Message)"
-			SbsWriteWarning "Exception Stack Trace: $($_.Exception.StackTrace)"
+			SbsWriteWarning "SbsMssqlRunBackups: Error performing $($backupType) backup for the database $($db) and instance $($serverName): $($_.Exception.Message)"
+			SbsWriteWarning "SbsMssqlRunBackups: Exception Stack Trace: $($_.Exception.StackTrace)"
 		}
 	}
 	

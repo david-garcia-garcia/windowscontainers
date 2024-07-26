@@ -22,7 +22,7 @@ function SbsMssqlIndexOptimize {
 	$r = (SbsMssqlRunQuery -Instance $connectionString -CommandText "SELECT @@SERVERNAME AS name");
 	$serverName = $r.name
 	if ($null -eq $serverName) {
-		SbsWriteError "Could not obtain @@SERVERNAME. Verify the connection to the database.";
+		SbsWriteError "SbsMssqlIndexOptimize: Could not obtain @@SERVERNAME. Verify the connection to the database.";
 		return;
 	}
 
@@ -52,7 +52,7 @@ function SbsMssqlIndexOptimize {
 		$dbCount = $databases.Count;
 	}
 	else {
-		SbsWriteWarning "Could not obtain databases to backup in instance: $($serverName)";
+		SbsWriteWarning "SbsMssqlIndexOptimize: Could not obtain databases to backup in instance: $($serverName)";
 		return;
 	}
 
@@ -82,8 +82,8 @@ function SbsMssqlIndexOptimize {
         } 
         Catch {
             $exceptions += $_.Exception
-            SbsWriteWarning "Error performing IndexOptimize for the database $($db.Name) and instance $($serverName): $($_.Exception.Message)"
-            SbsWriteWarning "Exception Stack Trace: $($_.Exception.StackTrace)"
+            SbsWriteWarning "SbsMssqlIndexOptimize: error performing IndexOptimize for the database $($db.Name) and instance $($serverName): $($_.Exception.Message)"
+            SbsWriteWarning "SbsMssqlIndexOptimize: exception Stack Trace: $($_.Exception.StackTrace)"
         }
     }
 	

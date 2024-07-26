@@ -24,7 +24,7 @@ function SbsEnsureConnectionString {
 
     # Server name
     if ($SqlInstanceOrConnectionString -is [String] -and -not($SqlInstanceOrConnectionString -match "=")) {
-        return "Data Source=TCP:$SqlInstanceOrConnectionString;TrustServerCertificate=Yes;Integrated Security=True;"
+        return "Data Source=$SqlInstanceOrConnectionString;TrustServerCertificate=Yes;Integrated Security=True;"
     }
 
     # Connection string
