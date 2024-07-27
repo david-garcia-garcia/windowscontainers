@@ -12,8 +12,6 @@ services:
     environment:
       - SBS_DEBUG=True
       - SBS_CONTAINERTIMEZONE=Alaskan Standard Time
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
     networks:
       - container_default
     # Environment completely wiped out on purpose, to test

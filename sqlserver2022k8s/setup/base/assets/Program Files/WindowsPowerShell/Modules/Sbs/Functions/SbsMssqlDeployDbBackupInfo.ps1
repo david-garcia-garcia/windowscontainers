@@ -5,7 +5,7 @@ function SbsMssqlDeployDbBackupInfo {
     )
 
     SbsWriteDebug "Upserting dbo.GetDatabaseBackupInfo";
-    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query @"
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -EnableException -Query @"
 CREATE OR ALTER PROCEDURE dbo.GetDatabaseBackupInfo
 AS
 BEGIN
@@ -90,7 +90,7 @@ END
 "@
 
     SbsWriteDebug "Upserting SbsDatabaseBackupInfo";
-    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query @"
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -EnableException -Query @"
 IF EXISTS (SELECT * FROM sys.tables WHERE name = 'SbsDatabaseBackupInfo')
 DROP TABLE SbsDatabaseBackupInfo;
 
@@ -112,7 +112,7 @@ CREATE TABLE SbsDatabaseBackupInfo
 "@
 
     SbsWriteDebug "Upserting SbsDatabaseBackupInfo";
-    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -Query @"
+    Invoke-DbaQuery -SqlInstance $sqlInstance -Database $databaseName -EnableException -Query @"
 USE msdb;
 GO
 

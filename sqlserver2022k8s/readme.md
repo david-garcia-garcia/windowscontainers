@@ -202,13 +202,13 @@ All SQL  paths (MSSQL_PATH_*) have been moved to persistent volume store. This e
 
 ### **Backup**
 
-The idea behind the backup lifecycle is very simple: backups are bound to the container lifecycle, so that no data is lost. 
+The idea behind the backup lifecycle is very simple: backups are bound to the container lifecycle, so that no data is lost. The actual server instance is 100% stateless, and - except for the actual data - all other settings (users, jobs, server settings) are configured on boot.
 
 * When the container starts, it will automatically restore from backup.
 * During operation, full, differential and frequent transaction logs are taken.
 * During teardown, database is locked in read-only mode and a final transaction log backup is made before finally releasing the container.
 
-This is **not a high availability setup**, but it is **robust**, **very cheap to operate** and you can get reliable low RPO with frequent transaction log backups. If you actually setup the proper VM and storage types, you could move a MSSQL database pod that hosts a 100GB database between nodes in about **4 minutes** (see the Benchmarks chapter for additional details). 
+This is **not a high availability setup**, but it is **robust**, **very cheap to operate** and you can get reliable low RPO with frequent transaction log backups. If you actually setup the proper VM and storage types, you could move a MSSQL database pod that hosts a 100GB database between nodes in about **4 minutes** (see the Benchmarks chapter for additional details) with a 0s RPO.
 
 ## Memory usage and footprint
 

@@ -1,6 +1,6 @@
 #################################################
-# This script applies basic server settings 
-# and starts the server
+# Check container timeout. Only makes sense on docker
+# where we will not be using lifecycle hooks
 #################################################
 
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }

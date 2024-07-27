@@ -11,8 +11,6 @@ services:
     image: ${IMG_SERVERCORE2022}
     environment:
       - SBS_DEBUG=True
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_INITASYNC=True
     networks:
       - container_default

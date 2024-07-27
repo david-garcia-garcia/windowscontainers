@@ -65,9 +65,6 @@ services:
       - MSSQL_DB_RECOVERYMODEL=FULL
       - SBS_TEMPORARY=d:\temp
       - SBS_ENTRYPOINTERRORACTION=Stop
-      # Output in the entrypoint loop
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       # Shutdown timeout
       - SBS_SHUTDOWNTIMEOUT=60
       - MSSQL_MAXMEMORY=300

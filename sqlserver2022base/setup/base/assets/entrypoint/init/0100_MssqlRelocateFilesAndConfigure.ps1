@@ -81,7 +81,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 ###############################
 SbsWriteHost "MSSQLSERVER Service Starting...";
 Start-Service 'MSSQLSERVER';
-SbsWriteHost "MSSQLSERVER Service started";
+(Get-Service MSSQLSERVER).WaitForStatus("Running", (New-TimeSpan -Seconds 30));
 
 $sqlNeedsRestart = $false;
 
@@ -89,15 +89,11 @@ $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 
 $newServerName = SbsGetEnvString -Name "MSSQL_SERVERNAME" -DefaultValue $null;
 
+###############################
+# Change servername
+###############################
+
 if ($newServerName) {
-
-    # TODO: In order to use the minimal mode, we need to manually repoint the master data and log files according to what
-    # is defined in the registry?
-
-    #SbsWriteHost "Starting MSSQL in minimal mode to change @@servername to $($newServerName)"
-    #Start-Process -FilePath "C:\Program Files\Microsoft SQL Server\$($id)\mssql\binn\SQLSERVR.EXE" -ArgumentList "/f /c /m""SQLCMD""" -NoNewWindow -PassThru -RedirectStandardOutput c:\mssql_stdout.txt -RedirectStandardError c:\mssql_stderr.txt
-    #$processId = (Get-Process -Name "SQLSERVR").Id
-    #SbsWriteHost "MSSQL process id $($processId)"
 
     $safetyStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
@@ -132,12 +128,59 @@ if ($newServerName) {
         # Restart
         $sqlNeedsRestart = $true;
     }
-
-    #SbsWriteHost "Stopping MSSQL process $($processId)"
-    #Stop-Process -Id $processId
 }
 
+###############################
+# Apply advanced settings
+###############################
+
 $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
+
+# Define default settings
+$defaultSettings = @{
+    "max degree of parallelism"  = 1
+    "backup compression default" = 1
+}
+
+# Read the environment variable
+$envSettings = $Env:MSSQL_SPCONFIGURE;
+
+# Parse the environment variable settings
+$parsedEnvSettings = @{}
+if ($null -ne $envSettings) {
+    $settingsArray = $envSettings.Split(';')
+    foreach ($setting in $settingsArray) {
+        if (-not [String]::IsNullOrWhiteSpace($setting)) {
+            $splitSetting = $setting.Split(':');
+            $parsedEnvSettings[$splitSetting[0].Trim()] = $splitSetting[1].Trim();
+        }
+    }
+}
+
+$finalSettings = $defaultSettings.Clone();
+foreach ($key in $parsedEnvSettings.Keys) {
+    $finalSettings[$key] = $parsedEnvSettings[$key];
+}
+
+# Apply the settings
+foreach ($key in $finalSettings.Keys) {
+    $currentConfig = Get-DbaSpConfigure -SqlInstance $sqlInstance -Name $key -EnableException;
+    $isDynamic = $currentConfig.IsDynamic; # If dynamic, the server does NOT need a restart after the change.
+    $currentValue = $currentConfig.ConfiguredValue;
+    $newValue = $finalSettings[$key];
+    if ($newValue -ne $currentValue) {
+        Set-DbaSpConfigure -SqlInstance $sqlInstance -Name $key -Value $newValue;
+        SbsWriteHost "SPCONFIGURE SET '$key' to '$newValue' from '$currentValue' with isDymamic '$isDynamic'";
+        if ($false -eq $isDynamic -and $newValue -ne $currentValue) {
+            SbsWriteHost "MSSQL dynamic setting $($key) changed requires a restart.";
+            $sqlNeedsRestart = $true;
+        }
+    }
+}
+
+###############################
+# Move system databases
+###############################
 
 if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     # Move system databases to the new location
@@ -145,7 +188,7 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     # TODO: Figure out what to do with tempdb
     # Get system databases
     SbsWriteDebug "Moving system databases to new location"
-    $systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance | Where-Object { $_.IsSystemObject -eq $true }
+    $systemDatabases = Get-DbaDatabase -SqlInstance $sqlInstance -EnableException | Where-Object { $_.IsSystemObject -eq $true }
 
     # Iterate over system databases and generate ALTER DATABASE commands for each
     $filesToMove = @{}
@@ -185,7 +228,9 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     }
  
     if ($filesToMove.Count -gt 0) {
+        SbsWriteHost "Some system databases needed physical relocation, server must be stopped."
         Stop-Service 'MSSQLSERVER';
+        (Get-Service MSSQLSERVER).WaitForStatus("Stopped", (New-TimeSpan -Seconds 30));
         foreach ($sourcePath in $filesToMove.Keys) {
             $destinationPath = $filesToMove[$sourcePath];
             SbsWriteHost "Moving $($sourcePath) to $($destinationPath)";
@@ -196,55 +241,15 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
     }
 }
 
-# Define default settings
-$defaultSettings = @{
-    "max degree of parallelism"  = 1
-    "backup compression default" = 1
-}
-
-# Read the environment variable
-$envSettings = $Env:MSSQL_SPCONFIGURE;
-
-# Parse the environment variable settings
-$parsedEnvSettings = @{}
-if ($null -ne $envSettings) {
-    $settingsArray = $envSettings.Split(';')
-    foreach ($setting in $settingsArray) {
-        if (-not [String]::IsNullOrWhiteSpace($setting)) {
-            $splitSetting = $setting.Split(':');
-            $parsedEnvSettings[$splitSetting[0].Trim()] = $splitSetting[1].Trim();
-        }
-    }
-}
-
-$finalSettings = $defaultSettings.Clone();
-foreach ($key in $parsedEnvSettings.Keys) {
-    $finalSettings[$key] = $parsedEnvSettings[$key];
-}
-
-# Apply the settings
-foreach ($key in $finalSettings.Keys) {
-    $currentConfig = Get-DbaSpConfigure -SqlInstance $sqlInstance -Name $key;
-    $isDynamic = $currentConfig.IsDynamic; # If dynamic, the server does NOT need a restart after the change.
-    $currentValue = $currentConfig.ConfiguredValue;
-    $newValue = $finalSettings[$key];
-    if ($newValue -ne $currentValue) {
-        Set-DbaSpConfigure -SqlInstance $sqlInstance -Name $key -Value $newValue;
-        SbsWriteHost "SPCONFIGURE SET '$key' to '$newValue' from '$currentValue' with isDymamic '$isDynamic'";
-        if ($true -eq $isDynamic) {
-            $sqlNeedsRestart = $true;
-        }
-    }
-}
-
 if ($sqlNeedsRestart) {
     SbsWriteHost "Server post config restart.";
     Restart-Service 'MSSQLSERVER';
+    (Get-Service MSSQLSERVER).WaitForStatus("Running", (New-TimeSpan -Seconds 30));
 }
 
 # Prepare path for data, log, backup, temporary and control
 SbsWriteDebug "Calling Get-DbaDefaultPath to retrieve default path configuration"
-$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance;
+$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance -EnableException;
 
 $backupPath = $dbaDefaultPath.Backup;
 $dataPath = $dbaDefaultPath.Data;

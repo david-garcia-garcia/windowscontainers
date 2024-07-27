@@ -10,8 +10,6 @@ services:
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SERVERCORE2022}
     environment:
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       - SBS_INITASYNC=True
       - SBS_TESTERROR=true
       - SBS_DEBUG=True

@@ -5,19 +5,6 @@ FROM ${IMG_SQLSERVER2022BASE}
 
 SHELL ["powershell.exe"]
 
-# https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#ProperUse
-
-# TODO: De momento ponemos la descarga como un paso independiente, para evitar
-# tener que descargarla todo el rato, pero para reducir el tamaño de la imagen,
-# la descarga, instalación y luego borrado de la ISO deben hacerse en un solo step
-# para que entre en un layer
-# RUN curl -o C:\SQLServer2022-x64-ENU-Dev.iso https://download.microsoft.com/download/3/8/d/38de7036-2433-4207-8eae-06e247e17b25/SQLServer2022-x64-ENU-Dev.iso;
-
-COPY "setup\\install" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
-
 COPY "setup\\base" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN c:\setup\setup.ps1

@@ -2,25 +2,37 @@ $global:ErrorActionPreference = 'Stop'
 
 Start-Service 'MSSQLSERVER';
 
+Write-Host "`n---------------------------------------"
+Write-Host " Install DbaTools"
+Write-Host "-----------------------------------------`n"
+
+choco install dbatools -y --version=2.1.22 --no-progress;
+
+# All DBA tools stuff is going to be interacting with local server, so
+# these default's whould be good to go.
+Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register -EnableException
+Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register -EnableException
+Set-DbatoolsInsecureConnection -Scope SystemDefault
+
 # https://github.com/dataplat/dbatools/pull/9252
 # Install https://ola.hallengren.com/
 Write-Host "`n---------------------------------------"
 Write-Host " Install https://ola.hallengren.com/"
 Write-Host "-----------------------------------------`n"
 
-Install-DbaMaintenanceSolution -SqlInstance "localhost" -LogToTable -InstallJobs;
+Install-DbaMaintenanceSolution -SqlInstance "localhost" -LogToTable -InstallJobs -EnableException;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install https://github.com/BrentOzarULTD/SQL-Server-First-Responder-Kit"
 Write-Host "-----------------------------------------`n"
 
-Install-DbaFirstResponderKit -SqlInstance "localhost"
+Install-DbaFirstResponderKit -SqlInstance "localhost" -EnableException
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install https://github.com/erikdarlingdata/DarlingData"
 Write-Host "-----------------------------------------`n"
 
-Install-DbaDarlingData -SqlInstance "localhost"
+Install-DbaDarlingData -SqlInstance "localhost" -EnableException
 
 # Disable jobs that we will not be using (backups are taken care of differently)
 $JobsToDisable = @(
@@ -33,7 +45,7 @@ $JobsToDisable = @(
 )
 
 foreach ($JobName in $JobsToDisable) {
-    Set-DbaAgentJob -SqlInstance "localhost" -Job $JobName -Disabled;
+    Set-DbaAgentJob -SqlInstance "localhost" -Job $JobName -Disabled -EnableException;
 }
 
 Write-Host "`n---------------------------------------"

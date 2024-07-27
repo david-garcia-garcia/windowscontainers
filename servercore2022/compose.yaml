@@ -39,9 +39,6 @@ services:
       - SBS_DISABLEAUTOSHUTDOWN=0
       # Call these proceses during shutdown
       - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
-      # Output in the entrypoint loop
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
       # Secret key
       - SBS_TESTPROTECT_PROTECT=supersecretekey
 networks:
