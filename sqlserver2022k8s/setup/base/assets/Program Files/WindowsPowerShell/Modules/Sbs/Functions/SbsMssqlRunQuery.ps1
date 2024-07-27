@@ -49,7 +49,6 @@ function SbsMssqlRunQuery {
 
     Try {
         $SqlConn = New-Object System.Data.SqlClient.SqlConnection($connectionString)
-        $SqlConn.Open()
         $cmd = $SqlConn.CreateCommand()
         $cmd.CommandType = $CommandType
         $cmd.CommandText = $CommandText
@@ -60,7 +59,8 @@ function SbsMssqlRunQuery {
                 $cmd.Parameters.AddWithValue($key, $Parameters[$key]) | Out-Null
             }
         }
-
+        
+        $SqlConn.Open()
         $reader = $cmd.ExecuteReader()
         while ($reader.Read()) {
             $row = @{}

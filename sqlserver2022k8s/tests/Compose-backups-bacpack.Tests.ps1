@@ -23,7 +23,8 @@ Describe 'compose-backups.yaml' {
 
     It 'SbsEnsureCredentialForSasUrl Works' {
         docker exec $Env:instanceName powershell "Import-Module Sbs; SbsEnsureCredentialForSasUrl -Url 'https://myaccount.blob.core.windows.net/pictures/profile.jpg?sv=2012-02-12&st=2009-02-09&se=2009-02-10&sr=c&sp=r&si=YWJjZGVmZw%3d%3d&sig=dD80ihBh5jfNpymO5Hg1IdiJIEvHcJpCMiCMnN%2fRnbI%3d' -SqlInstance 'localhost'"
-        WaitForLog $Env:instanceName "Credential 'https://myaccount.blob.core.windows.net/pictures' upserted." -extendedTimeout
+        WaitForLog $Env:instanceName "Credential 'https://myaccount.blob.core.windows.net/pictures' upserted."
+        Get-DbaCredential -SqlInstance $Env:connectionString -Credential "https://myaccount.blob.core.windows.net/pictures" | Should -Not -BeNullOrEmpty
     }
 
     It 'Can create a table in mytestdatabase' {

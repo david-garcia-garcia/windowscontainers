@@ -73,7 +73,7 @@ function SbsMssqlRunBackups {
 	if (-not [String]::IsNullOrWhitespace($Env:MSSQL_DB_NAME)) {
 		$databases = $databases | Where-Object { $_.name -eq $Env:MSSQL_DB_NAME };
 		if ($databases.Count -eq 0) {
-			SbsWriteHost "Database $($Env:MSSQL_DB_NAME) not found in instance $($serverName)";
+			SbsWriteHost "SbsMssqlRunBackups: Database $($Env:MSSQL_DB_NAME) not found in instance $($serverName)";
 			return;
 		}
 	}
