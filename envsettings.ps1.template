@@ -5,3 +5,4 @@ $Env:MSSQLINSTALL_CUFIX_URL = "https://xx.blob.core.windows.net/software/cufix.7
 $ENV:REGISTRY_PATH = "myregistry.azurecr.io/core/"
 $ENV:IMAGE_VERSION = "1.0.32";
 $ENV:BUILD_TEMP = "c:\windows\temp"
+$ENV:TESTS_SAS_URL = "https://xx.blob.core.windows.net/mybackups"

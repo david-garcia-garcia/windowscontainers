@@ -34,12 +34,17 @@ function SbsEnsureConnectionString {
 
     # Deal with a dbatools connection object
     if ($SqlInstanceOrConnectionString.PSobject.Properties.name -match "ConnectionContext") {
-        $connectionStringBuilder = New-Object System.Data.SqlClient.SqlConnectionStringBuilder
-        $connectionStringBuilder['Data Source'] = $sqlInstance.ConnectionContext.ServerInstance
-        $connectionStringBuilder['User ID'] = $sqlInstance.ConnectionContext.Login
-        $connectionStringBuilder['Password'] = $sqlInstance.ConnectionContext.Password
-        $connectionStringBuilder['Encrypt'] = $false
-        $connectionStringBuilder['TrustServerCertificate'] = $sqlInstance.ConnectionContext.TrustServerCertificate
-        return $connectionStringBuilder.ConnectionString
+
+        #Data Source=localhost;Integrated Security=True;Multiple Active Result
+        #Sets=False;Encrypt=True;Trust Server Certificate=True;Packet Size=4096;Application
+        #Name="dbatools PowerShell module - dbatools.io"
+
+        $connectionString = $sqlInstance.ConnectionContext.ConnectionString;
+
+        # For whatever reason, the format of some properties in this connection string
+        # need to be fixed.
+        $connectionString = $connectionString -replace "Trust Server Certificate=", ";TrustServerCertificate="
+        $connectionString = $connectionString -replace "Multiple Active Result Sets=", ";MultipleActiveResultSets="
+        return $connectionString;
     }
 }

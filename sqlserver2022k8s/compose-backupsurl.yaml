@@ -18,6 +18,7 @@ services:
         IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        TESTS_SAS_URL: ${TESTS_SAS_URL}
         BUILD_TEMP: ${BUILD_TEMP}
     image: ${IMG_SQLSERVER2022K8S}
     volumes:
@@ -61,9 +62,8 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
       - MSSQL_CLEARDATAPATHS=True
-      #- MSSQL_PATH_BACKUPMIRRORURL_FULL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_PATH_BACKUPURL=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
-      - MSSQL_BACKUP_AZCOPYLTS=https://xx.blob.core.windows.net/exchange/testbackups/lts?sv=xx
+      - MSSQL_PATH_BACKUPURL=${TESTS_SAS_URL}
+      # - MSSQL_BACKUP_AZCOPYLTS=${TESTS_SASURL}
       # Database info
       - MSSQL_DB_NAME=mytestdatabase
       - MSSQL_DB_RECOVERYMODEL=FULL

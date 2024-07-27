@@ -11,7 +11,7 @@ $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 $restored = $false;
 
 # Prepare path for data, log, backup and temp
-$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance localhost;
+$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance -EnableException;
 
 $backupPath = $dbaDefaultPath.Backup;
 $dataPath = $dbaDefaultPath.Data;
