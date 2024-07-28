@@ -12,6 +12,10 @@ Describe 'compose.yaml' {
         WaitForLog $Env:containerName "Initialization Completed" -extendedTimeout
     }
 
+    It 'SQL Server agent is disabled' {
+        docker exec $Env:instanceName powershell '(Get-Service "SQLSERVERAGENT").status' | Should -Be "Stopped"
+    }
+
     It 'Can connect to the SQL Server' {
         Connect-DbaInstance $Env:connectionString | Should -Not -BeNullOrEmpty;
     }
@@ -78,7 +82,7 @@ CREATE TABLE dbo.TestTableNotAllowed (
 
         docker exec $Env:containerName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d'; Set-Content -Path 'C:\environment.d\testuser.json' -Value '$userConfig1'"
     
-        WaitForLog $Env:containerName "Removing roles 'db_ddladmin'"
+        WaitForLog $Env:containerName "Removing roles 'db_ddladmin'" -extendedTimeout
     }
 
     AfterAll {

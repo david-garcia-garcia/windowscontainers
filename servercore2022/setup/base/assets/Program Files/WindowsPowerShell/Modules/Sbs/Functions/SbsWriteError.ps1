@@ -8,7 +8,7 @@ function SbsWriteError {
     if ([string]::IsNullOrWhiteSpace($Message)) {
         return;
     }
-
-    Write-Error "[$(Get-Date -Format 'HH:mm:ss')] [Entrypoint] Error $($message)"
+    
     Write-EventLog -LogName $LogName -Source $Source -EntryType Error -EventId 1 -Message $message;
+    Write-Error "[$(Get-Date -Format 'HH:mm:ss')] [Entrypoint] Error $($message)"
 }

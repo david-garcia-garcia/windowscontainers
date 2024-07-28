@@ -1,11 +1,13 @@
 function SbsMssqlResetMemory {
 
-    Import-Module dbatools;
-
     param(
         [Parameter(Mandatory = $true)]
         [int]$reduceTo
     )
+    
+    Import-Module dbatools;
+    Set-DbatoolsConfig -FullName sql.connection.trustcert -Value $true -Register
+	Set-DbatoolsConfig -FullName sql.connection.encrypt -Value $false -Register
 
     # Function to get memory usage
     function Get-MemoryUsage {
@@ -22,7 +24,7 @@ FROM sys.dm_os_sys_memory
         return Invoke-DbaQuery -SqlInstance $SqlInstance -Query $query;
     }
 
-    SbsWriteHost "MSSQL Memory reset start";
+    SbsWriteHost "MSSQL Memory reset start requested temporary constraint to $($reduceTo)Mb";
 
     $sqlInstance = "localhost";
     $sqlServer = Connect-DbaInstance -SqlInstance $sqlInstance;
@@ -32,16 +34,16 @@ FROM sys.dm_os_sys_memory
     # Get the current max server memory setting
     $currentMaxMemory = (Get-DbaMaxMemory -SqlInstance $sqlServer).MaxValue;
 
-    if ($reduceTo -le $currentMaxMemory) {
-        SbsWriteHost "Memory reduction requested $reduceTo is lower than currently max memory of $currentMaxMemory";
+    if ($reduceTo -gt $currentMaxMemory) {
+        SbsWriteWarning "Memory reduction requested $($reduceTo) is greater than currently max memory of $($currentMaxMemory). No operation will be performed.";
         return;
     }
 
-    Set-DbaMaxMemory -SqlInstance $sqlServer -Max $reducedMaxMemory;
+    Set-DbaMaxMemory -SqlInstance $sqlServer -Max $reduceTo;
 
     # Output original and temporary max memory settings for verification
     SbsWriteHost "Original Max Memory: $currentMaxMemory MB"
-    SbsWriteHost "Temporary Reduced Max Memory: $reducedMaxMemory MB"
+    SbsWriteHost "Temporary Reduced Max Memory: $reduceTo MB"
 
     Write-Host "Waiting...";
     Start-Sleep -Seconds 30;

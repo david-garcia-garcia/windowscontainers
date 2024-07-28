@@ -21,16 +21,22 @@ Describe 'compose-backups.yaml' {
         (Get-DbaDatabase -SqlInstance $Env:connectionString -Database mytestdatabase).Name | Should -Be "mytestdatabase"
     }
 
+    It 'SbsEnsureCredentialForSasUrl Works' {
+        docker exec $Env:instanceName powershell "Import-Module Sbs; SbsEnsureCredentialForSasUrl -Url 'https://myaccount.blob.core.windows.net/pictures/profile.jpg?sv=2012-02-12&st=2009-02-09&se=2009-02-10&sr=c&sp=r&si=YWJjZGVmZw%3d%3d&sig=dD80ihBh5jfNpymO5Hg1IdiJIEvHcJpCMiCMnN%2fRnbI%3d' -SqlInstance 'localhost'"
+        WaitForLog $Env:instanceName "Credential 'https://myaccount.blob.core.windows.net/pictures' upserted."
+        Get-DbaCredential -SqlInstance $Env:connectionString -Credential "https://myaccount.blob.core.windows.net/pictures" | Should -Not -BeNullOrEmpty
+    }
+
     It 'Can create a table in mytestdatabase' {
         $query = @"
-CREATE TABLE dbo.TestTable (
+CREATE TABLE TestTable (
     ID INT IDENTITY(1,1) NOT NULL,
     TestData NVARCHAR(255),
     CONSTRAINT PK_TestTable PRIMARY KEY CLUSTERED (ID)
 )
 "@
-        Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query $query
-        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database mytestdatabase -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
+        Invoke-DbaQuery -SqlInstance $Env:connectionString -Database "mytestdatabase" -Query $query
+        (Invoke-DbaQuery -SqlInstance $Env:connectionString -Database "mytestdatabase" -Query "SELECT OBJECT_ID('dbo.TestTable')").Column1 | Should -Not -BeNullOrEmpty
     }
 
     It 'Make bacpac from database' {
@@ -64,8 +70,8 @@ CREATE TABLE dbo.TestTable (
         docker exec $Env:instanceName powershell "Import-Module Sbs;SbsMssqlRunBackups -backupType FULL -sqlInstance localhost";
         
         $lastBackup = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup" -Recurse -Filter "*.bak" | 
-              Sort-Object LastWriteTime -Descending | 
-              Select-Object -First 1
+        Sort-Object LastWriteTime -Descending | 
+        Select-Object -First 1
 
         $lastBackup | Should -Not -BeNullOrEmpty
 

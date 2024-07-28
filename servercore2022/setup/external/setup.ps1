@@ -47,12 +47,6 @@ Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -S
 #Set-PSRepository -Name NuGet -InstallationPolicy Trusted;
 
 Write-Host "`n---------------------------------------"
-Write-Host " Install powershell-yaml"
-Write-Host "-----------------------------------------`n"
-
-Install-Module -Name powershell-yaml -Force;
-
-Write-Host "`n---------------------------------------"
 Write-Host " Creating log source: SbsContainer"
 Write-Host "-----------------------------------------`n"
 

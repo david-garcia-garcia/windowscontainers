@@ -100,7 +100,7 @@ if ([string]::IsNullOrWhiteSpace($SBS_ENTRYPOINTERRORACTION)) {
 $global:ErrorActionPreference = $SBS_ENTRYPOINTERRORACTION;
 SbsWriteHost "Start Entry Point with error action preference $global:ErrorActionPreference";
 if ($global:ErrorActionPreference -ne 'Stop') {
-    SbsWriteHost "Entry point PS Error Action Preference is not set to STOP. This will effectively allow errors to go through. Use only for debugging purposes.";
+    SbsWriteWarning "Entry point PS Error Action Preference is not set to STOP. This will effectively allow errors to go through. Use only for debugging purposes.";
 }
 
 ##########################################################################
@@ -120,79 +120,49 @@ $shutdownFlagFile = "C:\shutdownflags\" + [Guid]::NewGuid().ToString() + ".lock"
 Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 
 $initStopwatch.Stop();
+
 SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)s";
 
-$lastCheck = (Get-Date).AddSeconds(-1);
-
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
-$stopwatchLogRefresh = [System.Diagnostics.Stopwatch]::StartNew();
 
-# Get the parent process name
-$parentProcessIsLogMonitor = $false;
-$parentProcess = (Get-CimInstance Win32_Process -Filter "ProcessId = $PID").ParentProcessId | ForEach-Object {
-    $process = Get-CimInstance Win32_Process -Filter "ProcessId = $_";
-    $process.Name
-};
-
-if ($parentProcess -eq "LogMonitor.exe") {
-    $parentProcessIsLogMonitor = $true;
-}
-
-SbsWriteHost "Parent process: $parentProcess";
+$refreshEnvThresholdRegular = 8;
+$refreshEnvThresholdWhenError = 30;
+$refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
 
 # It is only from this point on that we block shutdown.
 try {
     [ConsoleCtrlHandler]::SetShutdownAllowed($false);
 
-    $logConf = $null;
-
     while (-not [ConsoleCtrlHandler]::GetShutdownRequested()) {
 
         # Warm refresh environment configuration
-        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt 8) {
+        if ($stopwatchEnvRefresh.Elapsed.TotalSeconds -gt $refreshEnvThresholdCurrent) {
             try {
                 $changed = SbsPrepareEnv;
                 if ($true -eq $changed) {
-                    SbsWriteHost "Environment refreshed.";
-                    SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
+                    # Do not refresh environment state if a shutdown is in progress
+                    if (Test-Path $shutdownFlagFile) {
+                        SbsWriteHost "Environment refreshed.";
+                        SbsRunScriptsInDirectory -Path "c:\entrypoint\refreshenv" -Async $initAsync;
+                    }
+                    else {
+                        SbsWriteHost "Environment refreshed but shutdown is in progress. c:\entrypoint\refreshenv scripts will NOT be called. ";
+                    }
                 }
+                $refreshEnvThresholdCurrent = $refreshEnvThresholdRegular;
             }
             catch {
                 # Set a random ENVHASH so that the ENV is refresh on next loop again, we WANT to flood the
                 # logs, but we don't want to stop the pods.
+                $refreshEnvThresholdCurrent = $refreshEnvThresholdWhenError;
                 [System.Environment]::SetEnvironmentVariable("ENVHASH", (Get-Date).ToString("o"), [System.EnvironmentVariableTarget]::Process);
-                SbsWriteHost "Error running environment update $($_.Message). Will retry later.";
+                SbsWriteHost "Error running environment update $($_.Exception.Message). Will retry in $($refreshEnvThresholdCurrent)s";
             }
 
             $stopwatchEnvRefresh.Restart();
         }
 
-        if ($stopwatchLogRefresh.Elapsed.TotalSeconds -gt 2) {
-            # I attempted to use Get-WinEvent - which is way more flexible, but for whatever reason the performance
-            # is terrible, taking almost 1 whole CPU once published in an AKS cluster. And it's not the cmdlet going crazy,
-            # it's the Event Viewer service after the querying.
-            if (-not [string]::IsNullOrWhiteSpace($Env:SBS_GETEVENTLOG) -and ($null -eq $logConf -or $changed -eq $true)) {
-                try {
-                    $logConf = ConvertFrom-Json $Env:SBS_GETEVENTLOG;
-                }
-                catch {
-                    SbsWriteWarning "Error parsing SBS_GETEVENTLOG: $_";
-                    $logConf = @(@{ LogName = 'Application'; Source = '*'; Level = 'Warning'; });
-                }
-                SbsWriteHost "Using event logging configuration $(ConvertTo-Json $logConf -Compress)";
-            }
-
-            
-            if ($null -ne $logConf -and $parentProcessIsLogMonitor -eq $false) {
-                $nextLastCheck = Get-Date;
-                SbsFilteredEventLog -After $lastCheck -Configurations $logConf;
-                $lastCheck = $nextLastCheck;
-            }
-
-            $stopwatchLogRefresh.Restart();
-        }
-
-        Start-Sleep -Milliseconds 1500;
+        Start-Sleep -Milliseconds 1000;
     }
 
     # Debugging to figure out exactly what signals and in what order we are receiving

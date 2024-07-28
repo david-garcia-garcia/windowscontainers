@@ -12,21 +12,18 @@ function SbsPrepareEnv {
 
     # Configmaps and files
     $configDir = "C:\environment.d";
-    $mergedConfig = @{}
+    $confHashes = @()
 
     if (Test-Path $configDir) {
         
         # We make this recursive to allow mounting full configmap without subpaths in K8S
         # see https://github.com/Azure/AKS/issues/4309
-        $confFiles = Get-ChildItem -File -Recurse -Path $configDir -Include *.json, *.yaml, *.yml | `
+        $confFiles = Get-ChildItem -File -Recurse -Path $configDir -Include *.json | `
             Where-object { -not ($_.FullName -match "\\\.") } | `
             Sort-Object Name;
-    
+        
         foreach ($configFile in $confFiles) {
-            $fileContent = Get-Content -Path $configFile.FullName -Raw | ConvertFrom-Yaml
-            foreach ($key in $fileContent.Keys) {
-                $mergedConfig["$key"] = $fileContent[$key];
-            }
+            $confHashes += (Get-FileHash $configFile.FullName -Algorithm SHA1).Hash;
         }
     }
 
@@ -37,15 +34,12 @@ function SbsPrepareEnv {
         # We make this recursive to allow mounting full configmap without subpaths in K8S
         # see https://github.com/Azure/AKS/issues/4309
         $secretFiles = Get-ChildItem -File -Recurse -Path $secretsDir | `
-        Where-object { -not ($_.FullName -match "\\\.") } | `
+            Where-object { -not ($_.FullName -match "\\\.") } | `
             Sort-Object Name;
         
         # With secrets, every file is a value, and the file name is the secret name
         foreach ($secretFile in $secretFiles) {
-            $fileContent = Get-Content -Path $secretFile.FullName -Raw;
-            # This TRIM here is just convenience...
-            # See https://github.com/kubernetes/kubernetes/issues/23404
-            $mergedConfig["$($secretFile.Name)"] = "$($fileContent)".Trim();
+            $confHashes += (Get-FileHash $secretFile.FullName -Algorithm SHA1).Hash;
         }
     }
 
@@ -55,8 +49,8 @@ function SbsPrepareEnv {
         $currentHash = Get-Content -Path $hashFilePath;
     }
 
-    $configuration = $mergedConfig | ConvertTo-Json -Depth 50;
-    $md5Hash = [System.Security.Cryptography.HashAlgorithm]::Create("MD5").ComputeHash([System.Text.Encoding]::UTF8.GetBytes($configuration))
+    $mergedHashes = -join($confHashes);
+    $md5Hash = [System.Security.Cryptography.HashAlgorithm]::Create("SHA1").ComputeHash([System.Text.Encoding]::UTF8.GetBytes($mergedHashes));
     $md5HashString = [System.BitConverter]::ToString($md5Hash);
 
     # In docker this is confusing because the ENV is gone when restarting containers, but the filesystem inside
@@ -64,6 +58,26 @@ function SbsPrepareEnv {
     if ($md5HashString -eq $currentHash -and $md5HashString -eq $Env:ENVHASH) {
         return $false;
     }
+
+    # Time to parse and merge the configuration
+    $mergedConfig = @{}
+
+    foreach ($configFile in $confFiles) {
+        $fileContent = Get-Content -Path $configFile.FullName -Raw | ConvertFrom-Json
+        foreach ($key in $fileContent.PSObject.Properties.Name) {
+            $mergedConfig[$key] = $fileContent.$key
+        }
+    }
+
+    # With secrets, every file is a value, and the file name is the secret name
+    foreach ($secretFile in $secretFiles) {
+        $fileContent = Get-Content -Path $secretFile.FullName -Raw;
+        # This TRIM here is just convenience...
+        # See https://github.com/kubernetes/kubernetes/issues/23404
+        $mergedConfig["$($secretFile.Name)"] = "$($fileContent)".Trim();
+    }
+
+    $configuration = $mergedConfig | ConvertTo-Json -Depth 50;
 
     $configChangeCount = SbsGetEnvInt -name "SBS_CONFIG_CHANGECOUNT" -defaultValue 0
     Write-Host "Configuration change count $($configChangeCount)"

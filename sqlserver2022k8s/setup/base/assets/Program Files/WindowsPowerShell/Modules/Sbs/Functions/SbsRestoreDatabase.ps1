@@ -1,7 +1,7 @@
 function SbsRestoreDatabase {
     param(
         [Parameter(Mandatory = $true)]
-        [DbaInstanceParameter]$SqlInstance,
+        [object]$SqlInstance,
         [Parameter(Mandatory = $true)]
         [string]$DatabaseName,
         [Parameter(Mandatory = $true)]
@@ -12,23 +12,22 @@ function SbsRestoreDatabase {
 
     SbsWriteHost "Starting database restore...";
 
-    $files = @();
-
-    $files = SbsMssqlPrepareRestoreFiles -SqlInstance $sqlInstance -Path $Path -DatabaseName $databaseName;
-
     $parsedUrl = SbsParseSasUrl -Url $Path;
     if ($null -ne $parsedUrl) {
-        SbsEnsureCredentialForSasUrl -SqlInstance $sqlInstance -Url $Path;
+        SbsEnsureCredentialForSasUrl -SqlInstance $SqlInstance -Url $Path;
     }
+
+    $files = @();
+    $files = SbsMssqlPrepareRestoreFiles -SqlInstance $SqlInstance -Path $Path -DatabaseName $databaseName;
 
     if ($null -eq $files -or $files.Count -eq 0) {
         SbsWriteWarning "No backup files found for database $databaseName. This might happen if this is the first time you spin up this instance.";
         return $false;
     }
 
-    $files | Restore-DbaDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -ReplaceDbNameInFile -Verbose;
+    $files | Restore-DbaDatabase -SqlInstance $SqlInstance -DatabaseName $databaseName -EnableException -WithReplace -UseDestinationDefaultDirectories -ReplaceDbNameInFile -Verbose;
     
-    $database = Get-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName;
+    $database = Get-DbaDatabase -SqlInstance $SqlInstance -Database $databaseName;
     
     if (-not $database) {
         SbsWriteError "Database $($databaseName) was not restored successfully."

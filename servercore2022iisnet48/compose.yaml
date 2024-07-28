@@ -49,9 +49,6 @@ services:
       - SBS_ADDPOOLSTOGROUPS=S-1-5-32-558;S-1-5-32-559;Performance Monitor Users
       # Licencia de New Relic
       - NEW_RELIC_LICENSE_KEY=badkey
-      # Output in the entrypoint loop
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
 networks:
   container_default:
     external: true

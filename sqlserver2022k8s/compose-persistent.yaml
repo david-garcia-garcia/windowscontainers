@@ -33,13 +33,11 @@ services:
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_BACKUP=d:\backup
       - MSSQL_PATH_SYSTEM=d:\system
-      - MSSQL_BACKUP_RELEASEMEMORY=400
+      - MSSQL_RELEASEMEMORY=400
       - SBS_DEBUG=True
       - SBS_TEMPORARY=d:\temp
       - SBS_INITASYNC=True
       - SBS_ENTRYPOINTERRORACTION=Continue
-      - SBS_GETWINEVENT=[{LogName:["Application"],ProviderName:"*",Level:[1]},{LogName:["Application"], ProviderName:"SbsContainer", Level:[1,2,3,4]}]
-      - SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
 networks:
   container_default:
     external: true

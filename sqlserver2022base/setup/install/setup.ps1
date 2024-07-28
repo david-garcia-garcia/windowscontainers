@@ -42,10 +42,6 @@ New-Item -Path $systemDbDir, $systemDbLogDir, $userDbDir, $userDbLogDir, $backup
 Remove-Item -Path C:\SQLServerISO -Recurse -Force;
 Remove-Item -Path C:\MSSQLUPDATES -Recurse -Force;
 
-# Install DBA tools
-Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-choco install dbatools -y --version=2.1.20 --no-progress;
-
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;

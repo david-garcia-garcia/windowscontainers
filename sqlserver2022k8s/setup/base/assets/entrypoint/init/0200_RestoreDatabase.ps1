@@ -11,7 +11,7 @@ $sqlInstance = Connect-DbaInstance -SqlInstance localhost;
 $restored = $false;
 
 # Prepare path for data, log, backup and temp
-$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance localhost;
+$dbaDefaultPath = Get-DbaDefaultPath -SqlInstance $sqlInstance -EnableException;
 
 $backupPath = $dbaDefaultPath.Backup;
 $dataPath = $dbaDefaultPath.Data;
@@ -51,7 +51,7 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
         foreach ($db in $jsonContent.databases) {
             $databaseName = $db.DatabaseName;
             $dataFiles = $db.Files | ForEach-Object { $_.PhysicalName };
-            Mount-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName -File $dataFiles;
+            Mount-DbaDatabase -SqlInstance $sqlInstance -Database $databaseName -File $dataFiles -EnableException;
             SbsWriteHost "Successfully attached database '$databaseName'";
         }
         
@@ -92,12 +92,19 @@ if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName
     }
 
     $restored = SbsRestoreDatabase -SqlInstance $sqlInstance -DatabaseName $databaseName -Path $backupPathForRestore;
+    if ($restored -eq $false) {
+        SbsWriteWarning "Database $databaseName could not be restored. Either backup media is missing or something failed. Check the logs."
+    }
 }
 
-if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
+# We need a way to avoid creating the database if attach, restore or whatever the user expected
+# to pull in the data failed. This is important to avoid an unnoticed failure during startup.
+$MSSQL_DONOTCREATEDATABASE = SbsGetEnvBool "MSSQL_DONOTCREATEDATABASE";
+
+if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName)) -and ($MSSQL_DONOTCREATEDATABASE -eq $false)) {
     # Create the database
     SbsWriteHost "Creating database $databaseName"
-    New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName;
+    New-DbaDatabase -SqlInstance $sqlInstance -Name $databaseName -EnableException;
 }
 
 if (-not [String]::IsNullOrWhiteSpace($databaseName)) {

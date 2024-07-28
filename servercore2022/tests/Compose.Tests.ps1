@@ -86,24 +86,13 @@ Describe 'compose.yaml' {
         # Refresh should happen automatically, wait for it
         WaitForLog $Env:imageName "Configuration change count 2"
 
-        $yamlString = @{
-            "SBS_TESTVALUE3" = "value3"
-        } | ConvertTo-Yaml
-
-        # Create directory and set environment
-        docker exec $Env:imageName powershell "New-Item -ItemType Directory -Force -Path 'C:\environment.d\subdir'; Set-Content -Path 'C:\environment.d\subdir\env1.yml' -Value '$yamlString'"
-
-        # Refresh should happen automatically, wait for it
-        WaitForLog $Env:imageName "Configuration change count 3"
-
         docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE' | Should -Be "value1"
         docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE2' | Should -Be "value2"
-        docker exec $Env:imageName powershell '$Env:SBS_TESTVALUE3' | Should -Be "value3"
         docker exec $Env:imageName powershell '$Env:SBS_OVERRIDE' | Should -Be "overridenValue"
 
         # Add a secret
         docker exec $Env:imageName powershell "New-Item -ItemType Directory -Force -Path 'C:\secrets.d\mysecret'; Set-Content -Path 'C:\secrets.d\mysecret\SBS_MYSECRETNAME' -NoNewline -Value 'mysecretvalue1'"
-        WaitForLog $Env:imageName "Configuration change count 4"
+        WaitForLog $Env:imageName "Configuration change count 3"
 
         docker exec $Env:imageName powershell '$Env:SBS_MYSECRETNAME' | Should -Be "mysecretvalue1"
     }

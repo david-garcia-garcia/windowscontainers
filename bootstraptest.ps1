@@ -34,7 +34,7 @@ function WaitForLog {
         Start-Sleep -Seconds 1
         $logs = Invoke-Command -Script {
             $ErrorActionPreference = "silentlycontinue"
-            docker logs $containerName --tail 250 2>&1
+            docker logs $containerName --tail 350 2>&1
         } -ErrorAction SilentlyContinue
         if ($logs -match $logContains) {
             return;

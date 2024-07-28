@@ -25,7 +25,7 @@ function SbsStopServiceWithTimeout {
         Start-Sleep -Seconds 1;
         $service.Refresh();
         if ($stopwatch.Elapsed.TotalSeconds -ge $TimeoutInSeconds) {
-            Write-Error "Timeout reached. Service '$ServiceName' or one of its dependents could not be stopped in $TimeoutInSeconds seconds."
+            Write-Warning "Timeout reached. Service '$ServiceName' or one of its dependents could not be stopped in $TimeoutInSeconds seconds."
             return;
         }
     } while ($service.Status -ne 'Stopped')

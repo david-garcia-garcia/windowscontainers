@@ -7,7 +7,6 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 * Chocolatey ([Chocolatey Software | Chocolatey - The package manager for Windows](https://chocolatey.org/))
 * 7zip ([Chocolatey Software | 7-Zip (Install) 23.1.0](https://community.chocolatey.org/packages/7zip.install))
 * Nuget package provider for Powershell
-* Powershell-yaml ([cloudbase/powershell-yaml: PowerShell CmdLets for YAML format manipulation (github.com)](https://github.com/cloudbase/powershell-yaml))
 * Log Source for event viewer "SbsContainer" in the "Application" category
 * Enabled Long Path Support through windows registry
 * Disable IEEnhancedSecurity through windows reigstry
@@ -34,7 +33,7 @@ If this is not sufficient, you can use LogMonitor as a replacement
 [windows-container-tools/LogMonitor/README.md at main · microsoft/windows-container-tools (github.com)](https://github.com/microsoft/windows-container-tools/blob/main/LogMonitor/README.md)
 
 ```powershell
-CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\configmap_logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
+CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
 The image automatically detects that LogMonitor is the container entrypoint, and will ignore any log fowarding configuration set through SBS_GETEVENTLOG.
@@ -385,11 +384,11 @@ Relevant locations
 
 | Path                                                     | Usage                                                        |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
-| c:\environment.d\**.json|**.yaml                         | Provide environment variables as a json or yaml file/s       |
+| c:\environment.d\**.json                                 | Provide environment variables as a json       |
 | c:\entrypoint\init\                                      | Path for initialization scripts                              |
 | c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed|
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
 | c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
-| c:\configmap_logmonitor\config.json                      | Default location for the LogMonitor configuration file.      |
+| c:\logmonitor\config.json                                | Default location for the LogMonitor configuration file.      |
 | c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions               |
 

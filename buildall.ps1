@@ -8,8 +8,9 @@ param (
     [string]$Images = ".*"
 )
 
-.\imagenames.ps1
+. .\imagenames.ps1
 . .\bootstraptest.ps1
+. .\importfunctions.ps1
 
 $global:ErrorActionPreference = 'Stop';
 
