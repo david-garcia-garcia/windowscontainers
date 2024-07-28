@@ -1,5 +1,59 @@
 # Microsoft SQL Server 2022 base image - For Kubernetes
 
+## Quick Reference
+
+This quick reference includes all variables from base images
+
+| Environment Variable                | Default Value | Description                                                  | Warm reload |
+| ----------------------------------- | ------------- | ------------------------------------------------------------ | ----------- |
+| SBS_PROMOTE_ENV_REGEX               | null          | Regular expression to determine what environment variables should be promoted to system wide Env | Yes         |
+| SBS_CONTAINERTIMEZONE               | null          | Container Time Zone name, i.e. "Alaskan Standard Time", "Romance Time" | Yes         |
+| SBS_INITASYNC                       | true          | If the init and environment refresh scripts should be run in their own process. Recommended to true, otherwise the entrypoint will retain any memory or loaded modules during it's operation. | No          |
+| SBS_ENTRYPOINTERRORACTION           | Stop          | How to deal with non terminating errors during entry point execution and startup. Only use "Continue" when debugging contianers. | No          |
+| SBS_DEBUG                           | False         | Additional debug information sent to logs                    | Yes         |
+| SBS_SHUTDOWNTIMEOUT                 | 30            | Container shutdown timeout (default for a container is 5s). Not needed when using K8S and lifecycle hooks, but necessary in docker. |             |
+| MSSQL_LIFECYCLE                     | null          | Possible values: "ATTACH", "BACKUP", "PERSISTENT". When using "BACKUP" MSSQL_DB_NAME is required. | No          |
+| MSSQL_ADMIN_USERNAME                | null          | Admin account user name for the server                       | Yes         |
+| MSSQL_AGENT_ENABLED                 | false         | If the MSSQL Server Agent should be enabled                  | Yes         |
+| MSSQL_SERVERNAME                    | null          | The Server Name for the instance, set on boot (needs restart) | No          |
+| MSSQL_ADMIN_PWD                     | null          | Admin account user password for the server                   | Yes         |
+| MSSQL_PATH_DATA                     | null          | SQL Server Default Data Path                                 | No          |
+| MSSQL_PATH_LOG                      | null          | SQL Server Default Log Path                                  | No          |
+| MSSQL_PATH_BACKUP                   | null          | SQL Server Default Backup Path                               | No          |
+| MSSQL_PATH_BACKUPURL                | null          | Azure Blob SAS URL with token to be used with backups and restores in MSSQL_LIFECYCLE="BACKUPS" | No          |
+| MSSQL_PATH_SYSTEM                   | null          | SQL Server Default System Path                               | No          |
+| MSSQL_SPCONFIGURE                   | null          | Options to set on boot, i.e. "max degree of parallelism:1;backup compression default:1". If any of these requires a server reboot, it will be taken care of. | No          |
+| MSSQL_SPCONFIGURERESTART            | null          | Force a server restart on boot                               | No          |
+| SBS_CRON_*                          | null          | Windows Scheduled Tasks configuration                        | Yes         |
+| MSSQL_JOB_*                         | null          | Sql Server Sql Agent Job configuration                       | Yes         |
+| MSSQL_BACKUP_CLEANUPTIME_LOG        | 0             | Retention time for log backups. Works for both disk backups and blob backups. | Yes         |
+| MSSQL_BACKUP_CLEANUPTIME_DIFF       | 0             | Retention time for diff backups. Works for both disk backups and blob backups. | Yes         |
+| MSSQL_BACKUP_CLEANUPTIME_FULL       | 0             | Retention time for full backups. Works for both disk backups and blob backups. | Yes         |
+| MSSQL_CLEARDATAPATHS                | false         | If MSSQL data paths should be cleared on boot. Only use when MSSQL_LIFECYCLE is "BACKUP" to ensure that any left over state in the data directory is cleared. | Yes         |
+| MSSQL_BACKUP_LOGSIZESINCELASTBACKUP | 0             | See [SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html) | Yes         |
+| MSSQL_BACKUP_TIMESINCELASTLOGBACKUP | 0             | See [SQL Server Backup (hallengren.com)](https://ola.hallengren.com/sql-server-backup.html) | Yes         |
+| MSSQL_DB_NAME                       | null          | The database name to restore and backup. If it cannot be restored it will be created. | No          |
+| MSSQL_DB_RECOVERYMODEL              | null          | The database recover model to set when using MSSQL_DB_NAME   | No          |
+| MSSQL_RELEASEMEMORY                 | null          | The temporary memory limit to set on the server to force memory eviction when the "Mssql - Reset memory" job is executed | Yes         |
+| MSSQL_MAXMEMORY                     | null          | Total SQL server max memory. **Not yet implemented.**        | Yes         |
+| MSSQL_MAXSIZE                       | null          | Maximum Data file size for MSSQL_DB_NAME. **Not yet implemented.** | Yes         |
+
+## Lifecycle
+
+The lifecycle determines "how" the image intends to treat persistent data and configuration. I.E. you might totally want to have a configuration-free MSSQL setup where the only persistent things are the data files themselves. On the other hand, you might want to have total control on the SQL Instance and have any config change you make to it persisted.
+
+### Lifecycle BACKUP
+
+In backup lifecycle mode the phylosophy of the image is to be **fully stateless** and the only database state to be the data itself contained **in the backups**.
+
+### Lifecycle PERSISTENT
+
+In persistent lifecycle mode, the data, system, log and other sql directories are confrigured on boot, and the state of the server is to be preservered with the data in those directories, including any database configuration. This would be the most similar setup to a traditional VM based MSSQL Server installation.
+
+### Lifecycle ATTACH
+
+Attach lifecycle mode has the exact same phyolosphy as BACKUP, except that the database state relies on the actual data files instead of the backups. Data files are dettached on container teardown, and rea-attached on startup. The rest of the configuration needs to be declaratively passed through environment.
+
 ## Instance Startup Configuration
 
 Use MSSQL_SPCONFIGURE to run SPCONFIGURE on boot, if any of the changes requires a restart, the script will detect it and take care of it.
@@ -171,10 +225,6 @@ Or in terraform format, this creates a user with sufficient permissions for the 
         "Roles"           = "db_datareader"
     })
 ```
-
-## Lifecycle
-
-The lifecycle determines "how" the image intends to treat persistent data and configuration. I.E. you might totally want to have a configuration-free MSSQL setup where the only persistent things are the data files themselves. On the other hand, you might want to have total control on the SQL Instance and have any config change you make to it persisted.
 
 ### **Persistent**
 

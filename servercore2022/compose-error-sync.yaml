@@ -1,0 +1,22 @@
+services:
+  servercore:
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+    image: ${IMG_SERVERCORE2022}
+    environment:
+      - SBS_INITASYNC=false
+      - SBS_TESTERROR=true
+      - SBS_DEBUG=True
+    networks:
+      - container_default
+    # Environment completely wiped out on purpose, to test
+    # scripts resiliency to null/empty
+networks:
+  container_default:
+    external: true

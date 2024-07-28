@@ -43,9 +43,7 @@ Function SbsRunScriptsInDirectory {
         if ($job.State -eq 'Failed') {
             SbsWriteWarning "Found exception while running async entrypoint scripts."
             $reason = $job.ChildJobs[0].JobStateInfo.Reason;
-            $stack = $reason.ErrorRecord.ScriptStackTrace;
-            $message = $reason.Message;
-            SbsWriteError "$($message) $($stack)";
+            SbsWriteException -Exception $reason.ErrorRecord
         }
 
         SbsWriteHost "Async init job state $($job.State)"
@@ -65,7 +63,7 @@ Function SbsRunScriptsInDirectory {
         catch {
             # We use this to convert the terminating to a non terminating error,
             # so that Error-Action influences startup behaviour the way we expect it to be.
-            SbsWriteError $_.Exception.Message;
+            SbsWriteException -Exception $_
         }
     }
 }
