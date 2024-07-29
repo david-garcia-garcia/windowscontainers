@@ -23,7 +23,7 @@ stages:
     displayName: Build
     pool:
       vmImage: $(vmImageName)
-      name: Default
+      name: Test-Rafael
     steps:
     - pwsh: .\buildall.ps1
       name: build_images
