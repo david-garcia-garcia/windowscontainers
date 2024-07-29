@@ -43,4 +43,8 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\WebManagement\Server" -Name "En
 Set-Service -name WMSVC -StartupType Manual;
 Write-Host "IIS Remote Management enabled";
 
+Stop-Service AppHostSvc -Force;
+Set-Service AppHostSvc -StartupType Disabled;
+Write-Host "Disabled service AppHostSvc"
+
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

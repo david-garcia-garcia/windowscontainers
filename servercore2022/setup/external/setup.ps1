@@ -120,6 +120,10 @@ Stop-Service ssh-agent -Force;
 Set-Service ssh-agent -StartupType Disabled;
 Write-Host "Disabled service ssh-agent"
 
+Stop-Service SENS -Force;
+Set-Service SENS -StartupType Disabled;
+Write-Host "Disabled service SENS"
+
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | ForEach-Object {
     try {
