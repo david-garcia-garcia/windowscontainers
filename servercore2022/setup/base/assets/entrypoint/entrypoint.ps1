@@ -14,7 +14,7 @@ $initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 #####################################
 $computerInfo = Get-WmiObject Win32_ComputerSystem | Select-Object NumberOfProcessors, NumberOfLogicalProcessors, Name, Manufacturer, Model, TotalPhysicalMemory;
 $cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object CurrentClockSpeed, MaxClockSpeed, Name;
-$memoryGb = [math]::round(($cpu.TotalPhysicalMemory / 1GB), 1);
+$memoryGb = [math]::round(($computerInfo.TotalPhysicalMemory / 1GB), 1);
 Write-Output "SystemInfo: NumberOfLogicalProcessors: $($computerInfo.NumberOfLogicalProcessors)";
 Write-Output "SystemInfo: NumberOfProcessors: $($computerInfo.NumberOfProcessors)";
 Write-Output "SystemInfo: System Memory: $($memoryGb)Gb";
