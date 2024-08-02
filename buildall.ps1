@@ -12,6 +12,16 @@ param (
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
 
+# Ensure we are in Windows containers
+if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
+    Get-Command docker
+    Write-Warning "Docker cli not found at $Env:ProgramFiles\Docker\Docker\DockerCli.exe"
+}
+else {
+    Write-Warning "Switching to Windows Engine"
+    & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
+}
+
 # Info about the actual IC environment
 $computerInfo = Get-WmiObject Win32_ComputerSystem | Select-Object NumberOfProcessors, NumberOfLogicalProcessors, Name, Manufacturer, Model, TotalPhysicalMemory;
 $cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object CurrentClockSpeed, MaxClockSpeed, Name;
