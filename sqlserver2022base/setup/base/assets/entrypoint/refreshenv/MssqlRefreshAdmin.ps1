@@ -2,7 +2,7 @@
 # Set SA account password
 ########################################
 SbsWriteHost -Message "Configuring SA administrator account";
-$password = SbsDpapiDecode -EncodedValue $Env:MSSQL_ADMIN_PWD;
+$password = SbsDpapiDecode -EncodedValue $Env:MSSQL_SA_PASSWORD;
 
 if (-not([string]::IsNullOrWhiteSpace($password))) {
     $securePassword = ConvertTo-SecureString $password -AsPlainText -Force;
