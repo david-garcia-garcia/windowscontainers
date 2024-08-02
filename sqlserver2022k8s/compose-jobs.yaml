@@ -29,8 +29,7 @@ services:
       # Temporary workaround to make scheduled tasks work
       - SBS_PROMOTE_ENV_REGEX=^SBS_|^MSSQL_
       # Admin credentials
-      - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_SA_PASSWORD_PROTECT=sapwd
       - MSSQL_SERVERNAME=jobstestserver
       # Backup based lifecyle. Restore on pod startup, backup during usage and final backup when pod closes. High
       # downtime when moving pods, but good to test backup behavior. Can perfectly

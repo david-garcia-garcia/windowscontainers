@@ -131,8 +131,7 @@ resource "kubernetes_config_map" "env_config" {
       "SBS_TEMPORARY"                       = "d:\\temp",
       "MSSQL_DISABLESHUTDOWNTIMEOUTCHECK"   = "True",
       "SBS_PROMOTE_ENV_REGEX"               = "^SBS_|^MSSQL_",
-      "MSSQL_ADMIN_USERNAME"                = "sa",
-      "MSSQL_ADMIN_PWD"                     = random_password.sqladmin.result,
+      "MSSQL_SA_PASSWORD"                     = random_password.sqladmin.result,
       "SBS_GETEVENTLOG"                     = jsonencode([{ LogName : "Application", Source : "*", MinLevel : "Information" }, { LogName : "System", Source : "*", MinLevel : "Warning" }])
       "SBS_CRON_MssqlLog"                   = "{\"Once\":true,\"At\":\"2023-01-01T00:00:00\",\"RepetitionInterval\": \"00:10:00\", \"RepetitionDuration\": \"Timeout.InfiniteTimeSpan\"}",
       "MSSQL_BACKUP_LOGSIZESINCELASTBACKUP" = "200",

@@ -19,7 +19,7 @@ Except for test purposes, you should be moving those **out** of the c:\ drive (e
 
 The image takes care automatically of moving al storage through env variables.
 
-**MSSQL_ADMIN_USERNAME and MSSQL_ADMIN_PWD**
+**MSSQL_SA_PASSWORD**
 
 Configure an admin username and password.
 
@@ -40,8 +40,7 @@ services:
     volumes:
       - "f:/databases/example:d:"
     environment:
-      - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_SA_PASSWORD_PROTECT=sapwd
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_SYSTEM=d:\system

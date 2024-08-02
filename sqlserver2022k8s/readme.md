@@ -13,10 +13,9 @@ This quick reference includes all variables from base images
 | SBS_DEBUG                           | False         | Additional debug information sent to logs                    | Yes         |
 | SBS_SHUTDOWNTIMEOUT                 | 30            | Container shutdown timeout (default for a container is 5s). Not needed when using K8S and lifecycle hooks, but necessary in docker. |             |
 | MSSQL_LIFECYCLE                     | null          | Possible values: "ATTACH", "BACKUP", "PERSISTENT". When using "BACKUP" MSSQL_DB_NAME is required. | No          |
-| MSSQL_ADMIN_USERNAME                | null          | Admin account user name for the server                       | Yes         |
 | MSSQL_AGENT_ENABLED                 | false         | If the MSSQL Server Agent should be enabled                  | Yes         |
 | MSSQL_SERVERNAME                    | null          | The Server Name for the instance, set on boot (needs restart) | No          |
-| MSSQL_ADMIN_PWD                     | null          | Admin account user password for the server                   | Yes         |
+| MSSQL_SA_PASSWORD                     | null          | Admin account user password for the server                   | Yes         |
 | MSSQL_PATH_DATA                     | null          | SQL Server Default Data Path                                 | No          |
 | MSSQL_PATH_LOG                      | null          | SQL Server Default Log Path                                  | No          |
 | MSSQL_PATH_BACKUP                   | null          | SQL Server Default Backup Path                               | No          |
@@ -238,8 +237,7 @@ Focusing on the minimum ENV setup needed for this:
     networks:
       - container_default
     environment:
-      - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_SA_PASSWORD_PROTECT=sapwd
       - MSSQL_LIFECYCLE=PERSISTENT
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log

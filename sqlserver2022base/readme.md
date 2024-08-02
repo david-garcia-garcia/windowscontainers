@@ -9,9 +9,8 @@ As part of the boostrapping, a random master key is automatically provisioned if
 The image takes care automatically of moving al storage through env variables.
 
 | Name                 | Default Value       | Description                                                  | Supports live refresh (changes are applied without restarting the container) |
-| -------------------- | ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| MSSQL_ADMIN_USERNAME | null                | Admin username, reconfigured every time when container starts | Yes                                                          |
-| MSSQL_ADMIN_PWD      | null                | Admin password, reconfigured every time when container starts | Yes                                                          |
+| -------------------- | ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ |                                             |
+| MSSQL_SA_PASSWORD      | null                | Admin password, reconfigured every time when container starts | Yes                                                          |
 | MSSQL_PATH_DATA      | C:\SQLSystemDB\Data | Data file location                                           | No                                                           |
 | MSSQL_PATH_LOG       | C:\SQLSystemDB\Log  | Log file location                                            | No                                                           |
 | MSSQL_PATH_BACKUP    | C:\SQLBackup        | Backup file location                                         | No                                                           |
@@ -27,8 +26,7 @@ services:
     volumes:
       - "f:/databases/example:d:"
     environment:
-      - MSSQL_ADMIN_USERNAME=sa
-      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_SA_PASSWORD_PROTECT=sapwd
       - MSSQL_PATH_DATA=d:\data
       - MSSQL_PATH_LOG=d:\log
       - MSSQL_PATH_SYSTEM=d:\system
