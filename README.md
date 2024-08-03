@@ -1,4 +1,4 @@
-[![Build Status](https://dev.azure.com/easytechglobal/windows-containers/_apis/build/status%2Fdavid-garcia-garcia.windowscontainers?branchName=refs%2Fpull%2F20%2Fmerge)](https://dev.azure.com/easytechglobal/windows-containers/_build/latest?definitionId=1&branchName=master)
+[![Build Status](https://dev.azure.com/easytechglobal/Sabentis/_apis/build/status%2FWindows%20Containers?branchName=master)](https://dev.azure.com/easytechglobal/Sabentis/_build/latest?definitionId=4&branchName=master)
 
 # Windows Containers
 
