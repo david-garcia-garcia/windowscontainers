@@ -12,6 +12,8 @@ param (
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
 
+SbsPrintSystemInfo
+
 $global:ErrorActionPreference = 'Stop';
 
 Import-Module Pester -PassThru;

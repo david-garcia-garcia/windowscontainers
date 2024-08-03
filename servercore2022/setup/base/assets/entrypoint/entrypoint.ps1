@@ -2,6 +2,8 @@ $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) {
 
 Import-Module Sbs;
 
+SbsPrintSystemInfo
+
 SbsPrepareEnv | Out-Null;
 
 $initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();

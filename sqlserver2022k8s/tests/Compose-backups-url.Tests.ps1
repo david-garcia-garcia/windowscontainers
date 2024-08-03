@@ -13,8 +13,8 @@ Describe 'compose-backupsurl.yaml' {
     It 'SQL Server starts' {
         docker compose -f sqlserver2022k8s/compose-backupsurl.yaml up -d
         WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
-        WaitForLog $Env:instanceName "Credential 'https://stresourcestemp.blob.core.windows.net/temp' upserted."
-        WaitForLog $Env:instanceName "Checking for backups in https://stresourcestemp.blob.core.windows.net/temp/windowscontainerspipelines"
+        WaitForLog $Env:instanceName "Credential 'https://.*' upserted"
+        WaitForLog $Env:instanceName "Checking for backups in https://.*"
         # The remote storage has been emptied, so it won't be able to restore anything, which is expected.
         WaitForLog $Env:instanceName "Database mytestdatabase could not be restored. Either backup media is missing or something failed. Check the logs."
     }
