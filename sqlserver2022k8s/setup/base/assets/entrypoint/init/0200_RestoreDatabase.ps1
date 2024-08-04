@@ -74,8 +74,8 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
             SbsWriteWarning "# MSSQL_LIFECYCLE=BACKUP and MSSQL_CLEARDATAPATHS=True";
             SbsWriteWarning "######################################";
             Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeSystem | Remove-DbaDatabase -Verbose -Confirm:$false;
-            Get-ChildItem -Path $dataPath -File | Remove-Item -Force;
-            Get-ChildItem -Path $logPath -File | Remove-Item -Force;
+            Get-ChildItem -Path $dataPath -File -Recurse | Remove-Item -Force;
+            Get-ChildItem -Path $logPath -File -Recurse | Remove-Item -Force;
         }
         else {
             Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them. You can use the MSSQL_CLEARDATAPATHS=True in combination with MSSQL_LIFECYCLE=BACKUP to clear the paths automatically.";
