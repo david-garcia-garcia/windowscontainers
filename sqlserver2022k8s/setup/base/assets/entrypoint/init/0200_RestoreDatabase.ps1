@@ -63,7 +63,7 @@ if ($restored -eq $false -and $Env:MSSQL_LIFECYCLE -eq 'ATTACH') {
 }
 
 if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:MSSQL_LIFECYCLE -ne 'PERSISTENT')) {
-    $hasData = (Get-ChildItem $dataPath -File | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File | Measure-Object).Count -gt 0;
+    $hasData = (Get-ChildItem $dataPath -File -Recurse | Measure-Object).Count -gt 0 -or (Get-ChildItem $logPath -File -Recurse | Measure-Object).Count -gt 0;
     if ($hasData -eq $true) {
         $clearDataPaths = SbsGetEnvBool -Name "MSSQL_CLEARDATAPATHS" -DefaultValue $false;
         if ($clearDataPaths -and $Env:MSSQL_LIFECYCLE -eq "BACKUP") {
@@ -74,8 +74,8 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
             SbsWriteWarning "# MSSQL_LIFECYCLE=BACKUP and MSSQL_CLEARDATAPATHS=True";
             SbsWriteWarning "######################################";
             Get-DbaDatabase -SqlInstance $sqlInstance -ExcludeSystem | Remove-DbaDatabase -Verbose -Confirm:$false;
-            Get-ChildItem -Path $dataPath | Remove-Item -Recurse -Force;
-            Get-ChildItem -Path $logPath | Remove-Item -Recurse -Force;
+            Get-ChildItem -Path $dataPath -File -Recurse | Remove-Item -Force;
+            Get-ChildItem -Path $logPath -File -Recurse | Remove-Item -Force;
         }
         else {
             Write-Error "No structure.json file was found to attach database, yet there are files in the data and log directories. Please clear them. You can use the MSSQL_CLEARDATAPATHS=True in combination with MSSQL_LIFECYCLE=BACKUP to clear the paths automatically.";
