@@ -19,7 +19,7 @@ services:
       # Zona horaria del contenedor
       - SBS_CONTAINERTIMEZONE=Pacific Standard Time
       # Servicios de windows que quiero arrancar (que no lo estén por defecto), este de ejemplo es para debug
-      - SBS_SRVENSURE=WMSVC;newrelic-infra
+      - SBS_SRVENSURE=WMSVC;
       # Acción cuando hay un fallo en el entrypoint, por defecto es Stop
       - SBS_ENTRYPOINTERRORACTION=Stop
       # Aprovisonamiento automático de certifciados con Chef, los coloca en el CCS
