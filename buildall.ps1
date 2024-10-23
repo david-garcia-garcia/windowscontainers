@@ -8,6 +8,16 @@ param (
     [string]$Images = ".*"
 )
 
+# Ensure we are in Windows containers
+if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
+    Get-Command docker
+    Write-Warning "Docker cli not found at $Env:ProgramFiles\Docker\Docker\DockerCli.exe"
+}
+else {
+    Write-Warning "Switching to Windows Engine"
+    & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
+}
+
 . .\imagenames.ps1
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
