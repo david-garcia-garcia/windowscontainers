@@ -111,7 +111,7 @@ So if you want to propagate all environment variable to all pools:
 SBS_IISENV=.*:.*
 ```
 
-**NOTE**: Make sure that you are correctly NOT setting your pool to autostart automatically with iis, but to do so as part of the entrypoint setup. Otherwise you risk these env settings being added to the pool before the pools starts, which will require a manual pool restart to make them visible to the application.
+**NOTE**: Make sure that you are **NOT** setting your pool to autostart automatically with IIS in your base image. It should be set to the STOPPED state. If you set the pool to start automatically with the image, the pool will start before the environment settings (both machine level and pool level) have been configured. The image already contains automation to start all application pools after the initial configuration has been made.
 
 ## Adding pools to user groups
 
