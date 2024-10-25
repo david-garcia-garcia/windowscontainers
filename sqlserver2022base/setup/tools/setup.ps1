@@ -6,7 +6,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install DbaTools"
 Write-Host "-----------------------------------------`n"
 
-choco install dbatools -y --version=2.1.22 --no-progress;
+choco install dbatools -y --version=2.1.26 --no-progress;
 
 # All DBA tools stuff is going to be interacting with local server, so
 # these default's whould be good to go.
