@@ -26,6 +26,11 @@ SbsPrintSystemInfo
 
 $global:ErrorActionPreference = 'Stop';
 
+Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
+Install-Module -Name Posh-SSH -Confirm:$false
+
+choco upgrade dbatools -y
+
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
 $PesterPreference.Output.Verbosity = 'Detailed'

@@ -27,8 +27,13 @@ if ([string]::IsNullOrWhiteSpace($SBS_IISENV)) {
             $envVars = @{}
 
             # Enumerate all environment variables and filter based on the variable regex pattern
+            # This logic previoulsy propagated only ENV variables that did not exist at the SYSTEM
+            # level, but considering that IIS start with the container, and the SYSTEM level env vars
+            # are set later on by an entrypoint script, they would not be seen by the pools until a full
+            # IIS reset was performed. By adding them explicitly to the pool, they will be grabbed
+            # provided that the pool has been properly configured to stopped on container boot
             Get-ChildItem env: | Where-Object {
-                $_.Name -match $varRegex -and -not $systemEnvVars.ContainsKey($_.Name)
+                $_.Name -match $varRegex
             } | ForEach-Object {
                 $varName = $_.Name
                 $varValue = $_.Value

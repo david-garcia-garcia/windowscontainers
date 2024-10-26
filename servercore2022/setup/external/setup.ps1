@@ -14,14 +14,20 @@ Write-Host " Installing 7zip"
 Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
-choco upgrade 7zip.install -y --version=24.7.0 --no-progress;
+choco upgrade 7zip.install -y --version=24.8.0 --no-progress;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Installing Micro"
 Write-Host "-----------------------------------------`n"
 
-# Command line editor
-choco upgrade micro -y --version=2.0.11 --no-progress;
+$microUrl = "https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip"
+$zipPath = "$env:TEMP\micro.zip"
+$installPath = "C:\Program Files\Micro"
+
+Invoke-WebRequest $microUrl -OutFile $zipPath
+Expand-Archive $zipPath -DestinationPath $installPath -Force
+[System.Environment]::SetEnvironmentVariable("Path", "$([System.Environment]::GetEnvironmentVariable("Path", "Machine"));$installPath\\micro-2.0.14", "Machine")
+Remove-Item $zipPath
 
 Write-Host "`n---------------------------------------"
 Write-Host " Open SSH server"
