@@ -2,6 +2,35 @@
 
 This image extends the base Server Core 2022 image with some preinstalled software, configurations and an **extensible entrypoint setup**. One of the major issues when preparing windows containers is proper orchestration of startup and shutdown in different layers (as you stack container images) and proper and reliable handling of the lifecycle of a container (startup and shutdown).
 
+## Image configuration Cheat Sheet
+
+### Environment variables
+
+| Name                       | Default Value       | Hot reload supported | Description                                                  |
+| -------------------------- | ------------------- | -------------------- | ------------------------------------------------------------ |
+| SBS_CONTAINERTIMEZONE      | $null               | Yes                  | Container Timezone                                           |
+| SBS_PROMOTE_ENV_REGEX      | $null               | Yes                  | When an environment variable matches this regular expression, it is promoted to system level. Careful with sensitive data. |
+| XXX_PROTECT                | N/A                 | Yes                  | When an environment variable ends in _PROTECT it is encoded with DPAPI at the machine level, and the suffix removed. |
+| SBS_INITASYNC              | $false              | N/A                  | Run initialization scripts in their own JOB.                 |
+| SBS_SHUTDOWNTIMEOUT        | 15                  | Yes                  | Container shutdown timeout in seconds.                       |
+| SBS_ENTRYPOINTERRORACTION  | Stop                | No                   | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
+| SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | Yes                  | List of processes that will be terminated when shutdown has completed |
+| SBS_SRVENSURE              | $null               | No                   | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
+| SBS_SRVSTOP                | $null               | Yes                  | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
+| SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Yes                  | Use this to configure the trigger for a scheduled task that is already present inside the image. |
+
+Relevant locations
+
+| Path                                                     | Usage                                                        |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| c:\environment.d\**.json                                 | Provide environment variables as a json                      |
+| c:\entrypoint\init\                                      | Path for initialization scripts                              |
+| c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed |
+| c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
+| c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
+| c:\logmonitor\config.json                                | Default location for the LogMonitor configuration file.      |
+| c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions               |
+
 ## Preinstalled software and configurations
 
 * Chocolatey ([Chocolatey Software | Chocolatey - The package manager for Windows](https://chocolatey.org/))
@@ -14,7 +43,7 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 * Creates a "localadmin" account with a random password
 * OpenSSH server (Windows Implementation)
 
-## Entry Point and Log Monitor
+## Entry Point
 
 Default Entry Point for this image is the c:\entrypoint\entrypoint.ps1 script.
 
@@ -22,13 +51,17 @@ Default Entry Point for this image is the c:\entrypoint\entrypoint.ps1 script.
 CMD ["powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
-This entry point can redirect to the container output stream Event Log data during execution. It uses the [Get-EventLog](https://learn.microsoft.com/es-es/powershell/module/microsoft.powershell.management/get-eventlog?view=powershell-5.1) command.
+The entrypoint will execute all scripts located at:
 
-```yaml
-SBS_GETEVENTLOG=[{LogName:"Application", Source:"*", MinLevel:"Information"}, {LogName:"System", Source:"*", MinLevel:"Warning"}]
+```bash
+c:\entrypoint\init
 ```
 
-If this is not sufficient, you can use LogMonitor as a replacement
+You can place here your own bootstrap scripts.
+
+## Log Monitor
+
+Container log output is managed using Microsoft's Log Monitor:
 
 [windows-container-tools/LogMonitor/README.md at main · microsoft/windows-container-tools (github.com)](https://github.com/microsoft/windows-container-tools/blob/main/LogMonitor/README.md)
 
@@ -36,23 +69,27 @@ If this is not sufficient, you can use LogMonitor as a replacement
 CMD ["C:\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
 ```
 
-The image automatically detects that LogMonitor is the container entrypoint, and will ignore any log fowarding configuration set through SBS_GETEVENTLOG.
+The Log Monitor configuration is read from:
 
-Note that the Log Monitor configuration has been moved to /configmap_logmonitor/config.json instead of the default location. This allows you to directly mount the Log Monitor configuration through a K8S volume bound to a [Config Map](https://kubernetes.io/es/docs/concepts/configuration/configmap/), replacing the default configuration already present in the container image.
+```
+c:/logmonitor/config.json 
+```
+
+This allows you to directly mount the Log Monitor configuration through a K8S volume bound to a [Config Map](https://kubernetes.io/es/docs/concepts/configuration/configmap/), replacing the default configuration already present in the container image.
 
 To fine-tune what logs are being monitored, refer to the LogMonitor documentation.
 
 ## Environment variable promotion
 
-By default, all the environment variables you setup for a container will be process injected to the Entry Point or the Shell. They are **not** (and should not) system wide environment variables. That means that these ENV will - by default - not be seen by scheduled tasks, IIS, or any other process that does not spin off the entry point itself. 
+All the environment variables you setup for a container will be process injected to the Entry Point or the Shell. They are **not** (and should not) be system wide environment variables. That means that these ENV will - by default - not be seen by scheduled tasks, IIS, or any other process that does not spin off the entry point itself. 
 
-If you need some of these environment variables promoted to system, so they can be seen by any other process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment configuration
+If you need some of these environment variables promoted to system so that they can be seen by any other process inside the container (services, IIS, etc.) use the SBS_PROMOTE_ENV_REGEX environment variable
 
 ```powershell
 SBS_PROMOTE_ENV_REGEX=^SBS_ # Regular expresion to match ENV that you want to promote to system
 ```
 
-All the environment variables that have a name that matches the Regular Expression in SBS_PROMOTE_ENV_REGEX will be promoted to System.
+All the environment variables that have a name that matches the Regular Expression in SBS_PROMOTE_ENV_REGEX will be promoted to System Wide environment variables.
 
 Be careful to get your timings and services startup right. If you have an application pool in IIS that is in autostart mode, there is chance that it will be started before the Entry Point script promotes the environment variables. The solution here is that you should design your container to have everything stopped by default, and do a **controlled** bootstrap using Entry Point script extensions (placing your startup logic in entrypoint/init, continue reading for more information about this).
 
@@ -76,27 +113,28 @@ Then you can promote that to system level
 SBS_PROMOTE_ENV_REGEX=^MYSENSIBLEPWD$
 ```
 
-You can the retrieve it and decode it in your application
+You can then retrieve it and decode it in your application
 
 ```powershell
 $password = [System.Environment]::GetEnvironmentVariable("MYSENSIBLEPWD");
 $password = [Convert]::FromBase64String($password);
 $password = [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect($password, $null, 'LocalMachine'));
+
+# You can also use the included ps function
+$decodedValue = SbsDpapiDecode -EncodedValue $SBS_LOCALADMIN_ENCODED
 ```
 
-This uses Machine Level DPAPI encryption, and this is just designed to avoid leakage of sensible information in environment variables. Let's say you have an APM for IIS that sends all ENV data to the APM, because this sensible information is DPAPI encrypted it will be safe.
+This uses Machine Level DPAPI encryption and it is just designed to avoid leakage of sensible information in environment variables. Let's say you have an APM for IIS that sends all ENV data to the APM, because this sensible information is DPAPI encrypted it will be safe.
 
-This does NOT protect the information from being decoded by any other process running inside the container. That is totally possible.
+This **does not protect the information from being decoded by any other process running inside the container**. That is totally possible.
 
 ## Environment hot reload and K8S config maps + secrets
 
-The image can process json configmaps mounted anywhere in:
+The image will process and add to the environment variables any json files placed in:
 
 ```powershell
 c:\environment.d\
 ```
-
-It will parse any file with the JSON, YAML and YML extension, recognizing both JSON and YAML Formats.
 
 You can also mount any secrets as volumes in:
 
@@ -104,7 +142,7 @@ You can also mount any secrets as volumes in:
 c:\secrets.d\
 ```
 
-where the secret filename will be the environment variable name, and the file contents the environment variable value.
+where **the secret filename will be the environment variable name, and the file contents the environment variable value.**
 
 Changes to these files are checked every 8 seconds in the entry point, and **environment variables updated accordingly**. Note that this **does not** mean that whatever this environment variables controls or affects is going to be updated, it depends on each specific setting and how it is used.
 
@@ -169,15 +207,15 @@ Note that these scripts are **NOT** executed on container initial startup, only 
 
 Because the entry point to this image is a powershell script, the minimum memory footprint for this image is **about 80Mb** (doing nothing). That is what powershell.exe plus some other windows services will need.
 
-In terms of CPU usage, the actual consumption might vary depending on the type of CPU. On a [Standard_D2S_V3](https://learn.microsoft.com/es-es/azure/virtual-machines/dv3-dsv3-series) which has one of the most basic CPU available on Azure (after the Burstable Series), you get about 30 milli-VCpu when Event Log forwarding is enabled from within Powershell (SBS_GETEVENTLOG), or 5 milli-VCPU if no log forwarding is in place.
+In terms of CPU usage, the actual consumption might vary depending on the type of CPU. On a [Standard_D2S_V3](https://learn.microsoft.com/es-es/azure/virtual-machines/dv3-dsv3-series) which has one of the most basic CPU available on Azure (after the Burstable Series) you get about 5 milli-VCPU.
 
-To avoid the INIT scripts impacting the entry point memory footprint, you can make the initialization logic run asynchronously  (SBS_INITASYNC). It can happen that these initialization scripts will load libraries like dbatools that have a noticeable memory footprint, if run synchronously this memory is not freed and retained by the entry point.
+To avoid the INIT scripts impacting the entry point memory footprint, you can make the initialization logic run asynchronously  with the environment variable SBS_INITASYNC. It can happen that these initialization scripts will load libraries like dbatools that have a noticeable memory footprint: if run synchronously this memory is not freed and will be retained by the entry point.
 
 ## OpenSSH
 
 The image comes with the OpenSSH server Windows Feature enabled and configured to use passwords. The service is disabled **by default** and should only be enabled for diagnostics or troubleshooting.
 
-To access your container using SSH
+To access your container using SSH:
 
 ```powershell
 Set-Service -Name ssh-agent -StartupType Manual;
@@ -229,7 +267,7 @@ Examples of scheduled task configurations:
 
 If you need any of the tasks to run immediately on boot, use the *SBS_CRONRUNONBOOT* environment variable to define a comma separated list of scheduled tasks to run on boot.
 
-If you want make sure you proper traceability of scheduled task failures, whatever you run in the scheduled task make sure is invoked through the helper script provided in the image:
+If you want to make sure you have proper traceability of scheduled task failures, whatever you run in the scheduled task make sure is invoked through the helper script provided in the image:
 
 ```xml
 <Exec>
@@ -361,34 +399,5 @@ For convenience, if you place a Powershell function inside a script at:
 c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\MyExampleFunction.ps1
 ```
 
-This will be available for you entry point scripts and inside the container. The function needs to be named exactly as the powershell file so that it can be automatically detected.
-
-## Image configuration Cheat Sheet
-
-### Environment variables
-
-| Name                       | Default Value       | Auto refresh/ Reapplied if warm updated | Description                                                  |
-| -------------------------- | ------------------- | --------------------------------------- | ------------------------------------------------------------ |
-| SBS_CONTAINERTIMEZONE      | $null               | Yes                                     | Container Timezone                                           |
-| SBS_PROMOTE_ENV_REGEX      | $null               | Yes                                     | When an environment variable matches this regular expression, it is promoted to system level. Careful with sensitive data. |
-| XXX_PROTECT                | N/A                 | Yes                                     | When an environment variable ends in _PROTECT it is encoded with DPAPI at the machine level, and the suffix removed. |
-| SBS_INITASYNC              | $false              | N/A                                     | Run initialization scripts in their own JOB.                 |
-| SBS_SHUTDOWNTIMEOUT        | 15                  | Yes                                     | Container shutdown timeout in seconds.                       |
-| SBS_ENTRYPOINTERRORACTION  | Stop                | No                                      | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
-| SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | Yes                                     | List of processes that will be terminated when shutdown has completed |
-| SBS_SRVENSURE              | $null               | No                                      | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
-| SBS_SRVSTOP                | $null               | Yes                                     | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
-| SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Yes                                     | Use this to configure the trigger for a scheduled task that is already present inside the image. |
-
-Relevant locations
-
-| Path                                                     | Usage                                                        |
-| -------------------------------------------------------- | ------------------------------------------------------------ |
-| c:\environment.d\**.json                                 | Provide environment variables as a json       |
-| c:\entrypoint\init\                                      | Path for initialization scripts                              |
-| c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed|
-| c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
-| c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
-| c:\logmonitor\config.json                                | Default location for the LogMonitor configuration file.      |
-| c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\ | Path to custom autoloaded Powershell functions               |
+This will be available for your entry point scripts and inside the container. The function needs to be named exactly as the powershell file so that it can be automatically detected.
 
