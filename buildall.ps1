@@ -22,7 +22,12 @@ else {
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
 
-SbsPrintSystemInfo
+try {
+    SbsPrintSystemInfo
+}
+catch {
+    Write-Host $_.Exception.Message
+}
 
 $global:ErrorActionPreference = 'Stop';
 
