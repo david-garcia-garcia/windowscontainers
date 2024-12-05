@@ -1,0 +1,31 @@
+services:
+  mssql:
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2017BASE: ${IMG_SQLSERVER2017BASE}
+        MSSQL2017INSTALL_ISO_URL: ${MSSQL2017INSTALL_ISO_URL}
+        MSSQL2017INSTALL_CU_URL: ${MSSQL2017INSTALL_CU_URL}
+        MSSQL2017INSTALL_CUFIX_URL: ${MSSQL2017INSTALL_CUFIX_URL}
+        TEMP: ${BUILD_TEMP}
+    image: ${IMG_SQLSERVER2017BASE}
+    volumes:
+      - "$SQLSRV_FOLDER:D:/"
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.8
+    environment:
+      - MSSQL_ADMIN_USERNAME=sa
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_PATH_DATA=d:\data
+      - MSSQL_PATH_LOG=d:\log
+      - MSSQL_PATH_SYSTEM=d:\system
+      - MSSQL_PATH_BACKUP=d:\backup
+networks:
+  container_default:
+    driver: nat  # Usa 'nat' para redes de Windows
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16  # Asegúrate de que esta subred incluya 172.18.8.86
