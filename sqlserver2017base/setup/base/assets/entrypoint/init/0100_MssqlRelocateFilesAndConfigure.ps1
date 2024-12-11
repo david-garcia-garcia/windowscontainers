@@ -65,7 +65,6 @@ if ($null -ne $Env:MSSQL_PATH_SYSTEM) {
 
         Test-Path $currentMasterPath;
 
-
         New-Item -ItemType Directory -Force -Path "$($Env:MSSQL_PATH_SYSTEM)\master";
         Stop-Service 'MSSQLSERVER';
         (Get-Service MSSQLSERVER).WaitForStatus("Stopped", (New-TimeSpan -Seconds 30));
