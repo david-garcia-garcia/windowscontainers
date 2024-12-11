@@ -1,0 +1,41 @@
+# escape=`
+
+ARG IMG_SERVERCORE2022
+FROM ${IMG_SERVERCORE2022}
+
+ARG MSSQL2017INSTALL_ISO_URL
+ARG MSSQL2017INSTALL_CU_URL
+ARG MSSQL2017INSTALL_CUFIX_URL
+
+ENV MSSQL2017INSTALL_ISO_URL=$MSSQL2017INSTALL_ISO_URL
+ENV MSSQL2017INSTALL_CU_URL=$MSSQL2017INSTALL_CU_URL
+ENV MSSQL2017INSTALL_CUFIX_URL=$MSSQL2017INSTALL_CUFIX_URL
+
+SHELL ["powershell.exe"]
+
+# https://learn.microsoft.com/en-us/sql/database-engine/install-windows/install-sql-server-from-the-command-prompt?view=sql-server-ver16#ProperUse
+
+# TODO: De momento ponemos la descarga como un paso independiente, para evitar
+# tener que descargarla todo el rato, pero para reducir el tamaño de la imagen,
+# la descarga, instalación y luego borrado de la ISO deben hacerse en un solo step
+# para que entre en un layer
+# RUN curl -o C:\SQLServer2017-x64-ENU-Dev.iso https://download.microsoft.com/download/E/F/2/EF23C21D-7860-4F05-88CE-39AA114B014B/SQLServer2017-x64-ENU-Dev.iso;
+
+COPY "setup\\install" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+RUN c:\setup\setup.ps1
+RUN Remove-Item -Path c:\setup -Recurse -Force;
+
+COPY "setup\\tools" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+RUN c:\setup\setup.ps1
+RUN Remove-Item -Path c:\setup -Recurse -Force;
+
+COPY "setup\\base" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+RUN echo "setup/base"; c:\setup\setup.ps1
+RUN Remove-Item -Path c:\setup -Recurse -Force;
+
+RUN echo "Hello5"
+
+SHELL ["cmd.exe"]

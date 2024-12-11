@@ -2,6 +2,11 @@
 $Env:MSSQLINSTALL_ISO_URL = "https://xx.blob.core.windows.net/software/mssql.iso";
 $Env:MSSQLINSTALL_CU_URL = "https://xx.blob.core.windows.net/software/cu.exe";
 $Env:MSSQLINSTALL_CUFIX_URL = "https://xx.blob.core.windows.net/software/cufix.7z";
+
+$Env:MSSQL2019INSTALL_ISO_URL = "https://xx.blob.core.windows.net/software/mssql.iso";
+$Env:MSSQL2019INSTALL_CU_URL = "https://xx.blob.core.windows.net/software/cu.exe";
+$Env:MSSQL2019INSTALL_CUFIX_URL = "https://xx.blob.core.windows.net/software/cufix.7z";
+
 $ENV:REGISTRY_PATH = "myregistry.azurecr.io/core/"
 $ENV:IMAGE_VERSION = "1.0.32";
 $ENV:BUILD_TEMP = "c:\windows\temp"

@@ -1,0 +1,34 @@
+services:
+  mssql:
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2019BASE: ${IMG_SQLSERVER2019BASE}
+        MSSQL2019INSTALL_ISO_URL: ${MSSQL2019INSTALL_ISO_URL}
+        MSSQL2019INSTALL_CU_URL: ${MSSQL2019INSTALL_CU_URL}
+        MSSQL2019INSTALL_CUFIX_URL: ${MSSQL2019INSTALL_CUFIX_URL}
+        TEMP: ${BUILD_TEMP}
+    image: ${IMG_SQLSERVER2019BASE}
+    volumes:
+      - "${BUILD_TEMP}:d:"
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.9
+    environment:
+      - MSSQL_ADMIN_USERNAME=sa
+      - MSSQL_ADMIN_PWD_PROTECT=sapwd
+      - MSSQL_PATH_DATA=d:\data
+      - MSSQL_PATH_LOG=d:\log
+      - MSSQL_PATH_SYSTEM=d:\system
+      - MSSQL_PATH_BACKUP=d:\backup
+      - MSSQL_SERVERNAME=MYSERVERNAME
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_DEBUG=True
+networks:
+  container_default:
+    driver: nat  # Usa 'nat' para redes de Windows
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16  # Asegúrate de que esta subred incluya 172.18.8.86
