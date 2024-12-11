@@ -144,6 +144,24 @@ if ("sqlserver2022base" -match $Images) {
     }
 }
 
+if ("sqlserver2019base" -match $Images) {
+
+    # SQL Server K8S
+    Write-Output "Building $($ENV:IMG_SQLSERVER2019BASE)"
+    docker compose -f sqlserver2019base/compose.yaml build --quiet
+    ThrowIfError
+
+    if ($test) {
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2019base.xml";
+        Invoke-Pester -Path "sqlserver2019base\tests"
+    }
+
+    if ($push) {
+        docker push "$($Env:IMG_SQLSERVER2019BASE)"
+        ThrowIfError
+    }
+}
+
 if ("sqlserver2022k8s" -match $Images) {
 
     # SQL Server K8S
