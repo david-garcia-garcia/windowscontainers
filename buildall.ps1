@@ -144,6 +144,23 @@ if ("sqlserver2022base" -match $Images) {
     }
 }
 
+if ("sqlserver2017base" -match $Images) {
+
+    Write-Output "Building $($Env:IMG_SQLSERVER2017BASE)"
+    docker compose -f sqlserver2017base/compose.yaml build --quiet
+    ThrowIfError
+
+    if ($test) {
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2017base.xml";
+        Invoke-Pester -Path "sqlserver2017base\tests"
+    }
+
+    if ($push) { 
+        docker push "$($Env:IMG_SQLSERVER2017BASE)"
+        ThrowIfError
+    }
+}
+
 if ("sqlserver2022k8s" -match $Images) {
 
     # SQL Server K8S
