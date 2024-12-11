@@ -76,6 +76,12 @@ See details [here](sqlserver2022as/readme.md).
 
 SQL Server Integration Services
 
+**SQL Server 2017 With Full Text Search**
+
+Base image with SQL Server and Full Text Search feature.
+
+See details [here](sqlserver2017base/readme.md).
+
 ## Debugging the powershell code
 
 To debug the powershell code in the different images, you use the helper method import functions:
