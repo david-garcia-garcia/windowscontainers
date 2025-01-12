@@ -1,0 +1,26 @@
+services:
+  mssql:
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2019AS: ${IMG_SQLSERVER2019AS}
+        IMG_SQLSERVER2019BASE: ${IMG_SQLSERVER2019BASE}
+        IMG_SQLSERVER2019K8S: ${IMG_SQLSERVER2019K8S}
+        MSSQL2019INSTALL_ISO_URL: ${MSSQL2019INSTALL_ISO_URL}
+        MSSQL2019INSTALL_CU_URL: ${MSSQL2019INSTALL_CU_URL}
+        MSSQL2019INSTALL_CUFIX_URL: ${MSSQL2019INSTALL_CUFIX_URL}
+        TEMP: ${BUILD_TEMP}
+    image: ${IMG_SQLSERVER2019BASE}
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.8
+    environment:
+      - MSSQL_ADMIN_PWD_PROTECT=testpassword
+      - MSSQL_SERVERNAME=k8s
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_DEBUG=True
+networks:
+  container_default:
+    external: true
