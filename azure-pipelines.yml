@@ -19,7 +19,7 @@ stages:
   displayName: Build and push stage
   jobs:
   - job: Build
-    timeoutInMinutes: 120
+    timeoutInMinutes: 200
     displayName: Build
     pool:
       vmImage: $(vmImageName)
