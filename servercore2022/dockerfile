@@ -41,7 +41,7 @@ SHELL ["powershell.exe"]
 
 RUN $global:ErrorActionPreference = 'Stop'; `
     mkdir 'c:\Program Files\LogMonitor'; `
-    Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe" -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
+    Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.1.0/LogMonitor.exe" -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
 
 # Change the default to something a little bit larger than the default 5s.... 15s
 # https://github.com/dotnet/runtime/issues/63709

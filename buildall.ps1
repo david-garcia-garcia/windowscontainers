@@ -49,6 +49,16 @@ if ([string]::IsNullOrWhiteSpace($TESTDIR)) {
 Write-Output "Current temporary directory: $($env:TEMP)";
 $Env:BUILD_TEMP = $Env:TEMP;
 
+# Ensure we are in windows containers mode
+if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
+    Get-Command docker
+    Write-Warning "Docker cli not found at $Env:ProgramFiles\Docker\Docker\DockerCli.exe"
+}
+else {
+    Write-Warning "Switching to Windows Engine"
+    & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
+}
+
 if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
     Write-Output "Container registry credentials through environment provided."
     
