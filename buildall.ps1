@@ -18,6 +18,7 @@ else {
     & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
 }
 
+. .\dockerchecker.ps1
 . .\imagenames.ps1
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
