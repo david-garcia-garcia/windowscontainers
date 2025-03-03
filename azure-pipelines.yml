@@ -1,102 +1,127 @@
 trigger:
   branches:
     include:
-      - '*'
+      - "*"
   tags:
     include:
-      - '*'
+      - "*"
 pr:
   branches:
     exclude:
-      - '*'
+      - "*"
 resources:
-- repo: self
+  - repo: self
 variables:
-  tag: '$(Build.BuildId)'
-  vmImageName: 'windows-2022'
+  tag: "$(Build.BuildId)"
+  vmImageName: "windows-2022"
 stages:
-- stage: Build
-  displayName: Build and push stage
-  jobs:
-  - job: Build
-    timeoutInMinutes: 120
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-      name: Test-Rafael
-    steps:
-    - pwsh: .\buildall.ps1
-      name: build_images
-      env:
-        REGISTRY_USER: $(REGISTRY_USER)
-        REGISTRY_PWD: $(REGISTRY_PWD)
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-        MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-        MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-        MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-        MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-        MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
-        TEMP: $(Agent.TempDirectory)
-        TESTS_SAS_URL: $(TESTS_SAS_URL)
-    - pwsh: .\buildall.ps1 -Test
-      name: run_tests
-      # Only build if [build] is present
-      condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
-      env:
-        REGISTRY_USER: $(REGISTRY_USER)
-        REGISTRY_PWD: $(REGISTRY_PWD)
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-        MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-        MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-        MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-        MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-        MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
-        TESTDIR: $(System.DefaultWorkingDirectory)
-        TEMP: $(Agent.TempDirectory)
-        TESTS_SAS_URL: $(TESTS_SAS_URL)
-    - task: PublishTestResults@2
-      name: publish_tests_results
-      condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
-      inputs:
-        testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
-        testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
-        searchFolder: '$(System.DefaultWorkingDirectory)/NUnit' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
-        # mergeTestResults: true
-        failTaskOnFailedTests: true
-        failTaskOnFailureToPublishResults: true
-        failTaskOnMissingResultsFile: true
-        testRunTitle: Pester
-      # Advanced
-        #buildPlatform: # string. Alias: platform. Build Platform. 
-        #buildConfiguration: # string. Alias: configuration. Build Configuration. 
-        publishRunAttachments: true
-    - pwsh: .\buildall.ps1 -Push
-      name: push_containers
-      # Only push if this is a tag, and the tests passed
-      condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
-      env:
-        REGISTRY_USER: $(REGISTRY_USER)
-        REGISTRY_PWD: $(REGISTRY_PWD)
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-        MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-        MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-        MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-        MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-        MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
-        TEMP: $(Agent.TempDirectory)
-        TESTS_SAS_URL: $(TESTS_SAS_URL)
+  - stage: Build
+    displayName: Build and push stage
+    jobs:
+      - job: Build_test
+        timeoutInMinutes: 30
+        displayName: Build
+        pool:
+          vmImage: $(vmImageName)
+          name: Test-Rafael
+        steps:
+          - pwsh: .\buildall.ps1 -Images "sqlserver2022base"
+            name: build_images
+            env:
+              REGISTRY_USER: $(REGISTRY_USER)
+              REGISTRY_PWD: $(REGISTRY_PWD)
+              MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+              MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+              MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+              MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
+              MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
+              MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
+              MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
+              MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
+              MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
+              REGISTRY_PATH: $(REGISTRY_PATH)
+              IMAGE_VERSION: $(Build.SourceBranchName)
+              TEMP: $(Agent.TempDirectory)
+              TESTS_SAS_URL: $(TESTS_SAS_URL)
+      - job: Build
+        timeoutInMinutes: 2
+        displayName: Build
+        pool:
+          vmImage: $(vmImageName)
+          name: Test-Rafael
+        steps:
+          - pwsh: .\buildall.ps1
+            name: build_images
+            env:
+              REGISTRY_USER: $(REGISTRY_USER)
+              REGISTRY_PWD: $(REGISTRY_PWD)
+              MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+              MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+              MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+              MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
+              MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
+              MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
+              MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
+              MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
+              MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
+              REGISTRY_PATH: $(REGISTRY_PATH)
+              IMAGE_VERSION: $(Build.SourceBranchName)
+              TEMP: $(Agent.TempDirectory)
+              TESTS_SAS_URL: $(TESTS_SAS_URL)
+          - pwsh: .\buildall.ps1 -Test
+            name: run_tests
+            # Only build if [build] is present
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            env:
+              REGISTRY_USER: $(REGISTRY_USER)
+              REGISTRY_PWD: $(REGISTRY_PWD)
+              MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+              MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+              MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+              MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
+              MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
+              MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
+              MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
+              MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
+              MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
+              REGISTRY_PATH: $(REGISTRY_PATH)
+              IMAGE_VERSION: $(Build.SourceBranchName)
+              TESTDIR: $(System.DefaultWorkingDirectory)
+              TEMP: $(Agent.TempDirectory)
+              TESTS_SAS_URL: $(TESTS_SAS_URL)
+          - task: PublishTestResults@2
+            name: publish_tests_results
+            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            inputs:
+              testResultsFormat: "NUnit" # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
+              testResultsFiles: "**/*.xml" # string. Required. Test results files. Default: **/TEST-*.xml.
+              searchFolder: "$(System.DefaultWorkingDirectory)/NUnit" # string. Search folder. Default: $(System.DefaultWorkingDirectory).
+              # mergeTestResults: true
+              failTaskOnFailedTests: true
+              failTaskOnFailureToPublishResults: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: Pester
+              # Advanced
+              #buildPlatform: # string. Alias: platform. Build Platform.
+              #buildConfiguration: # string. Alias: configuration. Build Configuration.
+              publishRunAttachments: true
+          - pwsh: .\buildall.ps1 -Push
+            name: push_containers
+            # Only push if this is a tag, and the tests passed
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+            env:
+              REGISTRY_USER: $(REGISTRY_USER)
+              REGISTRY_PWD: $(REGISTRY_PWD)
+              MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
+              MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
+              MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
+              MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
+              MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
+              MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
+              MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
+              MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
+              MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
+              REGISTRY_PATH: $(REGISTRY_PATH)
+              IMAGE_VERSION: $(Build.SourceBranchName)
+              TEMP: $(Agent.TempDirectory)
+              TESTS_SAS_URL: $(TESTS_SAS_URL)
