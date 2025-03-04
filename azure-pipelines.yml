@@ -78,7 +78,7 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
-      - job: Build_iisimages
+      - job: Build_sqlserver2022
         timeoutInMinutes: 30
         displayName: Build_sqlserver2022
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
