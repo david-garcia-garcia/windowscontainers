@@ -15,7 +15,7 @@ services:
       - "${BUILD_TEMP}:d:"
     networks:
       container_default:
-        ipv4_address: 172.18.8.9
+        ipv4_address: 172.18.8.8
     environment:
       - MSSQL_ADMIN_USERNAME=sa
       - MSSQL_ADMIN_PWD_PROTECT=sapwd
@@ -28,7 +28,4 @@ services:
       - SBS_DEBUG=True
 networks:
   container_default:
-    driver: nat  # Usa 'nat' para redes de Windows
-    ipam:
-      config:
-        - subnet: 172.18.0.0/16  # Asegúrate de que esta subred incluya 172.18.8.86
+    external: true
