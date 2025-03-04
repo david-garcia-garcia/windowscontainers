@@ -49,3 +49,32 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+      - job: Build_iisimages
+        timeoutInMinutes: 30
+        displayName: Build_iisimages
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - task: PublishTestResults@2
+            name: publish_tests_results
+            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "**/*.xml"
+              searchFolder: "$(System.DefaultWorkingDirectory)/NUnit"
+              failTaskOnFailedTests: true
+              failTaskOnFailureToPublishResults: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: Pester
+              publishRunAttachments: true
+          - pwsh: .\buildall.ps1 -Push -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
