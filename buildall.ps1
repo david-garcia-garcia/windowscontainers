@@ -150,13 +150,20 @@ foreach ($config in $ImageConfigs) {
     }
 }
 
-# Second pass: add dependencies
+# Second pass: add dependencies first, then selected images
+$imagesToBuild = [System.Collections.Generic.HashSet[string]]::new()
+
+# Add dependencies first
 foreach ($imageName in $selectedImages) {
-    $imagesToBuild.Add($imageName) | Out-Null
     $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
     foreach ($dep in $config.Dependencies) {
         $imagesToBuild.Add($dep) | Out-Null
     }
+}
+
+# Then add selected images
+foreach ($imageName in $selectedImages) {
+    $imagesToBuild.Add($imageName) | Out-Null
 }
 
 Write-Output "Images to build: $($imagesToBuild -join ', ')"
