@@ -21,7 +21,7 @@ stages:
     displayName: Build and push stage
     jobs:
       - job: Build_servercore2022
-        timeoutInMinutes: 30
+        timeoutInMinutes: 20
         displayName: Build_servercore2022
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
@@ -50,7 +50,7 @@ stages:
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_iisimages
-        timeoutInMinutes: 30
+        timeoutInMinutes: 40
         displayName: Build_iisimages
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
@@ -79,7 +79,7 @@ stages:
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2022
-        timeoutInMinutes: 30
+        timeoutInMinutes: 60
         displayName: Build_sqlserver2022
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
@@ -108,7 +108,7 @@ stages:
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2022as
-        timeoutInMinutes: 30
+        timeoutInMinutes: 60
         displayName: Build_sqlserver2022as
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
@@ -137,7 +137,7 @@ stages:
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2022is
-        timeoutInMinutes: 30
+        timeoutInMinutes: 60
         displayName: Build_sqlserver2022is
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
@@ -166,7 +166,7 @@ stages:
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2019
-        timeoutInMinutes: 30
+        timeoutInMinutes: 60
         displayName: Build_sqlserver2019
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
