@@ -72,60 +72,70 @@ if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
 # Define image configurations
 $ImageConfigs = @(
     @{
-        Name = "servercore2022"
-        ImageEnvVar = "IMG_SERVERCORE2022"
-        ComposeFile = "servercore2022/compose.yaml"
+        Name         = "servercore2022"
+        ImageEnvVar  = "IMG_SERVERCORE2022"
+        ComposeFile  = "servercore2022/compose.yaml"
         Dependencies = @()
-        TestPath = "servercore2022\tests\"
+        TestPath     = "servercore2022\tests\"
     },
     @{
-        Name = "servercore2022iis"
-        ImageEnvVar = "IMG_SERVERCORE2022IIS"
-        ComposeFile = "servercore2022iis/compose.yaml"
+        Name         = "servercore2022iis"
+        ImageEnvVar  = "IMG_SERVERCORE2022IIS"
+        ComposeFile  = "servercore2022iis/compose.yaml"
         Dependencies = @("servercore2022")
-        TestPath = "servercore2022iis\tests"
+        TestPath     = "servercore2022iis\tests"
     },
     @{
-        Name = "servercore2022iisnet48"
-        ImageEnvVar = "IMG_SERVERCORE2022IISNET48"
-        ComposeFile = "servercore2022iisnet48/compose.yaml"
+        Name         = "servercore2022iisnet48"
+        ImageEnvVar  = "IMG_SERVERCORE2022IISNET48"
+        ComposeFile  = "servercore2022iisnet48/compose.yaml"
         Dependencies = @("servercore2022iis", "servercore2022")
-        TestPath = $null
+        TestPath     = $null
     },
+    # SQL Server 2017
     @{
-        Name = "sqlserver2022base"
-        ImageEnvVar = "IMG_SQLSERVER2022BASE"
-        ComposeFile = "sqlserver2022base/compose.yaml"
+        Name         = "sqlserver2017base"
+        ImageEnvVar  = "IMG_SQLSERVER2019BASE"
+        ComposeFile  = "sqlserver2017base/compose.yaml"
         Dependencies = @("servercore2022")
-        TestPath = "sqlserver2022base\tests"
+        TestPath     = "sqlserver2017base\tests"
     },
+    # SQL Server 2019
     @{
-        Name = "sqlserver2019base"
-        ImageEnvVar = "IMG_SQLSERVER2019BASE"
-        ComposeFile = "sqlserver2019base/compose.yaml"
+        Name         = "sqlserver2019base"
+        ImageEnvVar  = "IMG_SQLSERVER2019BASE"
+        ComposeFile  = "sqlserver2019base/compose.yaml"
         Dependencies = @("servercore2022")
-        TestPath = "sqlserver2019base\tests"
+        TestPath     = "sqlserver2019base\tests"
+    },
+    # SQL Server 2022
+    @{
+        Name         = "sqlserver2022base"
+        ImageEnvVar  = "IMG_SQLSERVER2022BASE"
+        ComposeFile  = "sqlserver2022base/compose.yaml"
+        Dependencies = @("servercore2022")
+        TestPath     = "sqlserver2022base\tests"
     },
     @{
-        Name = "sqlserver2022k8s"
-        ImageEnvVar = "IMG_SQLSERVER2022K8S"
-        ComposeFile = "sqlserver2022k8s/compose.yaml"
+        Name         = "sqlserver2022k8s"
+        ImageEnvVar  = "IMG_SQLSERVER2022K8S"
+        ComposeFile  = "sqlserver2022k8s/compose.yaml"
         Dependencies = @("sqlserver2022base", "servercore2022")
-        TestPath = "sqlserver2022k8s\tests"
+        TestPath     = "sqlserver2022k8s\tests"
     },
     @{
-        Name = "sqlserver2022as"
-        ImageEnvVar = "IMG_SQLSERVER2022AS"
-        ComposeFile = "sqlserver2022as/compose.yaml"
+        Name         = "sqlserver2022as"
+        ImageEnvVar  = "IMG_SQLSERVER2022AS"
+        ComposeFile  = "sqlserver2022as/compose.yaml"
         Dependencies = @("sqlserver2022base", "servercore2022")
-        TestPath = $null
+        TestPath     = $null
     },
     @{
-        Name = "sqlserver2022is"
-        ImageEnvVar = "IMG_SQLSERVER2022IS"
-        ComposeFile = "sqlserver2022is/compose.yaml"
+        Name         = "sqlserver2022is"
+        ImageEnvVar  = "IMG_SQLSERVER2022IS"
+        ComposeFile  = "sqlserver2022is/compose.yaml"
         Dependencies = @("sqlserver2022base", "servercore2022")
-        TestPath = $null
+        TestPath     = $null
     }
 )
 
