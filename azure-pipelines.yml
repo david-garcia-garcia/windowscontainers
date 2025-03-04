@@ -14,22 +14,6 @@ resources:
 variables:
   tag: "$(Build.BuildId)"
   vmImageName: "windows-2022"
-  # Common environment variables
-  PIPELINE_REGISTRY_USER: $(REGISTRY_USER)
-  PIPELINE_REGISTRY_PWD: $(REGISTRY_PWD)
-  PIPELINE_MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-  PIPELINE_MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-  PIPELINE_MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-  PIPELINE_MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-  PIPELINE_MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-  PIPELINE_MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-  PIPELINE_MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-  PIPELINE_MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-  PIPELINE_MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-  PIPELINE_REGISTRY_PATH: $(REGISTRY_PATH)
-  PIPELINE_IMAGE_VERSION: $(Build.SourceBranchName)
-  PIPELINE_TEMP: $(Agent.TempDirectory)
-  PIPELINE_TESTS_SAS_URL: $(TESTS_SAS_URL)
 stages:
   - stage: Build
     displayName: Build and push stage
@@ -41,8 +25,11 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^servercore2022$"
             name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^servercore2022$"
             name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - task: PublishTestResults@2
             name: publish_tests_results
@@ -57,5 +44,6 @@ stages:
               testRunTitle: Pester
               publishRunAttachments: true
           - pwsh: .\buildall.ps1 -Push -Images "^servercore2022$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
