@@ -10,8 +10,8 @@ param (
 
 
 # Print all environment variables that start with IMG_
-Get-ChildItem env: | Where-Object { $_.Name -like "IMG_*" } | ForEach-Object {
-    Write-Host "Image Variable: $($_.Name) = $('*' * $_.Value.Length)"
+Get-ChildItem env: | ForEach-Object {
+    Write-Host "Variable: $($_.Name) = $('*' * $_.Value.Length)"
 }
 
 # Ensure we are in Windows containers
