@@ -8,6 +8,13 @@ param (
     [string]$Images = ".*"
 )
 
+# Remove PIPELINE_ prefix from environment variables
+Get-ChildItem env: | Where-Object { $_.Name -like "PIPELINE_*" } | ForEach-Object {
+    $newName = $_.Name -replace "^PIPELINE_", ""
+    Set-Item -Path "env:$newName" -Value $_.Value
+    Remove-Item -Path "env:$($_.Name)"
+}
+
 # Ensure we are in Windows containers
 if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
     Get-Command docker
