@@ -15,6 +15,8 @@ Get-ChildItem env: | Where-Object { $_.Name -like "PIPELINE_*" } | ForEach-Objec
     Remove-Item -Path "env:$($_.Name)"
 }
 
+
+
 # Define the array of environment variable names to check
 $envVarsToCheck = @(
     "MSSQLINSTALL_ISO_URL",
