@@ -1,102 +1,172 @@
 trigger:
   branches:
     include:
-      - '*'
+      - "*"
   tags:
     include:
-      - '*'
+      - "*"
 pr:
   branches:
     exclude:
-      - '*'
+      - "*"
 resources:
-- repo: self
+  - repo: self
 variables:
-  tag: '$(Build.BuildId)'
-  vmImageName: 'windows-2022'
+  tag: "$(Build.BuildId)"
+  vmImageName: "windows-2022"
+  IMAGE_VERSION: $(Build.SourceBranchName)
+  TEMP: $(Agent.TempDirectory)
 stages:
-- stage: Build
-  displayName: Build and push stage
-  jobs:
-  - job: Build
-    timeoutInMinutes: 120
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-      name: Test-Rafael
-    steps:
-    - pwsh: .\buildall.ps1
-      name: build_images
-      env:
-        REGISTRY_USER: $(REGISTRY_USER)
-        REGISTRY_PWD: $(REGISTRY_PWD)
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-        MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-        MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-        MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-        MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-        MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
-        TEMP: $(Agent.TempDirectory)
-        TESTS_SAS_URL: $(TESTS_SAS_URL)
-    - pwsh: .\buildall.ps1 -Test
-      name: run_tests
-      # Only build if [build] is present
-      condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
-      env:
-        REGISTRY_USER: $(REGISTRY_USER)
-        REGISTRY_PWD: $(REGISTRY_PWD)
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-        MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-        MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-        MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-        MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-        MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
-        TESTDIR: $(System.DefaultWorkingDirectory)
-        TEMP: $(Agent.TempDirectory)
-        TESTS_SAS_URL: $(TESTS_SAS_URL)
-    - task: PublishTestResults@2
-      name: publish_tests_results
-      condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
-      inputs:
-        testResultsFormat: 'NUnit' # 'JUnit' | 'NUnit' | 'VSTest' | 'XUnit' | 'CTest'. Alias: testRunner. Required. Test result format. Default: JUnit.
-        testResultsFiles: '**/*.xml' # string. Required. Test results files. Default: **/TEST-*.xml.
-        searchFolder: '$(System.DefaultWorkingDirectory)/NUnit' # string. Search folder. Default: $(System.DefaultWorkingDirectory).
-        # mergeTestResults: true
-        failTaskOnFailedTests: true
-        failTaskOnFailureToPublishResults: true
-        failTaskOnMissingResultsFile: true
-        testRunTitle: Pester
-      # Advanced
-        #buildPlatform: # string. Alias: platform. Build Platform. 
-        #buildConfiguration: # string. Alias: configuration. Build Configuration. 
-        publishRunAttachments: true
-    - pwsh: .\buildall.ps1 -Push
-      name: push_containers
-      # Only push if this is a tag, and the tests passed
-      condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
-      env:
-        REGISTRY_USER: $(REGISTRY_USER)
-        REGISTRY_PWD: $(REGISTRY_PWD)
-        MSSQLINSTALL_CU_URL: $(MSSQLINSTALL_CU_URL)
-        MSSQLINSTALL_CUFIX_URL: $(MSSQLINSTALL_CUFIX_URL)
-        MSSQLINSTALL_ISO_URL: $(MSSQLINSTALL_ISO_URL)
-        MSSQL2019LINSTALL_CU_URL: $(MSSQL2019INSTALL_CU_URL)
-        MSSQL2019INSTALL_CUFIX_URL: $(MSSQL2019INSTALL_CUFIX_URL)
-        MSSQL2019INSTALL_ISO_URL: $(MSSQL2019INSTALL_ISO_URL)
-        MSSQL2017LINSTALL_CU_URL: $(MSSQL2017INSTALL_CU_URL)
-        MSSQL2017INSTALL_CUFIX_URL: $(MSSQL2017INSTALL_CUFIX_URL)
-        MSSQL2017INSTALL_ISO_URL: $(MSSQL2017INSTALL_ISO_URL)
-        REGISTRY_PATH: $(REGISTRY_PATH)
-        IMAGE_VERSION: $(Build.SourceBranchName)
-        TEMP: $(Agent.TempDirectory)
-        TESTS_SAS_URL: $(TESTS_SAS_URL)
+  - stage: Build
+    displayName: Build and push stage
+    jobs:
+      - job: Build_servercore2022
+        timeoutInMinutes: 20
+        displayName: Build_servercore2022
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^servercore2022$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^servercore2022$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - task: PublishTestResults@2
+            name: publish_tests_results
+            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "**/*.xml"
+              searchFolder: "$(System.DefaultWorkingDirectory)/NUnit"
+              failTaskOnFailedTests: true
+              failTaskOnFailureToPublishResults: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: Pester
+              publishRunAttachments: true
+          - pwsh: .\buildall.ps1 -Push -Images "^servercore2022$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+      - job: Build_iisimages
+        timeoutInMinutes: 40
+        displayName: Build_iisimages
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - task: PublishTestResults@2
+            name: publish_tests_results
+            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "**/*.xml"
+              searchFolder: "$(System.DefaultWorkingDirectory)/NUnit"
+              failTaskOnFailedTests: true
+              failTaskOnFailureToPublishResults: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: Pester
+              publishRunAttachments: true
+          - pwsh: .\buildall.ps1 -Push -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+      - job: Build_sqlserver2022
+        timeoutInMinutes: 60
+        displayName: Build_sqlserver2022
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^sqlserver2022base$|^sqlserver2022k8s$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - task: PublishTestResults@2
+            name: publish_tests_results
+            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "**/*.xml"
+              searchFolder: "$(System.DefaultWorkingDirectory)/NUnit"
+              failTaskOnFailedTests: true
+              failTaskOnFailureToPublishResults: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: Pester
+              publishRunAttachments: true
+          - pwsh: .\buildall.ps1 -Push -Images "^servercore2022iisnet48$|^servercore2022iis$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+      - job: Build_sqlserver2022as
+        timeoutInMinutes: 60
+        displayName: Build_sqlserver2022as
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^sqlserver2022as$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2022as$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2022as$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+      - job: Build_sqlserver2022is
+        timeoutInMinutes: 60
+        displayName: Build_sqlserver2022is
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^sqlserver2022is$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2022is$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2022is$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
+      - job: Build_sqlserver2019
+        timeoutInMinutes: 60
+        displayName: Build_sqlserver2019
+        pool: { vmImage: $(vmImageName), name: Test-Rafael }
+        steps:
+          - pwsh: .\buildall.ps1 -Images "^sqlserver2019base$"
+            name: build_images
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+          - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2019base$"
+            name: run_tests
+            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+          - task: PublishTestResults@2
+            name: publish_tests_results
+            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "**/*.xml"
+              searchFolder: "$(System.DefaultWorkingDirectory)/NUnit"
+              failTaskOnFailedTests: true
+              failTaskOnFailureToPublishResults: true
+              failTaskOnMissingResultsFile: true
+              testRunTitle: Pester
+              publishRunAttachments: true
+          - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2019base$"
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            name: push_containers
+            condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))

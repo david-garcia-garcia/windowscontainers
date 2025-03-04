@@ -8,6 +8,12 @@ param (
     [string]$Images = ".*"
 )
 
+
+# Print all environment variables that start with IMG_
+Get-ChildItem env: | ForEach-Object {
+    Write-Host "Variable: $($_.Name) = $('*' * $_.Value.Length)"
+}
+
 # Ensure we are in Windows containers
 if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
     Get-Command docker
@@ -63,6 +69,105 @@ if ($Env:REGISTRY_USER -and $Env:REGISTRY_PWD) {
     ThrowIfError
 }
 
+# Define image configurations
+$ImageConfigs = @(
+    @{
+        Name         = "servercore2022"
+        ImageEnvVar  = "IMG_SERVERCORE2022"
+        ComposeFile  = "servercore2022/compose.yaml"
+        Dependencies = @()
+        TestPath     = "servercore2022\tests\"
+    },
+    @{
+        Name         = "servercore2022iis"
+        ImageEnvVar  = "IMG_SERVERCORE2022IIS"
+        ComposeFile  = "servercore2022iis/compose.yaml"
+        Dependencies = @("servercore2022")
+        TestPath     = "servercore2022iis\tests"
+    },
+    @{
+        Name         = "servercore2022iisnet48"
+        ImageEnvVar  = "IMG_SERVERCORE2022IISNET48"
+        ComposeFile  = "servercore2022iisnet48/compose.yaml"
+        Dependencies = @("servercore2022iis", "servercore2022")
+        TestPath     = $null
+    },
+    # SQL Server 2017
+    @{
+        Name         = "sqlserver2017base"
+        ImageEnvVar  = "IMG_SQLSERVER2019BASE"
+        ComposeFile  = "sqlserver2017base/compose.yaml"
+        Dependencies = @("servercore2022")
+        TestPath     = "sqlserver2017base\tests"
+    },
+    # SQL Server 2019
+    @{
+        Name         = "sqlserver2019base"
+        ImageEnvVar  = "IMG_SQLSERVER2019BASE"
+        ComposeFile  = "sqlserver2019base/compose.yaml"
+        Dependencies = @("servercore2022")
+        TestPath     = "sqlserver2019base\tests"
+    },
+    # SQL Server 2022
+    @{
+        Name         = "sqlserver2022base"
+        ImageEnvVar  = "IMG_SQLSERVER2022BASE"
+        ComposeFile  = "sqlserver2022base/compose.yaml"
+        Dependencies = @("servercore2022")
+        TestPath     = "sqlserver2022base\tests"
+    },
+    @{
+        Name         = "sqlserver2022k8s"
+        ImageEnvVar  = "IMG_SQLSERVER2022K8S"
+        ComposeFile  = "sqlserver2022k8s/compose.yaml"
+        Dependencies = @("sqlserver2022base", "servercore2022")
+        TestPath     = "sqlserver2022k8s\tests"
+    },
+    @{
+        Name         = "sqlserver2022as"
+        ImageEnvVar  = "IMG_SQLSERVER2022AS"
+        ComposeFile  = "sqlserver2022as/compose.yaml"
+        Dependencies = @("sqlserver2022base", "servercore2022")
+        TestPath     = $null
+    },
+    @{
+        Name         = "sqlserver2022is"
+        ImageEnvVar  = "IMG_SQLSERVER2022IS"
+        ComposeFile  = "sqlserver2022is/compose.yaml"
+        Dependencies = @("sqlserver2022base", "servercore2022")
+        TestPath     = $null
+    }
+)
+
+# Filter images based on regex pattern and collect dependencies
+$selectedImages = [System.Collections.Generic.HashSet[string]]::new()
+$imagesToBuild = [System.Collections.Generic.HashSet[string]]::new()
+
+# First pass: collect directly matched images
+foreach ($config in $ImageConfigs) {
+    if ($config.Name -match $Images) {
+        $selectedImages.Add($config.Name) | Out-Null
+    }
+}
+
+# Second pass: add dependencies first, then selected images
+$imagesToBuild = [System.Collections.Generic.HashSet[string]]::new()
+
+# Add dependencies first
+foreach ($imageName in $selectedImages) {
+    $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
+    foreach ($dep in $config.Dependencies) {
+        $imagesToBuild.Add($dep) | Out-Null
+    }
+}
+
+# Then add selected images
+foreach ($imageName in $selectedImages) {
+    $imagesToBuild.Add($imageName) | Out-Null
+}
+
+Write-Output "Images to build: $($imagesToBuild -join ', ')"
+
 if ($test) {
 
     # Check if the 'container_default' network exists
@@ -79,149 +184,27 @@ if ($test) {
     }
 }
 
+# Build all required images (including dependencies)
+foreach ($imageName in $imagesToBuild) {
+    $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
+    $imageVar = $config.ImageEnvVar
+    Write-Output "Building $(Get-Item env:$imageVar)"
+    docker compose -f $config.ComposeFile build --quiet
+    ThrowIfError
+}
 
-# Core Server, always build as it is a dependency to other images
-Write-Output "Building $($Env:IMG_SERVERCORE2022)"
-docker compose -f servercore2022/compose.yaml build --quiet
-ThrowIfError
-
-if ("servercore2022" -match $Images) {
-    if ($test) {
-        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\servercore2022.xml";
-        Invoke-Pester -Path "servercore2022\tests\"
+# Test and push only selected images
+foreach ($imageName in $selectedImages) {
+    $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
+    
+    if ($test -and $config.TestPath) {
+        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\$($imageName).xml"
+        Invoke-Pester -Path $config.TestPath
     }
 
     if ($push) {
-        docker push "$($Env:IMG_SERVERCORE2022)"
-        ThrowIfError
-    }
-}
-
-# IIS Base, always build as it is a dependency to other images
-Write-Host "Building $($Env:IMG_SERVERCORE2022IIS)"
-docker compose -f servercore2022iis/compose.yaml build --quiet
-ThrowIfError
-
-if ("servercore2022iis" -match $Images) {
-    if ($test) {
-        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\servercore2022iis.xml";
-        Invoke-Pester -Path "servercore2022iis\tests"
-    }
-
-    if ($push) { 
-        docker push "$($Env:IMG_SERVERCORE2022IIS)" 
-        ThrowIfError
-    }
-}
-
-# IIS NET 48
-if ("servercore2022iisnet48" -match $Images) {
-    Write-Output "Building $($Env:IMG_SERVERCORE2022IISNET48)"
-    docker compose -f servercore2022iisnet48/compose.yaml build --quiet
-    ThrowIfError
-
-    if ($push) { 
-        docker push "$($Env:IMG_SERVERCORE2022IISNET48)" 
-        ThrowIfError
-    }
-}
-
-# SQL Server Base, always build as it is a dependency to other images
-Write-Output "Building $($Env:IMG_SQLSERVER2022BASE)"
-docker compose -f sqlserver2022base/compose.yaml build --quiet
-ThrowIfError
-
-if ("sqlserver2022base" -match $Images) {
-
-    if ($test) {
-        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2022base.xml";
-        Invoke-Pester -Path "sqlserver2022base\tests"
-    }
-
-    if ($push) { 
-        docker push "$($Env:IMG_SQLSERVER2022BASE)"
-        ThrowIfError
-    }
-}
-
-if ("sqlserver2019base" -match $Images) {
-
-    # SQL Server K8S
-    Write-Output "Building $($ENV:IMG_SQLSERVER2019BASE)"
-    docker compose -f sqlserver2019base/compose.yaml build --quiet
-    ThrowIfError
-
-    if ($test) {
-        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2019base.xml";
-        Invoke-Pester -Path "sqlserver2019base\tests"
-    }
-
-    if ($push) {
-        docker push "$($Env:IMG_SQLSERVER2019BASE)"
-        ThrowIfError
-    }
-}
-
-if ("sqlserver2022k8s" -match $Images) {
-
-    # SQL Server K8S
-    Write-Output "Building $($Env:IMG_SQLSERVER2022K8S)"
-    docker compose -f sqlserver2022k8s/compose.yaml build --quiet
-    ThrowIfError
-
-    if ($test) {
-        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2022k8s.xml";
-        Invoke-Pester -Path "sqlserver2022k8s\tests"
-    }
-
-    if ($push) {
-        docker push "$($Env:IMG_SQLSERVER2022K8S)"
-        ThrowIfError
-    }
-}
-
-if ("sqlserver2022as" -match $Images) {
-    # SQL Server Analysis Services
-    Write-Output "Building $($Env:IMG_SQLSERVER2022AS)"
-    docker compose -f sqlserver2022as/compose.yaml build --quiet
-    ThrowIfError
-
-    if ($test) {
-    }
-    if ($push) {
-        docker push "$($Env:IMG_SQLSERVER2022AS)"
-        ThrowIfError
-    }
-}
-
-if ("sqlserver2022is" -match $Images) {
-    # SQL Server Integration Services
-    Write-Output "Building $($Env:IMG_SQLSERVER2022IS)"
-    docker compose -f sqlserver2022is/compose.yaml build --quiet
-    ThrowIfError
-
-    if ($test) {
-    }
-    if ($push) {
-        docker push "$($Env:IMG_SQLSERVER2022IS)"
-        ThrowIfError
-    }
-}
-
-if ("sqlserver2019base" -match $Images) {
-
-    # SQL Server 2019
-    Write-Output "Building $($ENV:IMG_SQLSERVER2019BASE)"
-    docker compose -f sqlserver2019base/compose.yaml build --quiet
-    ThrowIfError
-
-    if ($test) {
-        $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\sqlserver2019base.xml";
-        Invoke-Pester -Path "sqlserver2019base\tests"
-    }
-
-    if ($push) {
-        docker push "$($Env:IMG_SQLSERVER2019BASE)"
+        $imageVar = $config.ImageEnvVar
+        docker push "$(Get-Item env:$imageVar)"
         ThrowIfError
     }
 }

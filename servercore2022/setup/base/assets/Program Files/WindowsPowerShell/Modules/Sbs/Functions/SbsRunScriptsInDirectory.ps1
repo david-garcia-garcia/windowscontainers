@@ -65,5 +65,6 @@ Function SbsRunScriptsInDirectory {
             # so that Error-Action influences startup behaviour the way we expect it to be.
             SbsWriteException -Exception $_
         }
+        SbsWriteHost "SbsRunScriptsInDirectory completed";
     }
 }
