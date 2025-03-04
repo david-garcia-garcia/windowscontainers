@@ -14,6 +14,8 @@ resources:
 variables:
   tag: "$(Build.BuildId)"
   vmImageName: "windows-2022"
+  IMAGE_VERSION: $(Build.SourceBranchName)
+  TEMP: $(Agent.TempDirectory)
 stages:
   - stage: Build
     displayName: Build and push stage
