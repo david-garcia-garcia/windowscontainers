@@ -201,9 +201,11 @@ foreach ($imageName in $selectedImages) {
         $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\$($imageName).xml"
         Invoke-Pester -Path $config.TestPath
     }
+    
+    $imageVar = $config.ImageEnvVar
+    Write-Host "Pushing $(Get-Item env:$imageVar)"
 
     if ($push) {
-        $imageVar = $config.ImageEnvVar
         docker push "$(Get-Item env:$imageVar)"
         ThrowIfError
     }
