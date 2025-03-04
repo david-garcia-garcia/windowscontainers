@@ -7,6 +7,14 @@ if (Test-Path -Path ".\envsettings.ps1") {
     .\envsettings.ps1
 }
 
+# Remove PIPELINE_ prefix from environment variables
+Get-ChildItem env: | Where-Object { $_.Name -like "PIPELINE_*" } | ForEach-Object {
+    Write-Host "Removing PIPELINE_ prefix from $($_.Name)"
+    $newName = $_.Name -replace "^PIPELINE_", ""
+    Set-Item -Path "env:$newName" -Value $_.Value
+    Remove-Item -Path "env:$($_.Name)"
+}
+
 # Define the array of environment variable names to check
 $envVarsToCheck = @(
     "MSSQLINSTALL_ISO_URL",
