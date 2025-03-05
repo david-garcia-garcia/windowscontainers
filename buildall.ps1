@@ -188,7 +188,7 @@ if ($test) {
 foreach ($imageName in $imagesToBuild) {
     $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
     $imageVar = $config.ImageEnvVar
-    Write-Output "Building $(Get-Item env:$imageVar)"
+    Write-Output "Building $((Get-Item env:$imageVar).Value)"
     docker compose -f $config.ComposeFile build --quiet
     ThrowIfError
 }
@@ -203,10 +203,10 @@ foreach ($imageName in $selectedImages) {
     }
     
     $imageVar = $config.ImageEnvVar
-    Write-Host "Pushing $(Get-Item env:$imageVar)"
+    Write-Host "Pushing $((Get-Item env:$imageVar).Value)"
 
     if ($push) {
-        docker push "$(Get-Item env:$imageVar)"
+        docker push "$((Get-Item env:$imageVar).Value)"
         ThrowIfError
     }
 }
