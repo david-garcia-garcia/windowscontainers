@@ -188,7 +188,7 @@ if ($test) {
 foreach ($imageName in $imagesToBuild) {
     $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
     $imageVar = $config.ImageEnvVar
-    Write-Output "Building $(Get-Item env:$imageVar)"
+    Write-Output "Building $((Get-Item env:$imageVar).Value)"
     docker compose -f $config.ComposeFile build --quiet
     ThrowIfError
 }
@@ -201,10 +201,12 @@ foreach ($imageName in $selectedImages) {
         $PesterPreference.TestResult.OutputPath = "$TESTDIR\Nunit\$($imageName).xml"
         Invoke-Pester -Path $config.TestPath
     }
+    
+    $imageVar = $config.ImageEnvVar
+    Write-Host "Pushing $((Get-Item env:$imageVar).Value)"
 
     if ($push) {
-        $imageVar = $config.ImageEnvVar
-        docker push "$(Get-Item env:$imageVar)"
+        docker push "$((Get-Item env:$imageVar).Value)"
         ThrowIfError
     }
 }
