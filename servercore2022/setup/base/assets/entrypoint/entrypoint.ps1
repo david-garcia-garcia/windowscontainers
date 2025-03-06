@@ -4,14 +4,6 @@ Import-Module Sbs;
 SbsPrintSystemInfo
 SbsPrepareEnv | Out-Null;
 
-$CommandArgs = $args
-
-if ($CommandArgs.Length -gt 0) {
-    $cmd = $CommandArgs[0]
-    $prm = $CommandArgs[1..$($CommandArgs.Length - 1)]
-    & $cmd @prm
-}
-
 $initStopwatch = [System.Diagnostics.Stopwatch]::StartNew();
 
 #####################################
@@ -130,6 +122,16 @@ Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 $initStopwatch.Stop();
 
 SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)s";
+
+# If a command was provided, run that instead of the service loop.
+$CommandArgs = $args
+if ($CommandArgs.Length -gt 0) {
+    SbsWriteHost "Running command from arguments. Main loop will be skippped.";
+    $cmd = $CommandArgs[0]
+    $prm = $CommandArgs[1..$($CommandArgs.Length - 1)]
+    & $cmd @prm
+    exit 0
+}
 
 $stopwatchEnvRefresh = [System.Diagnostics.Stopwatch]::StartNew();
 
