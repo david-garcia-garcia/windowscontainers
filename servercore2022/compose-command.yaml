@@ -9,6 +9,7 @@ services:
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SERVERCORE2022}
+    command: ["powershell", "Write-Host 'this is an ad-hoc command'"]
     networks:
       container_default:
         ipv4_address: 172.18.8.8
