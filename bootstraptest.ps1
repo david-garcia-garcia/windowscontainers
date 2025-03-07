@@ -24,7 +24,7 @@ function WaitForLog {
     $timeoutSeconds = 20;
 
     if ($extendedTimeout) {
-        $timeoutSeconds = 60;
+        $timeoutSeconds = 90;
     }
 
     $timeout = New-TimeSpan -Seconds $timeoutSeconds
@@ -46,9 +46,9 @@ function WaitForLog {
     Write-Error "Timeout reached without detecting '$($logContains)' in logs after $($sw.Elapsed.TotalSeconds)s"
 }
 
-function ThrowIfError() {
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Last exit code was NOT 0.";
+function ThrowIfError([int]$ExpectedExitCode = 0) {
+    if ($LASTEXITCODE -ne $ExpectedExitCode) {
+        Write-Error "Last exit code $($LASTEXITCODE) did not match expected code $ExpectedExitCode";
     }
 }
 

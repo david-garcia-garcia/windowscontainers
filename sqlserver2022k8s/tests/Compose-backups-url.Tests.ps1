@@ -7,6 +7,9 @@ Describe 'compose-backupsurl.yaml' {
         New-Item -ItemType Directory -Path "$env:BUILD_TEMP\datavolume\data", "$env:BUILD_TEMP\datavolume\log", "$env:BUILD_TEMP\datavolume\backup" -Force
         Remove-Item -Path "$env:BUILD_TEMP\datavolume\data\*", "$env:BUILD_TEMP\datavolume\log\*", "$env:BUILD_TEMP\datavolume\backup\*" -Recurse -Force
         $parsedUrl = SbsParseSasUrl -Url $Env:TESTS_SAS_URL
+        if ($parsedUrl -eq $null) {
+            throw "Invalid SAS URL: $Env:TESTS_SAS_URL"
+        }
         azcopy remove ($parsedUrl.baseUrlWithPrefix + "/*" + $parsedUrl.query) --recursive
     }
 
