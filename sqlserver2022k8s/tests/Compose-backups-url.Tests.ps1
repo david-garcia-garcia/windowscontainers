@@ -11,8 +11,6 @@ Describe 'compose-backupsurl.yaml' {
             throw "Invalid SAS URL: $Env:TESTS_SAS_URL"
         }
         azcopy remove ($parsedUrl.baseUrlWithPrefix + "/*" + $parsedUrl.query) --recursive
-        # Az copy could fail if the SAS URL is invalid, so we need to throw an error, the whole test will fail anyways...
-        ThrowIfError
     }
 
     It 'SQL Server starts' {
