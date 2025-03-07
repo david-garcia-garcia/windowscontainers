@@ -27,11 +27,11 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^servercore2022$"
             name: build_images
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^servercore2022$"
             name: run_tests
             # To use a secret variable in a script, you must explicitly map it as an environment variable :(
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - task: PublishTestResults@2
             name: publish_tests_results
@@ -46,7 +46,7 @@ stages:
               testRunTitle: Pester
               publishRunAttachments: true
           - pwsh: .\buildall.ps1 -Push -Images "^servercore2022$"
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_iisimages
@@ -56,11 +56,11 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^servercore2022iisnet48$|^servercore2022iis$"
             name: build_images
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^servercore2022iisnet48$|^servercore2022iis$"
             name: run_tests
             # To use a secret variable in a script, you must explicitly map it as an environment variable :(
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - task: PublishTestResults@2
             name: publish_tests_results
@@ -75,7 +75,7 @@ stages:
               testRunTitle: Pester
               publishRunAttachments: true
           - pwsh: .\buildall.ps1 -Push -Images "^servercore2022iisnet48$|^servercore2022iis$"
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2022
@@ -85,11 +85,11 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^sqlserver2022base$|^sqlserver2022k8s$"
             name: build_images
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2022base$|^sqlserver2022k8s$"
             name: run_tests
             # To use a secret variable in a script, you must explicitly map it as an environment variable :(
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - task: PublishTestResults@2
             name: publish_tests_results
@@ -104,7 +104,7 @@ stages:
               testRunTitle: Pester
               publishRunAttachments: true
           - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2022base$|^sqlserver2022k8s$"
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2022as
@@ -114,14 +114,14 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^sqlserver2022as$"
             name: build_images
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2022as$"
             name: run_tests
             # To use a secret variable in a script, you must explicitly map it as an environment variable :(
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2022as$"
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2022is
@@ -131,14 +131,14 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^sqlserver2022is$"
             name: build_images
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2022is$"
             name: run_tests
             # To use a secret variable in a script, you must explicitly map it as an environment variable :(
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2022is$"
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))
       - job: Build_sqlserver2019
@@ -148,11 +148,11 @@ stages:
         steps:
           - pwsh: .\buildall.ps1 -Images "^sqlserver2019base$"
             name: build_images
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -Test -Images "^sqlserver2019base$"
             name: run_tests
             # To use a secret variable in a script, you must explicitly map it as an environment variable :(
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
           - task: PublishTestResults@2
             name: publish_tests_results
@@ -167,6 +167,6 @@ stages:
               testRunTitle: Pester
               publishRunAttachments: true
           - pwsh: .\buildall.ps1 -Push -Images "^sqlserver2019base$"
-            env: { REGISTRY_PWD: $(REGISTRY_PWD), TEST_SAS_URL: $(TEST_SAS_URL) }
+            env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
             condition: or(and(succeeded(), startsWith(variables['Build.SourceBranch'], 'refs/tags/')), contains(variables['Build.SourceVersionMessage'], '[push]'))

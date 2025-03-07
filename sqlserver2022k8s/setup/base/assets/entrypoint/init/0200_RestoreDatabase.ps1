@@ -88,6 +88,7 @@ if (($false -eq $restored) -and ($Env:MSSQL_LIFECYCLE -ne 'ATTACH') -and ($Env:M
 if (($restored -eq $false) -and (-not [String]::isNullOrWhitespace($databaseName))) {
     $backupPathForRestore = $backupPath;
     if (-not [string]::IsNullOrWhiteSpace($Env:MSSQL_PATH_BACKUPURL)) {
+        SbsWriteHost "Using backup URL from environment variable MSSQL_PATH_BACKUPURL";
         $backupPathForRestore = $Env:MSSQL_PATH_BACKUPURL;
     }
 
