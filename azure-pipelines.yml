@@ -17,7 +17,7 @@ variables:
   IMAGE_VERSION: $(Build.SourceBranchName)
   TEMP: $(Agent.TempDirectory)
   AZP_AGENT_CLEANUP_PSMODULES_IN_POWERSHELL: true
-  PsModulePath: "C:\Program Files\PowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules"
+  PsModulePath: 'C:\Program Files\PowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules'
 stages:
   - stage: Build
     displayName: Build and push stage
