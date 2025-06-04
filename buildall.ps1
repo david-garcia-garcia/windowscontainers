@@ -15,13 +15,11 @@ Get-ChildItem env: | ForEach-Object {
 }
 
 # Ensure we are in Windows containers
-if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
-    Get-Command docker
-    Write-Warning "Docker cli not found at $Env:ProgramFiles\Docker\Docker\DockerCli.exe"
-}
-else {
-    Write-Warning "Switching to Windows Engine"
+$dockerInfo = docker info --format '{{.OSType}}'
+if ($dockerInfo -eq 'linux') {
+    Write-TimeLog "Switching to Windows Engine"
     & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
+    ThrowIfError
 }
 
 . .\imagenames.ps1
@@ -34,9 +32,6 @@ $global:ErrorActionPreference = 'Stop';
 
 Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
 Install-Module -Name Posh-SSH -Confirm:$false
-
-choco upgrade dbatools -y
-choco upgrade azcopy10 -y
 
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
