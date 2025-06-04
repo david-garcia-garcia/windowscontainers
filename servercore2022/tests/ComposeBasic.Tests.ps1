@@ -59,6 +59,7 @@ Describe 'compose-basic.yaml' {
     }
 
     It 'Shutdown not called twice' {
+        Start-Sleep -Seconds 5
         docker exec $Env:ImageName powershell "powershell -File c:\entrypoint\shutdown.ps1"
         WaitForLog $Env:ImageName "SHUTDOWN END" -extendedTimeout
         docker compose -f servercore2022/compose-basic.yaml stop;
