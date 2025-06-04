@@ -49,19 +49,20 @@ Describe 'compose-basic.yaml' {
         "
         # Wait for WER to process the crash and create the dump (with timeout)
         $timeout = 15 # seconds
-        $elapsed = 0
+        $startTime = Get-Date
         $checkInterval = 1 # second
         $finalDumpCount = $initialDumpCount
         
         do {
             Start-Sleep -Seconds $checkInterval
-            $elapsed += $checkInterval
+            $elapsed = [int]((Get-Date) - $startTime).TotalSeconds
             $finalDumpCount = docker exec $Env:imageName powershell "(Get-ChildItem 'C:\test\CrashDumps' -Filter '*.dmp' -ErrorAction SilentlyContinue | Measure-Object).Count"
             Write-Host "Checking for dump files... Current count: $finalDumpCount, Initial: $initialDumpCount, Elapsed: ${elapsed}s"
         } while (([int]$finalDumpCount -eq [int]$initialDumpCount) -and ($elapsed -lt $timeout))
         
         # Verify that at least one new dump file was created
         [int]$finalDumpCount | Should -BeGreaterThan ([int]$initialDumpCount)
+        Start-Sleep -Seconds 5
     }
 
     It 'Shutdown not called twice' {
