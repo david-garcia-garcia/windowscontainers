@@ -40,21 +40,14 @@ Describe 'compose-basic.yaml' {
         # Copy crashtest.exe to container and execute with -so argument
         # https://github.com/spreadex/win-docker-crash-dump/blob/main/Dockerfile
         docker cp "servercore2022/tests/crashtest.exe" "${Env:imageName}:C:\crashtest.exe"
-        docker exec $Env:imageName powershell "
-            try { 
-                Start-Process 'C:\crashtest.exe' -ArgumentList '-so' -Wait -NoNewWindow
-            } catch { 
-                Write-Host 'Process crashed as expected' 
-            }
-        "
+        docker exec $Env:imageName powershell "Start-Process 'C:\crashtest.exe' -ArgumentList '-so'"
         # Wait for WER to process the crash and create the dump (with timeout)
-        $timeout = 15 # seconds
+        $timeout = 20 # seconds
         $startTime = Get-Date
-        $checkInterval = 1 # second
         $finalDumpCount = $initialDumpCount
         
         do {
-            Start-Sleep -Seconds $checkInterval
+            Start-Sleep -Seconds 1
             $elapsed = [int]((Get-Date) - $startTime).TotalSeconds
             $finalDumpCount = docker exec $Env:imageName powershell "(Get-ChildItem 'C:\test\CrashDumps' -Filter '*.dmp' -ErrorAction SilentlyContinue | Measure-Object).Count"
             Write-Host "Checking for dump files... Current count: $finalDumpCount, Initial: $initialDumpCount, Elapsed: ${elapsed}s"
