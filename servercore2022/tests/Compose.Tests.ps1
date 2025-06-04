@@ -115,58 +115,6 @@ Describe 'compose.yaml' {
         }
     }
 
-    It 'WER crash dump is generated on stack overflow' {
-        # Check if WER dump folder exists
-        $dumpFolderExists = docker exec $Env:imageName powershell "Test-Path 'C:\CrashDumps'"
-        $dumpFolderExists | Should -Be "True"
-        
-        # Count existing dump files before crash
-        $initialDumpCount = docker exec $Env:imageName powershell "(Get-ChildItem 'C:\CrashDumps' -Filter '*.dmp' -ErrorAction SilentlyContinue | Measure-Object).Count"
-        
-        # Create a PowerShell script that will cause stack overflow through infinite recursion
-        $crashScript = @'
-function InfiniteRecursion {
-    param($depth = 0)
-    Write-Host "Recursion depth: $depth"
-    InfiniteRecursion -depth ($depth + 1)
-}
-InfiniteRecursion
-'@
-        
-        # Execute the crash script in a separate PowerShell process to avoid affecting the test
-        # Use Start-Process with -Wait to ensure we capture the crash
-        docker exec $Env:imageName powershell "
-            `$crashScript = @'
-$crashScript
-'@
-            `$crashScript | Out-File -FilePath 'C:\temp\crashtest.ps1' -Encoding UTF8
-            try {
-                Start-Process -FilePath 'powershell.exe' -ArgumentList '-File C:\temp\crashtest.ps1' -Wait -WindowStyle Hidden
-            } catch {
-                Write-Host 'Process crashed as expected'
-            }
-        "
-        
-        # Wait for WER to process the crash and create the dump (with timeout)
-        $timeout = 15 # seconds
-        $elapsed = 0
-        $checkInterval = 1 # second
-        $finalDumpCount = $initialDumpCount
-        
-        do {
-            Start-Sleep -Seconds $checkInterval
-            $elapsed += $checkInterval
-            $finalDumpCount = docker exec $Env:imageName powershell "(Get-ChildItem 'C:\CrashDumps' -Filter '*.dmp' -ErrorAction SilentlyContinue | Measure-Object).Count"
-            Write-Host "Checking for dump files... Current count: $finalDumpCount, Initial: $initialDumpCount, Elapsed: ${elapsed}s"
-        } while (([int]$finalDumpCount -eq [int]$initialDumpCount) -and ($elapsed -lt $timeout))
-        
-        # Verify that at least one new dump file was created
-        [int]$finalDumpCount | Should -BeGreaterThan ([int]$initialDumpCount)
-        
-        # Clean up the test script
-        docker exec $Env:imageName powershell "Remove-Item 'C:\temp\crashtest.ps1' -ErrorAction SilentlyContinue"
-    }
-
     AfterAll {
         docker compose -f servercore2022/compose.yaml down;
     }

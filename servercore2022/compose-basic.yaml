@@ -12,8 +12,9 @@ services:
     environment:
       - SBS_DEBUG=True
       - SBS_CONTAINERTIMEZONE=Alaskan Standard Time
+      - CREATEDIR_crashdumps=C:\test\CrashDumps
       - WER_ENABLE=True
-      - WER_DUMPFOLDER=C:\CrashDumps
+      - WER_DUMPFOLDER=C:\test\CrashDumps
       - WER_DUMPCOUNT=10
       - WER_DUMPTYPE=2
       - WER_CUSTOMDUMPFLAGS=0
