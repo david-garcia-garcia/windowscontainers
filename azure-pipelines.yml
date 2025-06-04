@@ -24,7 +24,7 @@ stages:
         timeoutInMinutes: 20
         displayName: Build_servercore2022
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
-        env:
+        variables:
           AZP_AGENT_CLEANUP_PSMODULES_IN_POWERSHELL: true
         steps:
           - pwsh: .\buildall.ps1 -Images "^servercore2022$"
