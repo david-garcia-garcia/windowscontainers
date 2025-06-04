@@ -14,6 +14,10 @@ Get-ChildItem env: | ForEach-Object {
     Write-Host "Variable: $($_.Name) = $('*' * $_.Value.Length)"
 }
 
+. .\imagenames.ps1
+. .\bootstraptest.ps1
+. .\importfunctions.ps1
+
 # Ensure we are in Windows containers
 $dockerInfo = docker info --format '{{.OSType}}'
 if ($dockerInfo -eq 'linux') {
@@ -21,10 +25,6 @@ if ($dockerInfo -eq 'linux') {
     & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
     ThrowIfError
 }
-
-. .\imagenames.ps1
-. .\bootstraptest.ps1
-. .\importfunctions.ps1
 
 SbsPrintSystemInfo
 
