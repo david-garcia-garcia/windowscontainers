@@ -34,8 +34,8 @@ Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
 Install-Module -Name Posh-SSH -Confirm:$false
 
 Import-Module Pester -PassThru;
-#$PesterPreference = [PesterConfiguration]::Default
-$PesterPreference = New-PesterConfiguration
+$PesterPreference = [PesterConfiguration]::Default
+#$PesterPreference = New-PesterConfiguration
 $PesterPreference.Output.Verbosity = 'Detailed'
 $PesterPreference.Output.StackTraceVerbosity = 'Filtered'
 $PesterPreference.TestResult.Enabled = $true
