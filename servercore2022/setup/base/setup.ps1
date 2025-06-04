@@ -22,3 +22,9 @@ Get-ScheduledTask -TaskPath "\Microsoft\Windows\SoftwareProtectionPlatform\" | D
 ################################################
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
 Remove-Item -Path "$env:TEMP\*" -Recurse -Force;
+
+################################################
+# Install Az.Identity, if these images are to be used in AKS,
+# we need this to deal with Workload Identity
+################################################
+Install-Module -Name Az.Identity -Force -AllowClobber -Confirm:$false;

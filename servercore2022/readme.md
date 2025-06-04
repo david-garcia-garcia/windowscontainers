@@ -18,6 +18,11 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 | SBS_SRVENSURE              | $null               | No                   | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
 | SBS_SRVSTOP                | $null               | Yes                  | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
 | SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Yes                  | Use this to configure the trigger for a scheduled task that is already present inside the image. |
+| WER_ENABLE                 | $false              | No                   | Enable Windows Error Reporting configuration                 |
+| WER_DUMPFOLDER             | $null               | No                   | Directory path for crash dump files                          |
+| WER_DUMPCOUNT              | 4                   | No                   | Maximum number of dump files to keep                         |
+| WER_DUMPTYPE               | 2                   | No                   | Type of dump to create (0=Custom, 1=Mini, 2=Full)           |
+| WER_CUSTOMDUMPFLAGS        | 0                   | No                   | Custom dump flags for WER configuration                      |
 
 Relevant locations
 

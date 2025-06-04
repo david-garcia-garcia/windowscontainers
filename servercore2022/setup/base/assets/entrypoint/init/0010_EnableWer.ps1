@@ -8,10 +8,16 @@ if ($true -eq $WER_ENABLE) {
     Enable-WindowsErrorReporting;
     
     # Get configurable WER parameters with defaults using Sbs utility functions
-    $werDumpFolder = SbsGetEnvString -name "WER_DUMPFOLDER" -defaultValue $Env:CrashDumpDir;
+    $werDumpFolder = SbsGetEnvString -name "WER_DUMPFOLDER" -defaultValue $null;
     $werDumpCount = SbsGetEnvInt -name "WER_DUMPCOUNT" -defaultValue 4;
     $werDumpType = SbsGetEnvInt -name "WER_DUMPTYPE" -defaultValue 2;
     $werCustomDumpFlags = SbsGetEnvInt -name "WER_CUSTOMDUMPFLAGS" -defaultValue 0;
+    
+    # Validate and ensure dump folder is properly configured
+    if ([string]::IsNullOrWhiteSpace($werDumpFolder) -or -not (Test-Path $werDumpFolder)) {
+        SbsWriteWarning "WER_DUMPFOLDER not specified or does not exist.";
+        return; 
+    }
     
     # Configure WER registry settings
     $werDumpRegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps";
@@ -25,6 +31,7 @@ if ($true -eq $WER_ENABLE) {
     SbsWriteDebug "WER Dump Set Up with DumpFolder: $werDumpFolder, DumpCount: $werDumpCount, DumpType: $werDumpType, CustomDumpFlags: $werCustomDumpFlags";
     Get-Service WerSvc;
     Start-Service WerSvc;
-} else {
+}
+else {
     SbsWriteDebug "WER configuration skipped (WER_ENABLE not set to true)";
 }
