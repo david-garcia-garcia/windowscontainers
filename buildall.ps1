@@ -17,7 +17,7 @@ Get-ChildItem env: | ForEach-Object {
 # Ensure we are in Windows containers
 $dockerInfo = docker info --format '{{.OSType}}'
 if ($dockerInfo -eq 'linux') {
-    Write-TimeLog "Switching to Windows Engine"
+    Write-Host "Switching to Windows Engine"
     & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
     ThrowIfError
 }
