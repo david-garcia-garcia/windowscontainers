@@ -18,6 +18,9 @@ variables:
   TEMP: $(Agent.TempDirectory)
   AZP_AGENT_CLEANUP_PSMODULES_IN_POWERSHELL: false
   PsModulePath: 'C:\Program Files\PowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules'
+  # Variable to control which images to build, pipe-delimited list
+  #IMAGES_TO_BUILD: '|servercore2022|servercore2022iis|sqlserver2022base|sqlserver2022k8s|sqlserver2022as|sqlserver2022is|sqlserver2019base|'
+  IMAGES_TO_BUILD: '|servercore2022|servercore2022iis|'
 stages:
   - stage: Build
     displayName: Build and push stage
@@ -25,6 +28,7 @@ stages:
       - job: Build_servercore2022
         timeoutInMinutes: 20
         displayName: Build_servercore2022
+        condition: contains(variables['IMAGES_TO_BUILD'], '|servercore2022|')
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
           - pwsh: .\buildall.ps1 -RunningCI -Images "^servercore2022$"
@@ -53,6 +57,7 @@ stages:
       - job: Build_iisimages
         timeoutInMinutes: 40
         displayName: Build_iisimages
+        condition: contains(variables['IMAGES_TO_BUILD'], '|servercore2022iis|')
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
           - pwsh: .\buildall.ps1 -RunningCI -Images "^servercore2022iisnet48$|^servercore2022iis$"
@@ -81,6 +86,7 @@ stages:
       - job: Build_sqlserver2022
         timeoutInMinutes: 60
         displayName: Build_sqlserver2022
+        condition: contains(variables['IMAGES_TO_BUILD'], '|sqlserver2022base|')
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
           - pwsh: .\buildall.ps1 -RunningCI -Images "^sqlserver2022base$|^sqlserver2022k8s$"
@@ -109,6 +115,7 @@ stages:
       - job: Build_sqlserver2022as
         timeoutInMinutes: 60
         displayName: Build_sqlserver2022as
+        condition: contains(variables['IMAGES_TO_BUILD'], '|sqlserver2022as|')
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
           - pwsh: .\buildall.ps1 -RunningCI -Images "^sqlserver2022as$"
@@ -125,6 +132,7 @@ stages:
       - job: Build_sqlserver2022is
         timeoutInMinutes: 60
         displayName: Build_sqlserver2022is
+        condition: contains(variables['IMAGES_TO_BUILD'], '|sqlserver2022is|')
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
           - pwsh: .\buildall.ps1 -RunningCI -Images "^sqlserver2022is$"
@@ -141,6 +149,7 @@ stages:
       - job: Build_sqlserver2019
         timeoutInMinutes: 60
         displayName: Build_sqlserver2019
+        condition: contains(variables['IMAGES_TO_BUILD'], '|sqlserver2019base|')
         pool: { vmImage: $(vmImageName), name: Test-Rafael }
         steps:
           - pwsh: .\buildall.ps1 -RunningCI -Images "^sqlserver2019base$"
