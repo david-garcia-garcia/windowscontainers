@@ -7,6 +7,9 @@ Write-Host " Install DbaTools"
 Write-Host "-----------------------------------------`n"
 
 choco install dbatools -y --version=2.1.26 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "DbaTools installation failed with exit code $LASTEXITCODE"
+}
 
 # All DBA tools stuff is going to be interacting with local server, so
 # these default's whould be good to go.
@@ -52,7 +55,10 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install azcopy"
 Write-Host "-----------------------------------------`n"
 
-choco install azcopy10 -y --version=10.25.1 --no-progress;
+choco install azcopy10 -y --version=10.29.1 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "AzCopy installation failed with exit code $LASTEXITCODE"
+}
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
@@ -65,6 +71,9 @@ Write-Host " Install SqlPackage"
 Write-Host "-----------------------------------------`n"
 
 choco install sqlpackage -y --version=162.2.111 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "SqlPackage installation failed with exit code $LASTEXITCODE"
+}
 
 # Cleanup
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

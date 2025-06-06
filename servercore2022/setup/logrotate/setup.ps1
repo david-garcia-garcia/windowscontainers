@@ -6,10 +6,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Installing Log-Rotate (https://github.com/theohbrothers/Log-Rotate)"
 Write-Host "-----------------------------------------`n"
 
-$testCommand = Get-Command -Name Log-Rotate -ErrorAction SilentlyContinue;
-if(-not($testCommand)){
-  Install-Module -Name Log-Rotate -Force -Repository PSGallery -Scope AllUsers;
-}
+Install-Module -Name Log-Rotate -Force -Repository PSGallery -Scope AllUsers;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Registering log rotate scheduled task"

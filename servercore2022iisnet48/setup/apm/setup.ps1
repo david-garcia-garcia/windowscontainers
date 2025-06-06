@@ -5,6 +5,9 @@ Write-Host " Installing .Net agent";
 Write-Host "-----------------------------------------`n";
 
 choco upgrade newrelic-dotnet -y --version=10.32.0 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "NewRelic .NET agent installation failed with exit code $LASTEXITCODE"
+}
 
 # https://docs.newrelic.com/docs/apm/agents/net-agent/troubleshooting/no-data-appears-after-disabling-tls-10/#strongcrypto
 # Esto hace falta para que el framework utilice por defecto TLS en lugar de SSL

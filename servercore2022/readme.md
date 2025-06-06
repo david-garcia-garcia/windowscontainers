@@ -18,6 +18,12 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 | SBS_SRVENSURE              | $null               | No                   | List of comma separated service names to start and enabled (Automatic startup) when the image starts |
 | SBS_SRVSTOP                | $null               | Yes                  | List of comma separated service names to ensure are gracefully stopped when the container is stopped |
 | SBS_CRON_{SCHEDULEDTASK}   | N/A                 | Yes                  | Use this to configure the trigger for a scheduled task that is already present inside the image. |
+| CREATEDIR_{NAME}           | N/A                 | No                   | Automatically creates the specified directory during container initialization. Example: CREATEDIR_LOGS=C:\App\Logs |
+| WER_ENABLE                 | $false              | No                   | Enable Windows Error Reporting configuration                 |
+| WER_DUMPFOLDER             | $null               | No                   | Directory path for crash dump files                          |
+| WER_DUMPCOUNT              | 4                   | No                   | Maximum number of dump files to keep                         |
+| WER_DUMPTYPE               | 2                   | No                   | Type of dump to create (0=Custom, 1=Mini, 2=Full)           |
+| WER_CUSTOMDUMPFLAGS        | 0                   | No                   | Custom dump flags for WER configuration                      |
 
 Relevant locations
 
@@ -400,4 +406,41 @@ c:\ProgramFiles\WindowsPowerShell\Modules\Sbs\Functions\MyExampleFunction.ps1
 ```
 
 This will be available for your entry point scripts and inside the container. The function needs to be named exactly as the powershell file so that it can be automatically detected.
+
+## Automatic Directory Creation
+
+The container supports automatic directory creation during initialization through the `CREATEDIR_` environment variable pattern. This is useful for ensuring required directories exist before your application starts.
+
+### Usage
+
+Set environment variables that start with `CREATEDIR_` followed by any descriptive name, with the directory path as the value:
+
+```yaml
+environment:
+  - CREATEDIR_LOGS=C:\App\Logs
+  - CREATEDIR_DATA=C:\App\Data
+  - CREATEDIR_TEMP=C:\App\Temp
+  - CREATEDIR_UPLOADS=C:\inetpub\uploads
+```
+
+### Behavior
+
+- **Recursive Creation**: Directories are created recursively (parent directories are created if they don't exist)
+- **Safe Operation**: If a directory already exists, it will be skipped without error
+- **Early Execution**: Directories are created during the `0005_CreateDirectories.ps1` initialization script
+- **Error Handling**: Failed directory creation will be logged but won't stop container startup
+
+### Examples
+
+```bash
+# Docker run example
+docker run -e CREATEDIR_APPDATA=C:\MyApp\Data -e CREATEDIR_LOGS=C:\MyApp\Logs myimage
+
+# Docker Compose example
+environment:
+  - CREATEDIR_CACHE=C:\App\Cache
+  - CREATEDIR_REPORTS=D:\Reports\Output
+```
+
+This feature eliminates the need to manually create directories in your application code or custom scripts.
 

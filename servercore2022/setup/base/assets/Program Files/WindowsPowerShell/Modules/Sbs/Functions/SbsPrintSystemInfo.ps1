@@ -1,11 +1,11 @@
-
 function SbsPrintSystemInfo {
     [OutputType([bool])]
     param (
     )
 
-    $computerInfo = Get-WmiObject Win32_ComputerSystem | Select-Object NumberOfProcessors, NumberOfLogicalProcessors, Name, Manufacturer, Model, TotalPhysicalMemory;
-    $cpuInfo = Get-WmiObject -Class Win32_Processor | Select-Object CurrentClockSpeed, MaxClockSpeed, Name;
+    # Use Get-CimInstance instead of Get-WmiObject (modern replacement)
+    $computerInfo = Get-CimInstance -ClassName Win32_ComputerSystem | Select-Object NumberOfProcessors, NumberOfLogicalProcessors, Name, Manufacturer, Model, TotalPhysicalMemory;
+    $cpuInfo = Get-CimInstance -ClassName Win32_Processor | Select-Object CurrentClockSpeed, MaxClockSpeed, Name;
     $memoryGb = [math]::round(($computerInfo.TotalPhysicalMemory / 1GB), 1);
     Write-Output "SystemInfo: NumberOfLogicalProcessors: $($computerInfo.NumberOfLogicalProcessors)";
     Write-Output "SystemInfo: NumberOfProcessors: $($computerInfo.NumberOfProcessors)";

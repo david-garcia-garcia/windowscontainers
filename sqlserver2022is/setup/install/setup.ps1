@@ -45,6 +45,9 @@ Remove-Item -Path C:\MSSQLUPDATES -Recurse -Force;
 # Install DBA tools
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
 choco install dbatools -y --version=2.1.26 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "DbaTools installation failed with exit code $LASTEXITCODE"
+}
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

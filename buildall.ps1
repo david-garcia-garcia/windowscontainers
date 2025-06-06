@@ -5,7 +5,8 @@
 param (
     [switch]$Push = $false,
     [switch]$Test = $false,
-    [string]$Images = ".*"
+    [string]$Images = ".*",
+    [switch]$RunningCI = $false
 )
 
 
@@ -14,32 +15,32 @@ Get-ChildItem env: | ForEach-Object {
     Write-Host "Variable: $($_.Name) = $('*' * $_.Value.Length)"
 }
 
-# Ensure we are in Windows containers
-if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {
-    Get-Command docker
-    Write-Warning "Docker cli not found at $Env:ProgramFiles\Docker\Docker\DockerCli.exe"
-}
-else {
-    Write-Warning "Switching to Windows Engine"
-    & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
-}
-
 . .\imagenames.ps1
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
+
+# Ensure we are in Windows containers
+if ($true -eq $RunningCI) {
+    $dockerInfo = docker info --format '{{.OSType}}'
+    if ($dockerInfo -eq 'linux') {
+        Write-Host "Switching to Windows Engine"
+        & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
+        ThrowIfError
+    }
+}
 
 SbsPrintSystemInfo
 
 $global:ErrorActionPreference = 'Stop';
 
-Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-Install-Module -Name Posh-SSH -Confirm:$false
-
-choco upgrade dbatools -y
-choco upgrade azcopy10 -y
+if (-not (Get-Module -ListAvailable -Name Posh-SSH)) {
+    Write-Host "Installing Posh-SSH"
+    Install-Module -Name Posh-SSH -Confirm:$false
+}
 
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
+#$PesterPreference = New-PesterConfiguration
 $PesterPreference.Output.Verbosity = 'Detailed'
 $PesterPreference.Output.StackTraceVerbosity = 'Filtered'
 $PesterPreference.TestResult.Enabled = $true
@@ -120,7 +121,7 @@ $ImageConfigs = @(
         Name         = "sqlserver2022k8s"
         ImageEnvVar  = "IMG_SQLSERVER2022K8S"
         ComposeFile  = "sqlserver2022k8s/compose.yaml"
-        Dependencies = @("sqlserver2022base", "servercore2022")
+        Dependencies = @("servercore2022", "sqlserver2022base")
         TestPath     = "sqlserver2022k8s\tests"
     },
     @{
@@ -189,6 +190,7 @@ foreach ($imageName in $imagesToBuild) {
     $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
     $imageVar = $config.ImageEnvVar
     Write-Output "Building $((Get-Item env:$imageVar).Value)"
+    Write-Output "Using compose file $($config.ComposeFile)"
     docker compose -f $config.ComposeFile build --quiet
     ThrowIfError
 }

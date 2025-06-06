@@ -41,6 +41,13 @@ Write-Host " Installing IIS rewrite and Array Request Routing"
 Write-Host "-----------------------------------------`n"
 
 choco upgrade urlrewrite -y --version=2.1.20190828 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "URL Rewrite installation failed with exit code $LASTEXITCODE"
+}
+
 choco upgrade iis-arr -y --version=3.0.20210521 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "IIS Application Request Routing installation failed with exit code $LASTEXITCODE"
+}
 
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
