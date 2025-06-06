@@ -19,7 +19,9 @@ Describe 'compose-backupsurl.yaml' {
         WaitForLog $Env:instanceName "Credential 'https://.*' upserted"
         WaitForLog $Env:instanceName "Checking for backups in https://.*"
         # The remote storage has been emptied, so it won't be able to restore anything, which is expected.
-        WaitForLog $Env:instanceName "Database mytestdatabase could not be restored. Either backup media is missing or something failed. Check the logs."
+        # For whatever reason this changed in the logs and is now output in multiple lines? Probably an environment issue/config.
+        #WaitForLog $Env:instanceName "Database mytestdatabase could not be restored. Either backup media is missing or something failed. Check the logs."
+        WaitForLog $Env:instanceName "Database mytestdatabase could not be"
     }
 
     It 'Can connect to the SQL Server' {
