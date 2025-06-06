@@ -37,9 +37,8 @@ $process = Start-Process -Wait -NoNewWindow -FilePath "C:\SQLServerISO\setup.exe
 "/INSTANCEID=MSSQLSERVER",
 "/INSTANCENAME=MSSQLSERVER",
 "/INSTALLSQLDATADIR=`"$installDir`"",
-"/UpdateEnabled=0",
-"/IACCEPTSQLSERVERLICENSETERMS",
 "/UpdateEnabled=1",
+"/IACCEPTSQLSERVERLICENSETERMS",
 "/UseMicrosoftUpdate=0",
 "/UPDATESOURCE=`"C:\MSSQLUPDATES`"",
 "/ASSYSADMINACCOUNTS=ContainerAdministrator" -PassThru;
