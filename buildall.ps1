@@ -6,7 +6,7 @@ param (
     [switch]$Push = $false,
     [switch]$Test = $false,
     [string]$Images = ".*",
-    [switch]$RunningIc = $false
+    [switch]$RunningCI = $false
 )
 
 
@@ -20,7 +20,7 @@ Get-ChildItem env: | ForEach-Object {
 . .\importfunctions.ps1
 
 # Ensure we are in Windows containers
-if ($true -eq $RunningIc) {
+if ($true -eq $RunningCI) {
     $dockerInfo = docker info --format '{{.OSType}}'
     if ($dockerInfo -eq 'linux') {
         Write-Host "Switching to Windows Engine"
