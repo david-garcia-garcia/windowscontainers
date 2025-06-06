@@ -5,7 +5,8 @@
 param (
     [switch]$Push = $false,
     [switch]$Test = $false,
-    [string]$Images = ".*"
+    [string]$Images = ".*",
+    [switch]$RunningIc = $false
 )
 
 
@@ -19,19 +20,23 @@ Get-ChildItem env: | ForEach-Object {
 . .\importfunctions.ps1
 
 # Ensure we are in Windows containers
-$dockerInfo = docker info --format '{{.OSType}}'
-if ($dockerInfo -eq 'linux') {
-    Write-Host "Switching to Windows Engine"
-    & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
-    ThrowIfError
+if ($true -eq $RunningIc) {
+    $dockerInfo = docker info --format '{{.OSType}}'
+    if ($dockerInfo -eq 'linux') {
+        Write-Host "Switching to Windows Engine"
+        & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
+        ThrowIfError
+    }
 }
 
 SbsPrintSystemInfo
 
 $global:ErrorActionPreference = 'Stop';
 
-Set-PSRepository -Name 'PSGallery' -InstallationPolicy Trusted
-Install-Module -Name Posh-SSH -Confirm:$false
+if (-not (Get-Module -ListAvailable -Name Posh-SSH)) {
+    Write-Host "Installing Posh-SSH"
+    Install-Module -Name Posh-SSH -Confirm:$false
+}
 
 Import-Module Pester -PassThru;
 $PesterPreference = [PesterConfiguration]::Default
@@ -116,7 +121,7 @@ $ImageConfigs = @(
         Name         = "sqlserver2022k8s"
         ImageEnvVar  = "IMG_SQLSERVER2022K8S"
         ComposeFile  = "sqlserver2022k8s/compose.yaml"
-        Dependencies = @("sqlserver2022base", "servercore2022")
+        Dependencies = @("servercore2022", "sqlserver2022base")
         TestPath     = "sqlserver2022k8s\tests"
     },
     @{
@@ -185,6 +190,7 @@ foreach ($imageName in $imagesToBuild) {
     $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
     $imageVar = $config.ImageEnvVar
     Write-Output "Building $((Get-Item env:$imageVar).Value)"
+    Write-Output "Using compose file $($config.ComposeFile)"
     docker compose -f $config.ComposeFile build --quiet
     ThrowIfError
 }

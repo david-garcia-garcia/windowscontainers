@@ -15,6 +15,9 @@ Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
 choco upgrade 7zip.install -y --version=24.9.0 --no-progress;
+if ($LASTEXITCODE -ne 0) {
+    throw "7zip installation failed with exit code $LASTEXITCODE"
+}
 
 Write-Host "`n---------------------------------------"
 Write-Host " Installing Micro"
