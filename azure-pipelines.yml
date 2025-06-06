@@ -32,12 +32,11 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -RunningCI -Test -Images "^servercore2022$"
             name: run_tests
-            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
-            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            condition: and(succeeded(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
           - task: PublishTestResults@2
             name: publish_tests_results
-            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            condition: and(always(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
             inputs:
               testResultsFormat: "NUnit"
               testResultsFiles: "**/*.xml"
@@ -61,12 +60,11 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -RunningCI -Test -Images "^servercore2022iisnet48$|^servercore2022iis$"
             name: run_tests
-            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
-            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            condition: and(succeeded(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
           - task: PublishTestResults@2
             name: publish_tests_results
-            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            condition: and(always(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
             inputs:
               testResultsFormat: "NUnit"
               testResultsFiles: "**/*.xml"
@@ -90,12 +88,11 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -RunningCI -Test -Images "^sqlserver2022base$|^sqlserver2022k8s$"
             name: run_tests
-            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
-            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            condition: and(succeeded(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
           - task: PublishTestResults@2
             name: publish_tests_results
-            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            condition: and(always(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
             inputs:
               testResultsFormat: "NUnit"
               testResultsFiles: "**/*.xml"
@@ -119,9 +116,8 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -RunningCI -Test -Images "^sqlserver2022as$"
             name: run_tests
-            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
-            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            condition: and(succeeded(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
           - pwsh: .\buildall.ps1 -RunningCI -Push -Images "^sqlserver2022as$"
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
@@ -136,9 +132,8 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -RunningCI -Test -Images "^sqlserver2022is$"
             name: run_tests
-            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
-            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            condition: and(succeeded(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
           - pwsh: .\buildall.ps1 -RunningCI -Push -Images "^sqlserver2022is$"
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
             name: push_containers
@@ -153,12 +148,11 @@ stages:
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
           - pwsh: .\buildall.ps1 -RunningCI -Test -Images "^sqlserver2019base$"
             name: run_tests
-            # To use a secret variable in a script, you must explicitly map it as an environment variable :(
             env: { REGISTRY_PWD: $(REGISTRY_PWD), TESTS_SAS_URL: $(TESTS_SAS_URL) }
-            condition: not(contains(variables['Build.SourceVersionMessage'], '[notest]'))
+            condition: and(succeeded(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
           - task: PublishTestResults@2
             name: publish_tests_results
-            condition: and(not(canceled()), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
+            condition: and(always(), not(contains(variables['Build.SourceVersionMessage'], '[notest]')))
             inputs:
               testResultsFormat: "NUnit"
               testResultsFiles: "**/*.xml"
