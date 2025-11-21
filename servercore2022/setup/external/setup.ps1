@@ -14,7 +14,7 @@ Write-Host " Installing 7zip"
 Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
-choco upgrade 7zip.install -y --version=24.9.0 --no-progress;
+choco upgrade 7zip.install -y --version=25.1.0 --no-progress;
 if ($LASTEXITCODE -ne 0) {
     throw "7zip installation failed with exit code $LASTEXITCODE"
 }
