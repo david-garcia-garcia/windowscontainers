@@ -36,6 +36,21 @@ Foreach ($featureName in $features) {
 }
 
 Write-Host "`n---------------------------------------"
+Write-Host " Disabling IIS logging (server level and per-site)"
+Write-Host "-----------------------------------------`n"
+
+# Disable logging at the server level (for all future sites)
+Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'enabled' -Value 'False'
+Write-Host "Server-level logging disabled"
+
+# Disable logging for all existing sites
+Import-Module WebAdministration
+Get-Website | ForEach-Object {
+    Set-ItemProperty "IIS:\Sites\$($_.Name)" -Name logFile.enabled -Value $false
+    Write-Host "Logging disabled for site: $($_.Name)"
+}
+
+Write-Host "`n---------------------------------------"
 Write-Host " Installing IIS rewrite and Array Request Routing"
 Write-Host "-----------------------------------------`n"
 

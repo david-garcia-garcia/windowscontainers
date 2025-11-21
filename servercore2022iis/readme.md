@@ -82,7 +82,14 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Wow6432Node\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value 1
 ```
 
-**Important**: you will not be able to connect to IIS **from within the same machine where the port is bound**. IIS remote manager detects that the destination IP is also bound to the local computer and will skip remote management completely. There is no way to workaround this (not changing ports, not using HOSTS to fake a different hostname). The only way to make is to connect from somewhere where the IP does not match the one used for port forwarding. You can spin up a VM inside HyperV and from there, access the forwarded port in your host.
+**Important**: 
+
+* You will **not** be able to connect to IIS **from within the same machine where the port is bound**.
+* IIS remote manager detects that the destination IP is also bound to the local computer and will skip remote management completely.
+* There is no way to workaround this (not changing ports, not using HOSTS to fake a different hostname).
+* The only solution is to connect from somewhere where the IP does not match the one used for port forwarding.
+* You can spin up a VM inside HyperV and from there, access the forwarded port in your host.
+* To connect from HyperV to your host, you need to properly setup networking of your VM so that host and VM can see each other in the same network. Once done, you need to bind the port to the exact same IP that is visible to the VM.
 
 ![image-20240117144908714](readme_assets/img-remoteiis-hyperv)
 
