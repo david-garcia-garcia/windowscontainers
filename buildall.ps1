@@ -29,8 +29,9 @@ SbsPrintSystemInfo
 $global:ErrorActionPreference = 'Stop';
 
 if (-not (Get-Module -ListAvailable -Name Posh-SSH)) {
+    # TODO: This should be part of the IC image
     Write-Host "Installing Posh-SSH"
-    Install-Module -Name Posh-SSH -Confirm:$false
+    Install-Module -Name Posh-SSH -Force -Confirm:$false -Scope CurrentUser
 }
 
 Import-Module Pester -PassThru;
