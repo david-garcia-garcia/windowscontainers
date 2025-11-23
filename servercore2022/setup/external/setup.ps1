@@ -38,9 +38,6 @@ Write-Host "-----------------------------------------`n"
 
 Add-WindowsCapability -Online -Name OpenSSH.Server
 
-# Copy custom sshd_config from assets
-Copy-Item -Path "C:\sshd_config" -Destination "C:\ProgramData\ssh\sshd_config" -Force
-
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.
 #choco install openssl -y --version=3.2.1 --ignore-checksums --no-progress;
