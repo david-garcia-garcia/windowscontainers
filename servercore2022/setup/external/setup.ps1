@@ -27,8 +27,11 @@ $microUrl = "https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2
 $zipPath = "$env:TEMP\micro.zip"
 $installPath = "C:\Program Files\Micro"
 
+Write-Host "Downloading micro from $microUrl"
 Invoke-WebRequest $microUrl -OutFile $zipPath
+Write-Host "Expanding archive to $installPath"
 Expand-Archive $zipPath -DestinationPath $installPath -Force
+Write-Host "Setting environment variable for Path"
 [System.Environment]::SetEnvironmentVariable("Path", "$([System.Environment]::GetEnvironmentVariable("Path", "Machine"));$installPath\\micro-2.0.14", "Machine")
 Remove-Item $zipPath
 
