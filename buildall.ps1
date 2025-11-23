@@ -28,6 +28,15 @@ SbsPrintSystemInfo
 
 $global:ErrorActionPreference = 'Stop';
 
+# Check commit message for [composenocache] flag
+$useNoCache = $false
+if ($ENV:BUILD_SOURCEVERSIONMESSAGE) {
+    if ($ENV:BUILD_SOURCEVERSIONMESSAGE -match '\[composenocache\]') {
+        $useNoCache = $true
+        Write-Host "Commit message contains [composenocache] - will use --no-cache for docker compose build"
+    }
+}
+
 if (-not (Get-Module -ListAvailable -Name Posh-SSH)) {
     # TODO: This should be part of the IC image
     Write-Host "Installing Posh-SSH"
@@ -187,7 +196,14 @@ foreach ($imageName in $imagesToBuild) {
     $imageVar = $config.ImageEnvVar
     Write-Output "Building $((Get-Item env:$imageVar).Value)"
     Write-Output "Using compose file $($config.ComposeFile)"
-    docker compose -f $config.ComposeFile build --quiet
+    
+    $buildArgs = @("-f", $config.ComposeFile, "build", "--quiet")
+    if ($useNoCache) {
+        $buildArgs += "--no-cache"
+        Write-Output "Using --no-cache flag (from [composenocache] commit message)"
+    }
+    
+    docker compose $buildArgs
     ThrowIfError
 }
 
