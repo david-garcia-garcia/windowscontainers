@@ -10,7 +10,7 @@ Write-Host "-----------------------------------------`n"
 Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
 Write-Host "`n---------------------------------------"
-Write-Host " Installing 7zip"
+Write-Host " Choco upgrade 7zip"
 Write-Host "-----------------------------------------`n"
 
 # 7zip for compression/decompression
@@ -33,13 +33,13 @@ Expand-Archive $zipPath -DestinationPath $installPath -Force
 Remove-Item $zipPath
 
 Write-Host "`n---------------------------------------"
-Write-Host " Open SSH server"
+Write-Host " Add-WindowsCapability Open SSH server"
 Write-Host "-----------------------------------------`n"
 
 Add-WindowsCapability -Online -Name OpenSSH.Server
 
-Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "PasswordAuthentication yes";
-Add-Content -Path "C:\ProgramData\ssh\sshd_config" -Value "Subsystem sftp C:/Windows/System32/OpenSSH/sftp-server.exe";
+# Copy custom sshd_config from assets
+Copy-Item -Path "C:\sshd_config" -Destination "C:\ProgramData\ssh\sshd_config" -Force
 
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.

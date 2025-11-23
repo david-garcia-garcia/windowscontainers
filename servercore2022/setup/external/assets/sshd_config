@@ -1,0 +1,6 @@
+# Custom sshd_config for Windows Container
+# This file is copied to C:\ProgramData\ssh\sshd_config
+
+PasswordAuthentication yes
+Subsystem sftp C:/Windows/System32/OpenSSH/sftp-server.exe
+
