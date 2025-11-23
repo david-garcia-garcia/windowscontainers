@@ -21,12 +21,7 @@ Get-ChildItem env: | ForEach-Object {
 
 # Ensure we are in Windows containers
 if ($true -eq $RunningCI) {
-    $dockerInfo = docker info --format '{{.OSType}}'
-    if ($dockerInfo -eq 'linux') {
-        Write-Host "Switching to Windows Engine"
-        & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
-        ThrowIfError
-    }
+    . .\switch-to-windows-containers.ps1
 }
 
 SbsPrintSystemInfo
