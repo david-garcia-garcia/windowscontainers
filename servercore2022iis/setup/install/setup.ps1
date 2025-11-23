@@ -51,13 +51,17 @@ Get-Website | ForEach-Object {
 }
 
 Write-Host "`n---------------------------------------"
-Write-Host " Installing IIS rewrite and Array Request Routing"
+Write-Host " choco upgrade urlrewrite"
 Write-Host "-----------------------------------------`n"
 
 choco upgrade urlrewrite -y --version=2.1.20190828 --no-progress;
 if ($LASTEXITCODE -ne 0) {
     throw "URL Rewrite installation failed with exit code $LASTEXITCODE"
 }
+
+Write-Host "`n---------------------------------------"
+Write-Host " choco upgrade iis-arr"
+Write-Host "-----------------------------------------`n"
 
 choco upgrade iis-arr -y --version=3.0.20210521 --no-progress;
 if ($LASTEXITCODE -ne 0) {
