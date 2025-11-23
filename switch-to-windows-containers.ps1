@@ -1,7 +1,7 @@
 # Switch to Windows Containers mode
 # This script ensures Docker is running in Windows containers mode
 
-. .\importfunctions.ps1
+. .\bootstraptest.ps1
 
 # Ensure we are in Windows containers mode
 if (-not(Test-Path $Env:ProgramFiles\Docker\Docker\DockerCli.exe)) {

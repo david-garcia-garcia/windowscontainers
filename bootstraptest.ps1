@@ -47,6 +47,19 @@ function WaitForLog {
 }
 
 function ThrowIfError([int]$ExpectedExitCode = 0) {
+    # STATUS_CONTROL_C_EXIT (0xC000013A / 3221225786)
+    # This exit code indicates an interactive application received Ctrl+C and was aborted.
+    # In Windows, cmd.exe detects Ctrl+C in batch scripts by checking if a child process
+    # returns STATUS_CONTROL_C_EXIT. If we treat this as an error, it can inadvertently
+    # stop batch scripts. Therefore, we explicitly ignore this exit code.
+    # See: https://devblogs.microsoft.com/oldnewthing/20230303-00/?p=107899
+    $STATUS_CONTROL_C_EXIT = 3221225786  # 0xC000013A
+    
+    if ($LASTEXITCODE -eq $STATUS_CONTROL_C_EXIT) {
+        Write-Warning "Process was terminated with STATUS_CONTROL_C_EXIT (Ctrl+C). Treating as non-error."
+        return
+    }
+    
     if ($LASTEXITCODE -ne $ExpectedExitCode) {
         Write-Error "Last exit code $($LASTEXITCODE) did not match expected code $ExpectedExitCode";
     }
