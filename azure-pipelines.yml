@@ -15,6 +15,8 @@ variables:
   tag: "$(Build.BuildId)"
   vmImageName: "windows-2022"
   IMAGE_VERSION: $(Build.SourceBranchName)
+  BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+  BUILD_SOURCEVERSION: $(Build.SourceVersion)
   TEMP: $(Agent.TempDirectory)
   AZP_AGENT_CLEANUP_PSMODULES_IN_POWERSHELL: false
   PsModulePath: 'C:\Program Files\PowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules'
