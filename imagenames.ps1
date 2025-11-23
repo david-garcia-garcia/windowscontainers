@@ -46,15 +46,17 @@ if ($ENV:BUILD_SOURCEBRANCH) {
     $commitSha = $ENV:BUILD_SOURCEVERSION;
     Write-Host "Is tag: $isTag, Commit SHA: $commitSha"
     
-    # Append commit SHA if not a tag and we have a commit SHA
+    # Replace version with date_commithash format if not a tag
     if (-not $isTag -and $commitSha -and -not [string]::IsNullOrWhiteSpace($commitSha)) {
+        # Get current date in yyyymmdd format
+        $dateStr = Get-Date -Format "yyyyMMdd";
         # Use short commit SHA (first 7 characters)
         $shortSha = $commitSha.Substring(0, [Math]::Min(7, $commitSha.Length));
-        $version = "$($version)_$($shortSha)";
-        Write-Host "Appending commit SHA to version: $($version)"
+        $version = "$($dateStr)_$($shortSha)";
+        Write-Host "Using date and commit SHA format for version: $($version)"
     }
     elseif ($isTag) {
-        Write-Host "Tag detected - not appending commit SHA. Version: $($version)"
+        Write-Host "Tag detected - using tag as version. Version: $($version)"
     }
 }
 
