@@ -1,5 +1,6 @@
 services:
   mssql:
+    isolation: process
     stop_grace_period: 60s
     deploy:
       resources:

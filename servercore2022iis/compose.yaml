@@ -1,5 +1,6 @@
 services:
   web:
+    isolation: process
     build:
       context: .
       args:
