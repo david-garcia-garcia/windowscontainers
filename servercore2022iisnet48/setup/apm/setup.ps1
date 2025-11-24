@@ -1,14 +1,5 @@
 $global:ErrorActionPreference = 'Stop';
 
-Write-Host "`n---------------------------------------";
-Write-Host " Installing .Net agent";
-Write-Host "-----------------------------------------`n";
-
-choco upgrade newrelic-dotnet -y --version=10.47.0 --no-progress;
-if ($LASTEXITCODE -ne 0) {
-    throw "NewRelic .NET agent installation failed with exit code $LASTEXITCODE"
-}
-
 Write-Host "`n---------------------------------------"
 Write-Host " Configuring COR_ENABLE_PROFILING for IIS only"
 Write-Host "-----------------------------------------`n"

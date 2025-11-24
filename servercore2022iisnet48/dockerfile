@@ -5,6 +5,12 @@ FROM ${IMG_SERVERCORE2022IIS}
 
 SHELL ["powershell.exe"]
 
+# Install NewRelic .NET agent
+RUN $global:ErrorActionPreference = 'Stop'; `
+    choco upgrade newrelic-dotnet -y --version=10.47.0 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw ('NewRelic .NET agent installation failed with exit code ' + $LASTEXITCODE) }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+
 # APM
 COPY "setup\\apm" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
