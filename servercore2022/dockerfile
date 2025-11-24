@@ -61,6 +61,12 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15; `
     reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f;
 
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Add-WindowsCapability -Online -Name OpenSSH.Server
+
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
 COPY "setup\\external" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN echo "setup\\external";c:\setup\setup.ps1

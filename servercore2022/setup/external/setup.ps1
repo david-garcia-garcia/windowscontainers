@@ -2,13 +2,6 @@ $global:ErrorActionPreference = 'Stop'
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
 
-# Instalar choco
-Write-Host "`n---------------------------------------"
-Write-Host " Installing choco"
-Write-Host "-----------------------------------------`n"
-
-Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
 Write-Host "`n---------------------------------------"
 Write-Host " Choco upgrade 7zip"
 Write-Host "-----------------------------------------`n"
@@ -34,12 +27,6 @@ Expand-Archive $zipPath -DestinationPath $installPath -Force
 Write-Host "Setting environment variable for Path"
 [System.Environment]::SetEnvironmentVariable("Path", "$([System.Environment]::GetEnvironmentVariable("Path", "Machine"));$installPath\\micro-2.0.14", "Machine")
 Remove-Item $zipPath
-
-Write-Host "`n---------------------------------------"
-Write-Host " Add-WindowsCapability Open SSH server"
-Write-Host "-----------------------------------------`n"
-
-Add-WindowsCapability -Online -Name OpenSSH.Server
 
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.
