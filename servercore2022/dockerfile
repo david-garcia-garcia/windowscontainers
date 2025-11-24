@@ -1,7 +1,4 @@
 # escape=`
-# Multi-stage build to get wincat.exe from Kubernetes pause image
-FROM mcr.microsoft.com/oss/kubernetes/pause:3.6 AS pause
-
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # https://github.com/microsoft/dotnet-framework-docker/blob/main/src/runtime/4.8.1/windowsservercore-ltsc2022/Dockerfile
@@ -57,9 +54,6 @@ SHELL ["powershell.exe"]
 RUN $global:ErrorActionPreference = 'Stop'; `
     mkdir 'c:\Program Files\LogMonitor'; `
     Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe" -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
-
-# Copy wincat.exe from Kubernetes pause image for kubectl port-forward support
-COPY --from=pause /Windows/System32/wincat.exe C:\\Windows\\System32\\wincat.exe
 
 # Change the default to something a little bit larger than the default 5s.... 15s
 # https://github.com/dotnet/runtime/issues/63709
