@@ -36,6 +36,12 @@ foreach ($var in $triggerEnvVars) {
 
     # If the task name is in the $SBS_CRONRUNONBOOT_Array, start it immediately
     if ($taskName -in $SBS_CRONRUNONBOOT_Array) {
+        # Ensure the task is enabled before starting it
+        $task = Get-ScheduledTask | Where-Object { $_.TaskName -eq $taskName };
+        if ($task.Settings.Enabled -eq $false) {
+            Enable-ScheduledTask -TaskName $taskName | Out-Null;
+            SbsWriteHost "Enabled task $taskName as it is configured in SBS_CRONRUNONBOOT";
+        }
         SbsWriteHost "Starting task immediately as per SBS_CRONRUNONBOOT configuration: $($taskName)";
         Start-ScheduledTask -TaskName $taskName;
     }
