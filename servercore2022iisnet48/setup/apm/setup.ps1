@@ -44,6 +44,13 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v4.0.
 Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\.NETFramework\v4.0.30319" -Name "SchUseStrongCrypto" -Value 1 -Type DWord;
 
 Write-Host "`n---------------------------------------"
+Write-Host " Creating New Relic log directory"
+Write-Host "-----------------------------------------`n"
+
+New-Item -Path "C:\var\log\newrelic" -ItemType Directory -Force | Out-Null
+Write-Host "Created C:\var\log\newrelic directory"
+
+Write-Host "`n---------------------------------------"
 Write-Host " Deploying DeleteOldApmLogs Scheduled Task"
 Write-Host "-----------------------------------------`n"
 

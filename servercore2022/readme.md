@@ -188,7 +188,7 @@ resource "kubernetes_config_map" "env_config" {
         "sources" : [
           {
             "type" : "File",
-            "directory" : "C:\\ProgramData\\New Relic\\newrelic-infra\\",
+            "directory" : "C:\\var\\log\\newrelic-infra",
             "filter" : "*.log",
             "includeSubdirectories" : false
           }

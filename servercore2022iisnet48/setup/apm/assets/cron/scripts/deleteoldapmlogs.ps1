@@ -1,4 +1,4 @@
-Get-ChildItem -Path "C:\ProgramData\New Relic\.NET Agent\Logs" -Filter "*.log" |
+Get-ChildItem -Path "C:\var\log\newrelic" -Filter "*.log" |
 Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
 ForEach-Object {
     try {

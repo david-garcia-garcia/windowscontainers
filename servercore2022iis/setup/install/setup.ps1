@@ -36,8 +36,16 @@ Foreach ($featureName in $features) {
 }
 
 Write-Host "`n---------------------------------------"
-Write-Host " Disabling IIS logging (server level and per-site)"
+Write-Host " Configuring IIS log directory and disabling logging"
 Write-Host "-----------------------------------------`n"
+
+# Create IIS log directory
+New-Item -Path "C:\var\log\iis" -ItemType Directory -Force | Out-Null
+Write-Host "Created C:\var\log\iis directory"
+
+# Configure default log directory (even though logging is disabled, this sets the path if someone enables it later)
+Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'directory' -Value 'C:\var\log\iis'
+Write-Host "Set default IIS log directory to C:\var\log\iis"
 
 # Disable logging at the server level (for all future sites)
 Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'enabled' -Value 'False'
