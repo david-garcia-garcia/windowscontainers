@@ -204,7 +204,27 @@ foreach ($imageName in $imagesToBuild) {
         Write-Output "Using --no-cache flag (from [composenocache] commit message)"
     }
     
-    docker compose $buildArgs
+    $maxRetries = 3
+    $retryCount = 0
+    $buildSuccess = $false
+    
+    while ($retryCount -lt $maxRetries -and -not $buildSuccess) {
+        if ($retryCount -gt 0) {
+            Write-Output "Retrying docker compose build (attempt $($retryCount + 1) of $maxRetries)..."
+            Start-Sleep -Seconds 5
+        }
+        
+        docker compose $buildArgs
+        if ($LASTEXITCODE -eq 0) {
+            $buildSuccess = $true
+        } else {
+            $retryCount++
+            if ($retryCount -lt $maxRetries) {
+                Write-Output "Build failed with exit code $LASTEXITCODE. Will retry..."
+            }
+        }
+    }
+    
     ThrowIfError
 }
 

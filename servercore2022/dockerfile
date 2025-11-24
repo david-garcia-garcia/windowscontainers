@@ -53,7 +53,7 @@ SHELL ["powershell.exe"]
 
 RUN $global:ErrorActionPreference = 'Stop'; `
     mkdir 'c:\Program Files\LogMonitor'; `
-    Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe" -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
+    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
 
 # Change the default to something a little bit larger than the default 5s.... 15s
 # https://github.com/dotnet/runtime/issues/63709
@@ -70,7 +70,7 @@ RUN $global:ErrorActionPreference = 'Stop'; `
 # Install 7zip
 RUN $global:ErrorActionPreference = 'Stop'; `
     choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
-    if ($LASTEXITCODE -ne 0) { throw "7zip installation failed with exit code $LASTEXITCODE" }; `
+    if ($LASTEXITCODE -ne 0) { throw ('7zip installation failed with exit code ' + $LASTEXITCODE) }; `
     Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
 
 # Install Micro editor
@@ -86,10 +86,33 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Remove-Item $zipPath; `
     Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
 
-COPY "setup\\external" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN echo "setup\\external";c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
+# Install NuGet package provider
+RUN $global:ErrorActionPreference = 'Stop'; `
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -Scope AllUsers
+
+# Create event log source, configure registry settings, and enable login/logout audit
+RUN $global:ErrorActionPreference = 'Stop'; `
+    New-EventLog -LogName Application -Source 'SbsContainer'; `
+    Write-EventLog -LogName 'Application' -Source 'SbsContainer' -EventID 9900 -EntryType Information -Message 'Setup script executed.'; `
+    New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force; `
+    $LogonSubcategoryGUID = '{0CCE9226-69AE-11D9-BED3-505054503030}'; `
+    auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
+
+# Disable unnecessary services
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Stop-Service DiagHost -ErrorAction SilentlyContinue; Set-Service DiagHost -StartupType Disabled; `
+    Stop-Service DiagTrack -ErrorAction SilentlyContinue; Set-Service DiagTrack -StartupType Disabled; `
+    Stop-Service Vss -Force -ErrorAction SilentlyContinue; Set-Service Vss -StartupType Disabled; `
+    Stop-Service SWPRV -Force -ErrorAction SilentlyContinue; Set-Service SWPRV -StartupType Disabled; `
+    Stop-Service MSDTC -Force -ErrorAction SilentlyContinue; Set-Service MSDTC -StartupType Disabled; `
+    Stop-Service LanManServer -Force -ErrorAction SilentlyContinue; Set-Service LanManServer -StartupType Disabled; `
+    Stop-Service UsoSvc -Force -ErrorAction SilentlyContinue; Set-Service UsoSvc -StartupType Disabled; `
+    Stop-Service sshd -Force -ErrorAction SilentlyContinue; Set-Service sshd -StartupType Disabled; `
+    Stop-Service ssh-agent -Force -ErrorAction SilentlyContinue; Set-Service ssh-agent -StartupType Disabled
+
+# Copy external assets (SSH config)
+COPY "setup\\external\\assets" "C:\\"
 
 COPY "setup\\logrotate" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
