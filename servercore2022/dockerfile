@@ -67,6 +67,25 @@ RUN $global:ErrorActionPreference = 'Stop'; `
 RUN $global:ErrorActionPreference = 'Stop'; `
     Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
+# Install 7zip
+RUN $global:ErrorActionPreference = 'Stop'; `
+    choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw "7zip installation failed with exit code $LASTEXITCODE" }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+
+# Install Micro editor
+RUN $global:ErrorActionPreference = 'Stop'; `
+    $microUrl = 'https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip'; `
+    $zipPath = Join-Path $env:TEMP 'micro.zip'; `
+    $installPath = 'C:\Program Files\Micro'; `
+    Invoke-WebRequest $microUrl -OutFile $zipPath; `
+    Expand-Archive $zipPath -DestinationPath $installPath -Force; `
+    $currentPath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine'); `
+    $newPath = $currentPath + ';' + $installPath + '\micro-2.0.14'; `
+    [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine'); `
+    Remove-Item $zipPath; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+
 COPY "setup\\external" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 RUN echo "setup\\external";c:\setup\setup.ps1

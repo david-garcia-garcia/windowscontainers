@@ -2,32 +2,6 @@ $global:ErrorActionPreference = 'Stop'
 
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;
 
-Write-Host "`n---------------------------------------"
-Write-Host " Choco upgrade 7zip"
-Write-Host "-----------------------------------------`n"
-
-# 7zip for compression/decompression
-choco upgrade 7zip.install -y --version=25.1.0 --no-progress;
-if ($LASTEXITCODE -ne 0) {
-    throw "7zip installation failed with exit code $LASTEXITCODE"
-}
-
-Write-Host "`n---------------------------------------"
-Write-Host " Installing Micro"
-Write-Host "-----------------------------------------`n"
-
-$microUrl = "https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip"
-$zipPath = "$env:TEMP\micro.zip"
-$installPath = "C:\Program Files\Micro"
-
-Write-Host "Downloading micro from $microUrl"
-Invoke-WebRequest $microUrl -OutFile $zipPath
-Write-Host "Expanding archive to $installPath"
-Expand-Archive $zipPath -DestinationPath $installPath -Force
-Write-Host "Setting environment variable for Path"
-[System.Environment]::SetEnvironmentVariable("Path", "$([System.Environment]::GetEnvironmentVariable("Path", "Machine"));$installPath\\micro-2.0.14", "Machine")
-Remove-Item $zipPath
-
 # Open SSL
 # Bad idea, open ssl is too bloated, and download sources too slow.
 #choco install openssl -y --version=3.2.1 --ignore-checksums --no-progress;
