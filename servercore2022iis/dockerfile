@@ -5,11 +5,42 @@ FROM ${IMG_SERVERCORE2022}
 
 SHELL ["powershell.exe"]
 
-# Component and role install
-COPY "setup\\install" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
+# Enable IIS common components for application hosting
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-WebServerRole
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpRedirect
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName NetFx4Extended-ASPNET45
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-NetFxExtensibility45
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HealthAndDiagnostics
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-RequestFiltering
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-CertProvider
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpCompressionDynamic
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpCompressionStatic
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-LoggingLibraries
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-RequestMonitor
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpTracing
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-ASPNET45
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-StaticContent
+RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-CGI
+
+# Configure IIS log directory and disable logging
+RUN $global:ErrorActionPreference = 'Stop'; `
+    New-Item -Path "C:\var\log\iis" -ItemType Directory -Force | Out-Null; `
+    Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'directory' -Value 'C:\var\log\iis'; `
+    Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'enabled' -Value 'False'; `
+    Import-Module WebAdministration; `
+    Get-Website | ForEach-Object { Set-ItemProperty "IIS:\Sites\$($_.Name)" -Name logFile.enabled -Value $false }
+
+# Install URL Rewrite
+RUN $global:ErrorActionPreference = 'Stop'; `
+    choco upgrade urlrewrite -y --version=2.1.20190828 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw "URL Rewrite installation failed with exit code $LASTEXITCODE" }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+
+# Install IIS Application Request Routing
+RUN $global:ErrorActionPreference = 'Stop'; `
+    choco upgrade iis-arr -y --version=3.0.20210521 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw "IIS Application Request Routing installation failed with exit code $LASTEXITCODE" }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
 
 # CHEF
 COPY "setup\\chef" "C:\\setup"
