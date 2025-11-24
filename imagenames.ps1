@@ -38,6 +38,28 @@ foreach ($envVarName in $envVarsToCheck) {
 $version = $ENV:IMAGE_VERSION;
 $containerregistry = $ENV:REGISTRY_PATH;
 
+# If running in Azure Pipelines and not a tag, append commit SHA to version
+# Azure Pipelines - Build.SourceBranch contains refs/tags/ or refs/heads/
+if ($ENV:BUILD_SOURCEBRANCH) {
+    Write-Host "Detected Azure Pipelines build. BUILD_SOURCEBRANCH: $($ENV:BUILD_SOURCEBRANCH)"
+    $isTag = $ENV:BUILD_SOURCEBRANCH -like 'refs/tags/*';
+    $commitSha = $ENV:BUILD_SOURCEVERSION;
+    Write-Host "Is tag: $isTag, Commit SHA: $commitSha"
+    
+    # Replace version with date_commithash format if not a tag
+    if (-not $isTag -and $commitSha -and -not [string]::IsNullOrWhiteSpace($commitSha)) {
+        # Get current date in yyyymmdd format
+        $dateStr = Get-Date -Format "yyyyMMdd";
+        # Use short commit SHA (first 7 characters)
+        $shortSha = $commitSha.Substring(0, [Math]::Min(7, $commitSha.Length));
+        $version = "$($dateStr)_$($shortSha)";
+        Write-Host "Using date and commit SHA format for version: $($version)"
+    }
+    elseif ($isTag) {
+        Write-Host "Tag detected - using tag as version. Version: $($version)"
+    }
+}
+
 Write-Host "Environment IMAGE_VERSION: $($version)"
 Write-Host "Environment REGISTRY_PATH: $($containerregistry)"
 

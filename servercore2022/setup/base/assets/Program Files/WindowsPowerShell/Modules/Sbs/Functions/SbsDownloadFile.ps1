@@ -4,7 +4,9 @@ function SbsDownloadFile {
     param(
         [Parameter(Mandatory = $true)][string]$Url,
         [string]$Path,
-        [string]$TmpFile
+        [string]$TmpFile,
+        [int]$MaxRetries = 3,
+        [int]$RetryDelaySeconds = 5
     )
 
     function convertFileSize {
@@ -50,11 +52,27 @@ function SbsDownloadFile {
 
     Write-Verbose "TmpFile set to ""$($TmpFile)""."
 
-    try {
+    # Retry logic wrapper
+    $retryCount = 0
+    $downloadSuccessful = $false
 
-        #Start the download by using WebClient.DownloadFileTaskAsync, since this lets us show progress on screen.
-        Write-Verbose "Starting download..."
-        $FileDownload = $Downloader.DownloadFileTaskAsync($Url, $TmpFile)
+    while (-not $downloadSuccessful -and $retryCount -lt $MaxRetries) {
+        $retryCount++
+        
+        if ($retryCount -gt 1) {
+            $waitSeconds = $RetryDelaySeconds * ($retryCount - 1)
+            Write-Warning "Retry attempt $retryCount of $MaxRetries after waiting $waitSeconds seconds..."
+            Start-Sleep -Seconds $waitSeconds
+        }
+        else {
+            Write-Verbose "Download attempt $retryCount of $MaxRetries"
+        }
+
+        try {
+
+            #Start the download by using WebClient.DownloadFileTaskAsync, since this lets us show progress on screen.
+            Write-Verbose "Starting download..."
+            $FileDownload = $Downloader.DownloadFileTaskAsync($Url, $TmpFile)
 
         #Register the event from WebClient.DownloadProgressChanged to monitor download progress.
         Write-Verbose "Registering the ""DownloadProgressChanged"" event handle from the WebClient object."
@@ -88,25 +106,46 @@ function SbsDownloadFile {
             SbsWriteHost $message;
             Start-Sleep -Seconds 5;
         }
+        
+        # If we reach here, download completed successfully
+        $downloadSuccessful = $true
     }
     catch [Exception] {
         $ErrorDetails = $_
-
-        switch ($ErrorDetails.FullyQualifiedErrorId) {
-            "ArgumentNullException" { 
-                Write-Error -Exception "ArgumentNullException" -ErrorId "ArgumentNullException" -Message "Either the Url or Path is null." -Category InvalidArgument -TargetObject $Downloader -ErrorAction Stop
+        
+        # Clean up failed download attempt
+        if (Test-Path -Path $TmpFile) {
+            try {
+                Remove-Item -Path $TmpFile -Force -ErrorAction SilentlyContinue
             }
-            "WebException" {
-                Write-Error -Exception "WebException" -ErrorId "WebException" -Message "An error occurred while downloading the resource." -Category OperationTimeout -TargetObject $Downloader -ErrorAction Stop
-            }
-            "InvalidOperationException" {
-                Write-Error -Exception "InvalidOperationException" -ErrorId "InvalidOperationException" -Message "The file at ""$($Path)"" is in use by another process." -Category WriteError -TargetObject $Path -ErrorAction Stop
-            }
-            Default {
-                Write-Error $ErrorDetails -ErrorAction Stop
+            catch {
+                # Ignore cleanup errors
             }
         }
+
+        # If we've exhausted retries, throw the error
+        if ($retryCount -ge $MaxRetries) {
+            switch ($ErrorDetails.FullyQualifiedErrorId) {
+                "ArgumentNullException" { 
+                    Write-Error -Exception "ArgumentNullException" -ErrorId "ArgumentNullException" -Message "Either the Url or Path is null." -Category InvalidArgument -TargetObject $Downloader -ErrorAction Stop
+                }
+                "WebException" {
+                    Write-Error -Exception "WebException" -ErrorId "WebException" -Message "An error occurred while downloading the resource after $MaxRetries attempts." -Category OperationTimeout -TargetObject $Downloader -ErrorAction Stop
+                }
+                "InvalidOperationException" {
+                    Write-Error -Exception "InvalidOperationException" -ErrorId "InvalidOperationException" -Message "The file at ""$($Path)"" is in use by another process." -Category WriteError -TargetObject $Path -ErrorAction Stop
+                }
+                Default {
+                    Write-Error $ErrorDetails -ErrorAction Stop
+                }
+            }
+        }
+        else {
+            # Log the error and continue to retry
+            Write-Warning "Download attempt $retryCount failed: $($ErrorDetails.Exception.Message)"
+        }
     }
+    } # End of retry while loop
     finally {
         #Cleanup tasks
         Write-Verbose "Cleaning up...";

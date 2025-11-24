@@ -1,5 +1,6 @@
 services:
   web:
+    isolation: process
     build:
       context: .
       args:
@@ -29,7 +30,7 @@ services:
       # Contraseña para los certificados en el CCS
       - SBS_AUTOSSLPASSWORD_PROTECT=pfxpassword
       # Reemplazar bindings de un website, usar ! para quitar un binding
-      - SBS_IISBINDINGS=Default Web Site:http/80/testthesite.com,!http/80/
+      - SBS_IISBINDINGS=Default Web Site:http/80/*,!http/80/
       # Proveedor de certificados de Chef (SeflSigned, AcmeProd, AcmeStaging)
       - SBS_AUTOSSLPROVIDER=SelfSigned
       # Ruta a los certificados del CCS, en producción asegurarse de que es una ruta compartida

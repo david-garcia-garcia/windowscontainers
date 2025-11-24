@@ -17,23 +17,35 @@ RUN `
     && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen update `
     && %windir%\Microsoft.NET\Framework\v4.0.30319\ngen update
 
-# Install 2.9.0 Roslyn compilers
+# Install 2.9.0 Roslyn compilers - Download and extract
 RUN curl -fSLo microsoft.net.compilers.2.9.0.zip https://api.nuget.org/packages/microsoft.net.compilers.2.9.0.nupkg `
     && mkdir C:\RoslynCompilers `
     && tar -C C:\RoslynCompilers -zxf microsoft.net.compilers.2.9.0.zip `
-    && del microsoft.net.compilers.2.9.0.zip `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\csc.exe /ExeConfig:C:\RoslynCompilers\tools\csc.exe `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\vbc.exe /ExeConfig:C:\RoslynCompilers\tools\vbc.exe `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers\tools\VBCSCompiler.exe
+    && del microsoft.net.compilers.2.9.0.zip
 
-# Install 3.6.0 Roslyn compilers
+# Install 2.9.0 Roslyn compilers - csc.exe
+RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\csc.exe /ExeConfig:C:\RoslynCompilers\tools\csc.exe
+
+# Install 2.9.0 Roslyn compilers - vbc.exe
+RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\vbc.exe /ExeConfig:C:\RoslynCompilers\tools\vbc.exe
+
+# Install 2.9.0 Roslyn compilers - VBCSCompiler.exe
+RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers\tools\VBCSCompiler.exe
+
+# Install 3.6.0 Roslyn compilers - Download and extract
 RUN curl -fSLo microsoft.net.compilers.3.6.0.zip https://api.nuget.org/packages/microsoft.net.compilers.3.6.0.nupkg `
     && mkdir C:\RoslynCompilers-3.6.0 `
     && tar -C C:\RoslynCompilers-3.6.0 -zxf microsoft.net.compilers.3.6.0.zip `
-    && del microsoft.net.compilers.3.6.0.zip `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe
+    && del microsoft.net.compilers.3.6.0.zip
+
+# Install 3.6.0 Roslyn compilers - csc.exe
+RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe
+
+# Install 3.6.0 Roslyn compilers - vbc.exe
+RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe
+
+# Install 3.6.0 Roslyn compilers - VBCSCompiler.exe
+RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe
 
 ENV ROSLYN_COMPILER_LOCATION=C:\RoslynCompilers-3.6.0\tools
 
@@ -41,7 +53,7 @@ SHELL ["powershell.exe"]
 
 RUN $global:ErrorActionPreference = 'Stop'; `
     mkdir 'c:\Program Files\LogMonitor'; `
-    Invoke-WebRequest -Uri "https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe" -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
+    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
 
 # Change the default to something a little bit larger than the default 5s.... 15s
 # https://github.com/dotnet/runtime/issues/63709
@@ -49,10 +61,59 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15; `
     reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f;
 
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Add-WindowsCapability -Online -Name OpenSSH.Server
+
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install 7zip
+RUN $global:ErrorActionPreference = 'Stop'; `
+    choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw ('7zip installation failed with exit code ' + $LASTEXITCODE) }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+
+# Install Micro editor
+RUN $global:ErrorActionPreference = 'Stop'; `
+    $microUrl = 'https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip'; `
+    $zipPath = Join-Path $env:TEMP 'micro.zip'; `
+    $installPath = 'C:\Program Files\Micro'; `
+    Invoke-WebRequest $microUrl -OutFile $zipPath; `
+    Expand-Archive $zipPath -DestinationPath $installPath -Force; `
+    $currentPath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine'); `
+    $newPath = $currentPath + ';' + $installPath + '\micro-2.0.14'; `
+    [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine'); `
+    Remove-Item $zipPath; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+
+# Install NuGet package provider
+RUN $global:ErrorActionPreference = 'Stop'; `
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -Scope AllUsers
+
+# Create event log source, configure registry settings, and enable login/logout audit
+RUN $global:ErrorActionPreference = 'Stop'; `
+    New-EventLog -LogName Application -Source 'SbsContainer'; `
+    Write-EventLog -LogName 'Application' -Source 'SbsContainer' -EventID 9900 -EntryType Information -Message 'Setup script executed.'; `
+    New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force; `
+    $LogonSubcategoryGUID = '{0CCE9226-69AE-11D9-BED3-505054503030}'; `
+    auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
+
+# Disable unnecessary services
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Stop-Service DiagHost -ErrorAction SilentlyContinue; Set-Service DiagHost -StartupType Disabled; `
+    Stop-Service DiagTrack -ErrorAction SilentlyContinue; Set-Service DiagTrack -StartupType Disabled; `
+    Stop-Service Vss -Force -ErrorAction SilentlyContinue; Set-Service Vss -StartupType Disabled; `
+    Stop-Service SWPRV -Force -ErrorAction SilentlyContinue; Set-Service SWPRV -StartupType Disabled; `
+    Stop-Service MSDTC -Force -ErrorAction SilentlyContinue; Set-Service MSDTC -StartupType Disabled; `
+    Stop-Service LanManServer -Force -ErrorAction SilentlyContinue; Set-Service LanManServer -StartupType Disabled; `
+    Stop-Service UsoSvc -Force -ErrorAction SilentlyContinue; Set-Service UsoSvc -StartupType Disabled; `
+    Stop-Service sshd -Force -ErrorAction SilentlyContinue; Set-Service sshd -StartupType Disabled; `
+    Stop-Service ssh-agent -Force -ErrorAction SilentlyContinue; Set-Service ssh-agent -StartupType Disabled
+
+# Copy external assets (SSH config)
 COPY "setup\\external" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN echo "setup\\external";c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
 
 COPY "setup\\logrotate" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"

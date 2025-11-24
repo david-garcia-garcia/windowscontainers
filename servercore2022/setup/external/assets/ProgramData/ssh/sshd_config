@@ -1,0 +1,43 @@
+# Custom sshd_config for Windows Container
+# This file is copied to C:\ProgramData\ssh\sshd_config
+
+# Protocol version
+Protocol 2
+
+# Authentication
+PasswordAuthentication yes
+PermitEmptyPasswords no
+MaxAuthTries 3
+LoginGraceTime 60
+
+# Disable root login
+PermitRootLogin no
+
+# Disable X11 forwarding
+X11Forwarding no
+
+# Disable DNS lookups (improves connection speed)
+UseDNS no
+
+# Logging
+LogLevel INFO
+
+# Connection limits
+MaxSessions 10
+MaxStartups 10:30:100
+
+# Disable compression (security and performance)
+Compression no
+
+# SFTP subsystem
+Subsystem sftp C:/Windows/System32/OpenSSH/sftp-server.exe
+
+# Key exchange algorithms (modern, secure)
+KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp256,ecdh-sha2-nistp384,ecdh-sha2-nistp521,diffie-hellman-group-exchange-sha256
+
+# Ciphers (modern, secure)
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com,aes256-ctr,aes192-ctr,aes128-ctr
+
+# MACs (modern, secure)
+MACs hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,hmac-sha2-256,hmac-sha2-512
+

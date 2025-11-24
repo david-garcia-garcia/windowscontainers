@@ -1,5 +1,6 @@
 services:
   servercore:
+    isolation: process
     stop_grace_period: 40s
     build:
       context: .

@@ -6,7 +6,8 @@ param (
     [switch]$Push = $false,
     [switch]$Test = $false,
     [string]$Images = ".*",
-    [switch]$RunningCI = $false
+    [switch]$RunningCI = $false,
+    [switch]$StartContainer = $false
 )
 
 
@@ -21,21 +22,26 @@ Get-ChildItem env: | ForEach-Object {
 
 # Ensure we are in Windows containers
 if ($true -eq $RunningCI) {
-    $dockerInfo = docker info --format '{{.OSType}}'
-    if ($dockerInfo -eq 'linux') {
-        Write-Host "Switching to Windows Engine"
-        & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchWindowsEngine
-        ThrowIfError
-    }
+    . .\switch-to-windows-containers.ps1
 }
 
 SbsPrintSystemInfo
 
 $global:ErrorActionPreference = 'Stop';
 
+# Check commit message for [composenocache] flag
+$useNoCache = $false
+if ($ENV:BUILD_SOURCEVERSIONMESSAGE) {
+    if ($ENV:BUILD_SOURCEVERSIONMESSAGE -match '\[composenocache\]') {
+        $useNoCache = $true
+        Write-Host "Commit message contains [composenocache] - will use --no-cache for docker compose build"
+    }
+}
+
 if (-not (Get-Module -ListAvailable -Name Posh-SSH)) {
+    # TODO: This should be part of the IC image
     Write-Host "Installing Posh-SSH"
-    Install-Module -Name Posh-SSH -Confirm:$false
+    Install-Module -Name Posh-SSH -Force -Confirm:$false -Scope CurrentUser
 }
 
 Import-Module Pester -PassThru;
@@ -191,8 +197,47 @@ foreach ($imageName in $imagesToBuild) {
     $imageVar = $config.ImageEnvVar
     Write-Output "Building $((Get-Item env:$imageVar).Value)"
     Write-Output "Using compose file $($config.ComposeFile)"
-    docker compose -f $config.ComposeFile build --quiet
+    
+    $buildArgs = @("-f", $config.ComposeFile, "build", "--quiet")
+    if ($useNoCache) {
+        $buildArgs += "--no-cache"
+        Write-Output "Using --no-cache flag (from [composenocache] commit message)"
+    }
+    
+    $maxRetries = 5
+    $retryCount = 0
+    $buildSuccess = $false
+    
+    while ($retryCount -lt $maxRetries -and -not $buildSuccess) {
+        if ($retryCount -gt 0) {
+            Write-Output "Retrying docker compose build (attempt $($retryCount + 1) of $maxRetries)..."
+            Start-Sleep -Seconds 5
+        }
+        
+        docker compose $buildArgs
+        if ($LASTEXITCODE -eq 0) {
+            $buildSuccess = $true
+        } else {
+            $retryCount++
+            if ($retryCount -lt $maxRetries) {
+                Write-Output "Build failed with exit code $LASTEXITCODE. Will retry..."
+            }
+        }
+    }
+    
     ThrowIfError
+}
+
+# Start containers in detached mode if requested
+if ($StartContainer) {
+    foreach ($imageName in $selectedImages) {
+        $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
+        Write-Output "Starting containers for $imageName"
+        Write-Output "Using compose file $($config.ComposeFile)"
+        
+        docker compose -f $config.ComposeFile up -d
+        ThrowIfError
+    }
 }
 
 # Test and push only selected images
@@ -205,9 +250,10 @@ foreach ($imageName in $selectedImages) {
     }
     
     $imageVar = $config.ImageEnvVar
-    Write-Host "Pushing $((Get-Item env:$imageVar).Value)"
+    Write-Host "Image ready $((Get-Item env:$imageVar).Value)"
 
     if ($push) {
+        Write-Host "Pushing $((Get-Item env:$imageVar).Value)"
         docker push "$((Get-Item env:$imageVar).Value)"
         ThrowIfError
     }
