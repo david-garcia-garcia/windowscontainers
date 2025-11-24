@@ -112,7 +112,8 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Stop-Service ssh-agent -Force -ErrorAction SilentlyContinue; Set-Service ssh-agent -StartupType Disabled
 
 # Copy external assets (SSH config)
-COPY "setup\\external\\assets" "C:\\"
+COPY "setup\\external" "C:\\setup"
+RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
 
 COPY "setup\\logrotate" "C:\\setup"
 RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"

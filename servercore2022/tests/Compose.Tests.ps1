@@ -71,6 +71,66 @@ Describe 'compose.yaml' {
         }
     }
 
+    It 'SFTP Connection works' {
+        # Verify sshd_config file exists
+        $sshdConfigExists = docker exec $Env:imageName powershell "Test-Path 'C:\ProgramData\ssh\sshd_config'"
+        $sshdConfigExists | Should -Be "True"
+
+        Import-Module Posh-SSH
+        # Define the SFTP server details
+        $serverIp = "172.18.8.8"
+        $username = "localadmin"
+        $password = "P@ssw0rd"
+
+        # Create a PSCredential object
+        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+
+        # Create an SFTP session
+        $sftpSession = New-SFTPSession -ComputerName $serverIp -Credential $credential -AcceptKey -Force
+    
+        # Assert that the session was created successfully
+        $sftpSession | Should -Not -BeNullOrEmpty
+
+        # Test SFTP functionality by listing a directory
+        $files = Get-SFTPChildItem -SFTPSession $sftpSession -Path '/'
+        $files | Should -Not -BeNullOrEmpty
+
+        # Test file upload/download
+        $testContent = "SFTP Test Content"
+        $localTestFile = Join-Path $env:TEMP "sftp_test.txt"
+        $remoteDirectory = "/C:"
+        $remoteFileName = "sftp_test.txt"
+        $remoteTestFileSFTP = "$remoteDirectory/$remoteFileName"
+        $remoteTestFileLocal = "C:/$remoteFileName"
+        
+        # Create local test file
+        Set-Content -Path $localTestFile -Value $testContent
+        
+        # Upload file via SFTP (Destination is the remote directory, Path is the local file)
+        Set-SFTPItem -Session $sftpSession.SessionId -Destination $remoteDirectory -Path $localTestFile -Force
+        
+        # Verify file exists in container (Test-Path uses Windows path format without leading slash)
+        $fileExists = docker exec $Env:imageName powershell "Test-Path '$remoteTestFileLocal'"
+        $fileExists | Should -Be "True"
+        
+        # Verify file content in container
+        $remoteContentArray = docker exec $Env:imageName powershell "Get-Content '$remoteTestFileLocal' -Raw"
+        $remoteContent = if ($remoteContentArray -is [Array]) { $remoteContentArray -join "`n" } else { $remoteContentArray }
+        $remoteContent.Trim() | Should -Be $testContent
+        
+        # Clean up remote file
+        Remove-SFTPItem -SFTPSession $sftpSession -Path $remoteTestFileSFTP
+        
+        # Clean up local file
+        Remove-Item -Path $localTestFile -ErrorAction SilentlyContinue
+
+        # Close the SFTP session
+        if ($sftpSession) {
+            Remove-SFTPSession -SessionId $sftpSession.SessionId
+        }
+    }
+
     It 'Env warm reload' {
         $jsonString = @{
             "SBS_TESTVALUE" = "value1"

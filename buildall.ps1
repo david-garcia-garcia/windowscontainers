@@ -204,7 +204,7 @@ foreach ($imageName in $imagesToBuild) {
         Write-Output "Using --no-cache flag (from [composenocache] commit message)"
     }
     
-    $maxRetries = 3
+    $maxRetries = 5
     $retryCount = 0
     $buildSuccess = $false
     
