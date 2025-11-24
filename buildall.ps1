@@ -250,9 +250,10 @@ foreach ($imageName in $selectedImages) {
     }
     
     $imageVar = $config.ImageEnvVar
-    Write-Host "Pushing $((Get-Item env:$imageVar).Value)"
+    Write-Host "Image ready $((Get-Item env:$imageVar).Value)"
 
     if ($push) {
+        Write-Host "Pushing $((Get-Item env:$imageVar).Value)"
         docker push "$((Get-Item env:$imageVar).Value)"
         ThrowIfError
     }
