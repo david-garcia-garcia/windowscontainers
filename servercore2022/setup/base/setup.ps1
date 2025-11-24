@@ -18,6 +18,12 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\sppsvc" -Name "S
 Get-ScheduledTask -TaskPath "\Microsoft\Windows\SoftwareProtectionPlatform\" | Disable-ScheduledTask
 
 ################################################
+# Create log directory
+################################################
+New-Item -Path "C:\var\log" -ItemType Directory -Force | Out-Null
+Write-Host "Created C:\var\log directory"
+
+################################################
 # Cleanup
 ################################################
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;

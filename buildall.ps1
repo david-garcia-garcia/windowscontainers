@@ -6,7 +6,8 @@ param (
     [switch]$Push = $false,
     [switch]$Test = $false,
     [string]$Images = ".*",
-    [switch]$RunningCI = $false
+    [switch]$RunningCI = $false,
+    [switch]$StartContainer = $false
 )
 
 
@@ -205,6 +206,18 @@ foreach ($imageName in $imagesToBuild) {
     
     docker compose $buildArgs
     ThrowIfError
+}
+
+# Start containers in detached mode if requested
+if ($StartContainer) {
+    foreach ($imageName in $selectedImages) {
+        $config = $ImageConfigs | Where-Object { $_.Name -eq $imageName }
+        Write-Output "Starting containers for $imageName"
+        Write-Output "Using compose file $($config.ComposeFile)"
+        
+        docker compose -f $config.ComposeFile up -d
+        ThrowIfError
+    }
 }
 
 # Test and push only selected images
