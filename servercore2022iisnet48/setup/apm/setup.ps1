@@ -51,10 +51,19 @@ New-Item -Path "C:\var\log\newrelic" -ItemType Directory -Force | Out-Null
 Write-Host "Created C:\var\log\newrelic directory"
 
 Write-Host "`n---------------------------------------"
-Write-Host " Deploying DeleteOldApmLogs Scheduled Task"
+Write-Host " Deploying New Relic logrotate configuration"
 Write-Host "-----------------------------------------`n"
 
-Register-ScheduledTask -Xml (Get-Content "c:\setup\cron\DeleteOldApmLogs.xml" -Raw) -TaskName "DeleteOldApmLogs";
+# Ensure logrotate directory exists
+$logrotateDir = "C:\logrotate\log-rotate.d"
+if (-not (Test-Path $logrotateDir)) {
+    New-Item -Path $logrotateDir -ItemType Directory -Force | Out-Null
+    Write-Host "Created $logrotateDir directory"
+}
+
+# Copy logrotate configuration
+Copy-Item -Path "c:\setup\assets\logrotate\newrelic.conf" -Destination "$logrotateDir\newrelic.conf" -Force
+Write-Host "Deployed New Relic logrotate configuration to $logrotateDir\newrelic.conf"
 
 # Clean temp data
 Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse;
