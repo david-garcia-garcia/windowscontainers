@@ -14,6 +14,13 @@ Describe 'compose.yaml' {
         docker exec $Env:imageName powershell "[DateTime]::Parse((Get-ScheduledTask LogRotate).Triggers[0].StartBoundary).ToLocalTime().ToString('s')" | Should -Be "2023-01-01T05:00:00";
     }
 
+    It 'LogRotate task is enabled when SBS_CRON_LogRotate is set' {
+        $taskState = docker exec $Env:imageName powershell "(Get-ScheduledTask LogRotate).State";
+        $taskState | Should -Be "Ready";
+        $taskEnabled = docker exec $Env:imageName powershell "(Get-ScheduledTask LogRotate).Settings.Enabled";
+        $taskEnabled | Should -Be "True";
+    }
+
     It 'Env variable is protected' {
         $sbsTestProtect = docker exec $Env:imageName powershell '$Env:SBS_TESTPROTECT';
         $sbsTestProtectProtected = docker exec $Env:imageName powershell '$Env:SBS_TESTPROTECT_PROTECTED';

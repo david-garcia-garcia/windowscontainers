@@ -58,6 +58,9 @@ function SbsSetTaskTrigger {
 
     # Use Set-ScheduledTask to update the task with the new trigger
     Set-ScheduledTask -TaskName $taskName -Trigger $trigger | Out-Null;
+    
+    # Explicitly enable the task to ensure it's enabled when a trigger is configured
+    Enable-ScheduledTask -TaskName $taskName | Out-Null;
 }
 
 # Example usage
