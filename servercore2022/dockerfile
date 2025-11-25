@@ -33,36 +33,27 @@ RUN `
     # Install 3.6.0 Roslyn compilers - ngen install
     && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe `
     && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe `
-    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe `
+    # Change the default to something a little bit larger than the default 5s.... 15s
+    # https://github.com/dotnet/runtime/issues/63709
+    && reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15; `
+    && reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f;
 
 ENV ROSLYN_COMPILER_LOCATION=C:\RoslynCompilers-3.6.0\tools
 
 SHELL ["powershell.exe"]
 
 RUN $global:ErrorActionPreference = 'Stop'; `
+    # Intall log monitor
     mkdir 'c:\Program Files\LogMonitor'; `
-    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
-
-# Change the default to something a little bit larger than the default 5s.... 15s
-# https://github.com/dotnet/runtime/issues/63709
-RUN $global:ErrorActionPreference = 'Stop'; `
-    reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15; `
-    reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f;
-
-RUN $global:ErrorActionPreference = 'Stop'; `
-    Add-WindowsCapability -Online -Name OpenSSH.Server
-
-RUN $global:ErrorActionPreference = 'Stop'; `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install 7zip
-RUN $global:ErrorActionPreference = 'Stop'; `
-    choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
-    if ($LASTEXITCODE -ne 0) { throw ('7zip installation failed with exit code ' + $LASTEXITCODE) }; `
-    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
-
-# Install Micro editor
-RUN $global:ErrorActionPreference = 'Stop'; `
+    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'; `
+    # Add OpenSSH Server
+    Add-WindowsCapability -Online -Name OpenSSH.Server; `
+    # Install NuGet package provider
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -Scope AllUsers; `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')) `
+    # Install micro editor
     $microUrl = 'https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip'; `
     $zipPath = Join-Path $env:TEMP 'micro.zip'; `
     $installPath = 'C:\Program Files\Micro'; `
@@ -72,12 +63,13 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     $newPath = $currentPath + ';' + $installPath + '\micro-2.0.14'; `
     [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine'); `
     Remove-Item $zipPath; `
-    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse | Out-Null;
 
-# Install NuGet package provider
+# Install 7zip
 RUN $global:ErrorActionPreference = 'Stop'; `
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -Scope AllUsers
+    choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw ('7zip installation failed with exit code ' + $LASTEXITCODE) }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
 
 # Create event log source, configure registry settings, and enable login/logout audit
 RUN $global:ErrorActionPreference = 'Stop'; `
@@ -85,10 +77,8 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Write-EventLog -LogName 'Application' -Source 'SbsContainer' -EventID 9900 -EntryType Information -Message 'Setup script executed.'; `
     New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force; `
     $LogonSubcategoryGUID = '{0CCE9226-69AE-11D9-BED3-505054503030}'; `
-    auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
-
-# Disable unnecessary services
-RUN $global:ErrorActionPreference = 'Stop'; `
+    auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable `
+    # Disable services
     Stop-Service DiagHost -ErrorAction SilentlyContinue; Set-Service DiagHost -StartupType Disabled; `
     Stop-Service DiagTrack -ErrorAction SilentlyContinue; Set-Service DiagTrack -StartupType Disabled; `
     Stop-Service Vss -Force -ErrorAction SilentlyContinue; Set-Service Vss -StartupType Disabled; `
