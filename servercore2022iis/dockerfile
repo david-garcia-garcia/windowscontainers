@@ -6,21 +6,24 @@ FROM ${IMG_SERVERCORE2022}
 SHELL ["powershell.exe"]
 
 # Enable IIS common components for application hosting
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-WebServerRole
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpRedirect
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName NetFx4Extended-ASPNET45
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-NetFxExtensibility45
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HealthAndDiagnostics
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-RequestFiltering
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-CertProvider
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpCompressionDynamic
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpCompressionStatic
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-LoggingLibraries
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-RequestMonitor
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-HttpTracing
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-ASPNET45
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-StaticContent
-RUN $global:ErrorActionPreference = 'Stop'; Enable-WindowsOptionalFeature -All -Online -FeatureName IIS-CGI
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Enable-WindowsOptionalFeature -All -Online -FeatureName @( `
+        'IIS-WebServerRole', `
+        'IIS-HttpRedirect', `
+        'NetFx4Extended-ASPNET45', `
+        'IIS-NetFxExtensibility45', `
+        'IIS-HealthAndDiagnostics', `
+        'IIS-RequestFiltering', `
+        'IIS-CertProvider', `
+        'IIS-HttpCompressionDynamic', `
+        'IIS-HttpCompressionStatic', `
+        'IIS-LoggingLibraries', `
+        'IIS-RequestMonitor', `
+        'IIS-HttpTracing', `
+        'IIS-ASPNET45', `
+        'IIS-StaticContent', `
+        'IIS-CGI' `
+    )
 
 # Configure IIS log directory and disable logging
 RUN $global:ErrorActionPreference = 'Stop'; `
