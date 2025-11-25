@@ -141,9 +141,9 @@ RUN $global:ErrorActionPreference = 'Stop'; `
 
 # Copy assets and remove setup directory
 RUN $global:ErrorActionPreference = 'Stop'; `
-    Copy-Item -Path 'c:\setup\base\assets' -Destination 'C:\' -Recurse -Force; `
-    Copy-Item -Path 'c:\setup\logrotate\assets' -Destination 'C:\' -Recurse -Force; `
-    Copy-Item -Path 'c:\setup\external\assets' -Destination 'C:\' -Recurse -Force; `
+    Copy-Item -Path 'c:\setup\base\assets\*' -Destination 'C:\' -Recurse -Force; `
+    Copy-Item -Path 'c:\setup\logrotate\assets\*' -Destination 'C:\' -Recurse -Force; `
+    Copy-Item -Path 'c:\setup\external\assets\*' -Destination 'C:\' -Recurse -Force; `
     Remove-Item -Path 'c:\setup' -Recurse -Force;
 
 ENTRYPOINT ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
