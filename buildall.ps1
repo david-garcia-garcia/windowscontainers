@@ -19,10 +19,11 @@ Get-ChildItem env: | ForEach-Object {
 . .\imagenames.ps1
 . .\bootstraptest.ps1
 . .\importfunctions.ps1
+. .\buildtools.ps1
 
 # Ensure we are in Windows containers
 if ($true -eq $RunningCI) {
-    . .\switch-to-windows-containers.ps1
+    Switch-ToWindowsContainers
 }
 
 SbsPrintSystemInfo
@@ -176,19 +177,7 @@ foreach ($imageName in $selectedImages) {
 Write-Output "Images to build: $($imagesToBuild -join ', ')"
 
 if ($test) {
-
-    # Check if the 'container_default' network exists
-    $networkName = "container_default"
-    $existingNetwork = docker network ls --format "{{.Name}}" | Where-Object { $_ -eq $networkName }
-
-    if (-not $existingNetwork) {
-        Write-Output "Network '$networkName' does not exist. Creating..."
-        docker network create $networkName --driver nat --subnet=172.18.8.0/24;
-        Write-Output "Network '$networkName' created."
-    }
-    else {
-        Write-Output "Network '$networkName' already exists."
-    }
+    Initialize-DockerNetwork -NetworkName "container_default" -Driver "nat" -Subnet "172.18.8.0/24" -Gateway "172.18.8.1"
 }
 
 # Build all required images (including dependencies)

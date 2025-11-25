@@ -2,6 +2,26 @@ Describe 'compose.yaml' {
     BeforeAll {
         . ./../bootstraptest.ps1
         $Env:imageName = "servercore2022-servercore-1";
+        
+        # Centralized SSH connection details
+        $script:sshServerIp = "172.18.8.8"
+        $script:sshUsername = "localadmin"
+        $script:sshPassword = "P@ssw0rd"
+    }
+
+    BeforeEach {
+        # Reset SSH service state and localadmin password to expected values before each test
+        # This ensures tests don't depend on each other's state
+        # Only run if container exists (skip for "Container starts" test)
+        $containerExists = docker ps -a --filter "name=$Env:imageName" --format "{{.Names}}" 2>&1
+        if ($containerExists -and $containerExists -notmatch "No such container") {
+            docker exec $Env:imageName powershell @"
+                Set-Service -Name sshd -StartupType Automatic -ErrorAction SilentlyContinue;
+                Start-Service -Name sshd -ErrorAction SilentlyContinue;
+                Enable-LocalUser -Name '$script:sshUsername' -ErrorAction SilentlyContinue;
+                net user $script:sshUsername $script:sshPassword
+"@ | Out-Null
+        }
     }
 
     It 'Container starts' {
@@ -50,17 +70,12 @@ Describe 'compose.yaml' {
 
     It 'SSH Connection works' {
         Import-Module Posh-SSH
-        # Define the SSH server details
-        $serverIp = "172.18.8.8"
-        $username = "localadmin"
-        $password = "P@ssw0rd"
-
         # Create a PSCredential object
-        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+        $securePassword = ConvertTo-SecureString $script:sshPassword -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($script:sshUsername, $securePassword)
 
         # Attempt to create a new SSH session with auto-accepted host key
-        $sshSession = New-SSHSession -ComputerName $serverIp -Credential $credential -AcceptKey -Force
+        $sshSession = New-SSHSession -ComputerName $script:sshServerIp -Credential $credential -AcceptKey -Force
     
         # Assert that the session was created successfully
         $sshSession | Should -Not -BeNullOrEmpty
@@ -69,6 +84,12 @@ Describe 'compose.yaml' {
         if ($sshSession) {
             Remove-SSHSession -SessionId $sshSession.SessionId
         }
+        
+        # Verify that SSH successful login logs appear in container logs
+        Start-Sleep -Seconds 2  # Give LogMonitor time to process events
+        $containerLogs = docker logs $Env:imageName --tail 500 2>&1
+        $successfulLoginLogs = $containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false
+        $successfulLoginLogs | Should -Not -BeNullOrEmpty -Because "SSH successful login logs should appear in container logs via LogMonitor"
     }
 
     It 'SFTP Connection works' {
@@ -77,17 +98,12 @@ Describe 'compose.yaml' {
         $sshdConfigExists | Should -Be "True"
 
         Import-Module Posh-SSH
-        # Define the SFTP server details
-        $serverIp = "172.18.8.8"
-        $username = "localadmin"
-        $password = "P@ssw0rd"
-
         # Create a PSCredential object
-        $securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-        $credential = New-Object System.Management.Automation.PSCredential($username, $securePassword)
+        $securePassword = ConvertTo-SecureString $script:sshPassword -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($script:sshUsername, $securePassword)
 
         # Create an SFTP session
-        $sftpSession = New-SFTPSession -ComputerName $serverIp -Credential $credential -AcceptKey -Force
+        $sftpSession = New-SFTPSession -ComputerName $script:sshServerIp -Credential $credential -AcceptKey -Force
     
         # Assert that the session was created successfully
         $sftpSession | Should -Not -BeNullOrEmpty
@@ -129,6 +145,12 @@ Describe 'compose.yaml' {
         if ($sftpSession) {
             Remove-SFTPSession -SessionId $sftpSession.SessionId
         }
+        
+        # Verify that SSH/SFTP connection logs appear in container logs
+        Start-Sleep -Seconds 2  # Give LogMonitor time to process events
+        $containerLogs = docker logs $Env:imageName --tail 500 2>&1
+        $connectionLogs = $containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Connection from|SFTP|sftp-server" -CaseSensitive:$false
+        $connectionLogs | Should -Not -BeNullOrEmpty -Because "SSH/SFTP connection logs should appear in container logs via LogMonitor"
     }
 
     It 'Env warm reload' {
@@ -174,12 +196,98 @@ Describe 'compose.yaml' {
         Import-Module Posh-SSH
         # Create SSH session
         try {
-            $Session = New-SSHSession -ComputerName $Server -Credential $Credential -AcceptKey
+            $Session = New-SSHSession -ComputerName $Server -Credential $Credential -AcceptKey -Force
             Write-Host "SSH session created successfully."
+            
+            # Close the session if it was created
+            if ($Session) {
+                Remove-SSHSession -SessionId $Session.SessionId
+            }
         }
         catch {
             Write-Host "Failed to create SSH session: $_"
+            throw
         }
+    }
+
+    It 'SSH successful login logs appear in container logs via LogMonitor' {
+        Import-Module Posh-SSH
+        # Get initial log count to verify new logs are generated
+        $initialLogs = docker logs $Env:imageName --tail 1000 2>&1
+        $initialSuccessfulLoginCount = ($initialLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false).Count
+
+        # Create a PSCredential object
+        $securePassword = ConvertTo-SecureString $script:sshPassword -AsPlainText -Force
+        $credential = New-Object System.Management.Automation.PSCredential($script:sshUsername, $securePassword)
+
+        # Create an SSH session to generate logs
+        try {
+            $sshSession = New-SSHSession -ComputerName $script:sshServerIp -Credential $credential -AcceptKey -Force -ErrorAction Stop
+    
+            # Assert that the session was created successfully
+            $sshSession | Should -Not -BeNullOrEmpty
+        }
+        catch {
+            Write-Host "Failed to create SSH session: $_"
+            throw
+        }
+
+        # Close the session
+        if ($sshSession) {
+            Remove-SSHSession -SessionId $sshSession.SessionId
+        }
+        
+        # Wait for LogMonitor to process events
+        Start-Sleep -Seconds 3
+        
+        # Verify that successful login logs appear in container logs
+        $containerLogs = docker logs $Env:imageName --tail 1000 2>&1
+        $successfulLoginLogs = $containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false
+        
+        # Verify successful login logs were found
+        $successfulLoginLogs | Should -Not -BeNullOrEmpty -Because "SSH successful login logs (Accepted password/publickey) should appear in container logs via LogMonitor"
+        
+        # Verify that new successful login logs were generated
+        $finalSuccessfulLoginCount = ($containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false).Count
+        $finalSuccessfulLoginCount | Should -BeGreaterThan $initialSuccessfulLoginCount -Because "New SSH successful login logs should have been generated"
+    }
+
+    It 'SSH failed login logs appear in container logs via LogMonitor' {
+        Import-Module Posh-SSH
+        # Get initial log count to verify new logs are generated
+        $initialLogs = docker logs $Env:imageName --tail 1000 2>&1
+        $initialFailedLoginCount = ($initialLogs | Select-String -Pattern "Failed password|Invalid user|Authentication failed|failed logon" -CaseSensitive:$false).Count
+
+        # Create a PSCredential object with wrong password to generate failed login logs
+        $wrongPassword = ConvertTo-SecureString "WrongPassword123!" -AsPlainText -Force
+        $wrongCredential = New-Object System.Management.Automation.PSCredential($script:sshUsername, $wrongPassword)
+
+        # Attempt to create an SSH session with wrong password (this should fail)
+        try {
+            $sshSession = New-SSHSession -ComputerName $script:sshServerIp -Credential $wrongCredential -AcceptKey -Force -ErrorAction Stop
+            # If we get here, the connection succeeded (unexpected), close it
+            if ($sshSession) {
+                Remove-SSHSession -SessionId $sshSession.SessionId
+            }
+        }
+        catch {
+            # Expected failure - this will generate failed login logs
+            Write-Host "Expected SSH connection failure with wrong password: $_"
+        }
+        
+        # Wait for LogMonitor to process events
+        Start-Sleep -Seconds 3
+        
+        # Verify that failed login logs appear in container logs
+        $containerLogs = docker logs $Env:imageName --tail 1000 2>&1
+        $failedLoginLogs = $containerLogs | Select-String -Pattern "Failed password|Invalid user|Authentication failed|failed logon" -CaseSensitive:$false
+        
+        # Verify failed login logs were found
+        $failedLoginLogs | Should -Not -BeNullOrEmpty -Because "SSH failed login logs (Failed password/Authentication failed) should appear in container logs via LogMonitor"
+        
+        # Verify that new failed login logs were generated
+        $finalFailedLoginCount = ($containerLogs | Select-String -Pattern "Failed password|Invalid user|Authentication failed|failed logon" -CaseSensitive:$false).Count
+        $finalFailedLoginCount | Should -BeGreaterThan $initialFailedLoginCount -Because "New SSH failed login logs should have been generated"
     }
 
     AfterAll {

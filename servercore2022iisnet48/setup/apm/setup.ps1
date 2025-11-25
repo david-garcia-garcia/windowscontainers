@@ -1,28 +1,33 @@
 $global:ErrorActionPreference = 'Stop';
 
+# Install NewRelic .NET agent
 Write-Host "`n---------------------------------------"
-Write-Host " Configuring COR_ENABLE_PROFILING for IIS only"
+Write-Host " choco upgrade newrelic-dotnet"
+Write-Host "-----------------------------------------`n"
+choco upgrade newrelic-dotnet -y --version=10.47.0 --no-progress;
+
+Write-Host "`n---------------------------------------"
+Write-Host " Backing up New Relic environment variables"
 Write-Host "-----------------------------------------`n"
 
-# https://github.com/DataDog/dd-trace-dotnet/issues/343
-# https://github.com/DataDog/dd-trace-dotnet/blob/12926d187c16467d5c60e36d28b9c3fa6398c28a/deploy/Datadog.Trace.ClrProfiler.WindowsInstaller/Product.wxs#L148-L150
+# Backup environment variables set by New Relic installer by renaming them
+# This prevents global profiler activation - users can configure them explicitly in Kubernetes
+# or they can be autoconfigured during container startup only for the IIS service
+$envVarsToBackup = @(
+    "COR_ENABLE_PROFILING",
+    "COR_PROFILER",
+    "CORECLR_NEWRELIC_HOME",
+    "CORECLR_PROFILER"
+)
 
-# Set COR_ENABLE_PROFILING=0 explicitly at system level to ensure it's disabled globally
-[System.Environment]::SetEnvironmentVariable("COR_ENABLE_PROFILING", "0", "Machine")
-Write-Host "Set COR_ENABLE_PROFILING=0 at system level"
-
-# Enable COR_ENABLE_PROFILING only for W3SVC (IIS) and WAS services
-# Service environment variables are stored in the registry
-$services = @("W3SVC", "WAS")
-foreach ($serviceName in $services) {
-    $serviceEnvPath = "HKLM:\SYSTEM\CurrentControlSet\Services\$serviceName\Environment"
-    if (-not (Test-Path $serviceEnvPath)) {
-        New-Item -Path $serviceEnvPath -Force | Out-Null
-        Write-Host "Created $serviceName Environment registry key"
+foreach ($varName in $envVarsToBackup) {
+    $currentValue = [System.Environment]::GetEnvironmentVariable($varName, "Machine")
+    if ($null -ne $currentValue -and $currentValue -ne "") {
+        $backupName = "BACKUP_$varName"
+        [System.Environment]::SetEnvironmentVariable($backupName, $currentValue, "Machine")
+        [System.Environment]::SetEnvironmentVariable($varName, $null, "Machine")
+        Write-Host "Backed up $varName to $backupName (value: $currentValue)"
     }
-    
-    Set-ItemProperty -Path $serviceEnvPath -Name "COR_ENABLE_PROFILING" -Value "1" -Type String
-    Write-Host "Set COR_ENABLE_PROFILING=1 for $serviceName service"
 }
 
 Write-Host "`n---------------------------------------"

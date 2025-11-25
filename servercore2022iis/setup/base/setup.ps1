@@ -21,7 +21,6 @@ Write-Host "`n---------------------------------------"
 Write-Host " Configuring default application pool"
 Write-Host "-----------------------------------------`n"
 
-Stop-WebAppPool -Name "DefaultAppPool";
 Import-Module WebAdministration;
 $ApplicationPoolName = "IIS:\AppPools\DefaultAppPool";
 $AppPool = Get-Item $ApplicationPoolName;

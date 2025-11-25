@@ -21,6 +21,69 @@ NEW_RELIC_LICENSE_KEY
 
 setting the license key will both configure the license key and enable the agent in the configuration file.
 
+## New Relic Profiler Environment Variables
+
+The New Relic .NET agent installer sets several environment variables at the system (Machine) level that enable the profiler globally:
+
+- `COR_ENABLE_PROFILING` - Enables the .NET Framework profiler
+- `COR_PROFILER` - GUID of the .NET Framework profiler
+- `CORECLR_NEW_RELIC_HOME` - Path to New Relic agent directory
+- `CORECLR_PROFILER` - GUID of the .NET Core profiler
+
+**During image build, these variables are automatically backed up** by renaming them with a `BACKUP_` prefix (e.g., `BACKUP_COR_ENABLE_PROFILING`). This prevents the profiler from being activated globally, ensuring that:
+
+1. The profiler is not enabled for all processes in the container
+2. You have explicit control over when and where the profiler is enabled
+3. The original values are preserved for reference or manual configuration
+4. **You can attach other profilers** (e.g., DataDog, Application Insights) to different processes or services without conflicts
+
+> **Note:** This design allows you to selectively enable different profilers for different services or processes. For example, you could use New Relic for IIS services while using a different APM solution for background worker processes, all within the same container.
+
+### Automatic IIS Service Configuration
+
+To automatically configure the New Relic profiler **only for IIS services** (W3SVC and WAS), set the following environment variable:
+
+```
+SETUP_IIS_NR_APM=true
+```
+
+or
+
+```
+SETUP_IIS_NR_APM=1
+```
+
+When enabled, the entrypoint script will:
+- Copy the backed-up environment variables from `BACKUP_*` to the W3SVC and WAS service registry keys
+- This ensures the profiler is enabled only for IIS-related processes, not globally
+- The variables are set in the service-specific registry location: `HKLM:\SYSTEM\CurrentControlSet\Services\{W3SVC|WAS}\Environment`
+
+This approach follows the pattern recommended by other APM providers (see [DataDog's implementation](https://github.com/DataDog/dd-trace-dotnet/issues/343)) to avoid global profiler activation.
+
+### Manual Configuration in Kubernetes
+
+If you need different behavior or want to configure the profiler for specific application pools, you can explicitly set these environment variables in your Kubernetes deployment:
+
+```yaml
+env:
+  - name: COR_ENABLE_PROFILING
+    value: "1"
+  - name: COR_PROFILER
+    value: "{71DA0A04-7777-4EC6-9643-7D28B46A8A41}"
+  - name: CORECLR_NEW_RELIC_HOME
+    value: "C:\ProgramData\New Relic\.NET Agent\"
+  - name: CORECLR_PROFILER
+    value: "{36032161-FFC0-4B61-B559-F6C5D41BAE5A}"
+```
+
+You can also reference the backup values if needed:
+- `BACKUP_COR_ENABLE_PROFILING`
+- `BACKUP_COR_PROFILER`
+- `BACKUP_CORECLR_NEW_RELIC_HOME`
+- `BACKUP_CORECLR_PROFILER`
+
+These backup variables contain the original values set by the New Relic installer.
+
 To override the configuration in K8S, use a configmap:
 
 ```terraform

@@ -50,6 +50,8 @@ services:
       - SBS_ADDPOOLSTOGROUPS=S-1-5-32-558;S-1-5-32-559;Performance Monitor Users
       # Licencia de New Relic
       - NEW_RELIC_LICENSE_KEY=badkey
+      # Setup profiler environment for IIS services
+      - SETUP_IIS_NR_APM=true
 networks:
   container_default:
     external: true
