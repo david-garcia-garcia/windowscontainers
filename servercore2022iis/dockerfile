@@ -31,7 +31,8 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'directory' -Value 'C:\var\log\iis'; `
     Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter 'system.applicationHost/sites/siteDefaults/logFile' -Name 'enabled' -Value 'False'; `
     Import-Module WebAdministration; `
-    Get-Website | ForEach-Object { Set-ItemProperty "IIS:\Sites\$($_.Name)" -Name logFile.enabled -Value $false }
+    Get-Website | ForEach-Object { Set-ItemProperty "IIS:\Sites\$($_.Name)" -Name logFile.enabled -Value $false }; `
+    Set-Service -Name W3SVC -StartupType Manual
 
 # Install URL Rewrite and IIS Application Request Routing
 RUN $global:ErrorActionPreference = 'Stop'; `

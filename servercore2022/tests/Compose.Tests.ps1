@@ -9,6 +9,21 @@ Describe 'compose.yaml' {
         $script:sshPassword = "P@ssw0rd"
     }
 
+    BeforeEach {
+        # Reset SSH service state and localadmin password to expected values before each test
+        # This ensures tests don't depend on each other's state
+        # Only run if container exists (skip for "Container starts" test)
+        $containerExists = docker ps -a --filter "name=$Env:imageName" --format "{{.Names}}" 2>&1
+        if ($containerExists -and $containerExists -notmatch "No such container") {
+            docker exec $Env:imageName powershell @"
+                Set-Service -Name sshd -StartupType Automatic -ErrorAction SilentlyContinue;
+                Start-Service -Name sshd -ErrorAction SilentlyContinue;
+                Enable-LocalUser -Name '$script:sshUsername' -ErrorAction SilentlyContinue;
+                net user $script:sshUsername $script:sshPassword
+"@ | Out-Null
+        }
+    }
+
     It 'Container starts' {
         docker compose -f servercore2022/compose.yaml up -d;
         WaitForLog $Env:imageName "Initialization Completed" -extendedTimeout
@@ -206,10 +221,16 @@ Describe 'compose.yaml' {
         $credential = New-Object System.Management.Automation.PSCredential($script:sshUsername, $securePassword)
 
         # Create an SSH session to generate logs
-        $sshSession = New-SSHSession -ComputerName $script:sshServerIp -Credential $credential -AcceptKey -Force
+        try {
+            $sshSession = New-SSHSession -ComputerName $script:sshServerIp -Credential $credential -AcceptKey -Force -ErrorAction Stop
     
-        # Assert that the session was created successfully
-        $sshSession | Should -Not -BeNullOrEmpty
+            # Assert that the session was created successfully
+            $sshSession | Should -Not -BeNullOrEmpty
+        }
+        catch {
+            Write-Host "Failed to create SSH session: $_"
+            throw
+        }
 
         # Close the session
         if ($sshSession) {

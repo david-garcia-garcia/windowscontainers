@@ -9,6 +9,11 @@
 
 Import-Module WebAdministration;
 
+# Set W3SVC service to automatic startup and start it
+Set-Service -Name W3SVC -StartupType Automatic;
+Start-Service -Name W3SVC;
+SbsWriteHost "W3SVC service set to automatic and started";
+
 # Start all IIS application pools
 Get-IISAppPool | Where-Object { $_.State -eq 'Stopped' } | ForEach-Object {
     $poolName = $_.Name;
