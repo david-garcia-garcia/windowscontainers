@@ -4,6 +4,8 @@ $SBS_LOCALADMIN_ENCODED = [System.Environment]::GetEnvironmentVariable("SBS_LOCA
 $SBS_LOCALADMINPWD = SbsDpapiDecode -EncodedValue $SBS_LOCALADMIN_ENCODED
 
 if (-not [string]::IsNullOrWhiteSpace($SBS_LOCALADMINPWD)) {
+    SbsWriteDebug -Message "Enabling localadmin account"
+    Enable-LocalUser -Name 'localadmin' -ErrorAction SilentlyContinue
     SbsWriteDebug -Message "Setting password to localadmin account"
-    net user localadmin $SBS_LOCALADMINPWD;
+    net user localadmin $SBS_LOCALADMINPWD
 }
