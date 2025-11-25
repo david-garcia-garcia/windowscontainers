@@ -15,66 +15,43 @@ RUN `
     # To optimize 32-bit assemblies, uncomment the next line
     # && %windir%\Microsoft.NET\Framework\v4.0.30319\ngen install "Microsoft.PowerShell.Utility.Activities, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35" `
     && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen update `
-    && %windir%\Microsoft.NET\Framework\v4.0.30319\ngen update
-
-# Install 2.9.0 Roslyn compilers - Download and extract
-RUN curl -fSLo microsoft.net.compilers.2.9.0.zip https://api.nuget.org/packages/microsoft.net.compilers.2.9.0.nupkg `
+    && %windir%\Microsoft.NET\Framework\v4.0.30319\ngen update `
+    # Install 2.9.0 Roslyn compilers - Download and extract
+    && curl -fSLo microsoft.net.compilers.2.9.0.zip https://api.nuget.org/packages/microsoft.net.compilers.2.9.0.nupkg `
     && mkdir C:\RoslynCompilers `
     && tar -C C:\RoslynCompilers -zxf microsoft.net.compilers.2.9.0.zip `
-    && del microsoft.net.compilers.2.9.0.zip
-
-# Install 2.9.0 Roslyn compilers - csc.exe
-RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\csc.exe /ExeConfig:C:\RoslynCompilers\tools\csc.exe
-
-# Install 2.9.0 Roslyn compilers - vbc.exe
-RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\vbc.exe /ExeConfig:C:\RoslynCompilers\tools\vbc.exe
-
-# Install 2.9.0 Roslyn compilers - VBCSCompiler.exe
-RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers\tools\VBCSCompiler.exe
-
-# Install 3.6.0 Roslyn compilers - Download and extract
-RUN curl -fSLo microsoft.net.compilers.3.6.0.zip https://api.nuget.org/packages/microsoft.net.compilers.3.6.0.nupkg `
+    && del microsoft.net.compilers.2.9.0.zip `
+    # Install 2.9.0 Roslyn compilers - ngen install
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\csc.exe /ExeConfig:C:\RoslynCompilers\tools\csc.exe `
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\vbc.exe /ExeConfig:C:\RoslynCompilers\tools\vbc.exe `
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers\tools\VBCSCompiler.exe `
+    # Install 3.6.0 Roslyn compilers - Download and extract
+    && curl -fSLo microsoft.net.compilers.3.6.0.zip https://api.nuget.org/packages/microsoft.net.compilers.3.6.0.nupkg `
     && mkdir C:\RoslynCompilers-3.6.0 `
     && tar -C C:\RoslynCompilers-3.6.0 -zxf microsoft.net.compilers.3.6.0.zip `
-    && del microsoft.net.compilers.3.6.0.zip
-
-# Install 3.6.0 Roslyn compilers - csc.exe
-RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe
-
-# Install 3.6.0 Roslyn compilers - vbc.exe
-RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe
-
-# Install 3.6.0 Roslyn compilers - VBCSCompiler.exe
-RUN %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe
+    && del microsoft.net.compilers.3.6.0.zip `
+    # Install 3.6.0 Roslyn compilers - ngen install
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe `
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe `
+    && %windir%\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe `
+    # Change the default to something a little bit larger than the default 5s.... 15s
+    # https://github.com/dotnet/runtime/issues/63709
+    && reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15 `
+    && reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f  `
+    # Install OpenSSH.Server
+    && powershell -Command Add-WindowsCapability -Online -Name OpenSSH.Server;
 
 ENV ROSLYN_COMPILER_LOCATION=C:\RoslynCompilers-3.6.0\tools
 
 SHELL ["powershell.exe"]
 
+# Install LogMonitor and Micro editor
 RUN $global:ErrorActionPreference = 'Stop'; `
-    mkdir 'c:\Program Files\LogMonitor'; `
-    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'
-
-# Change the default to something a little bit larger than the default 5s.... 15s
-# https://github.com/dotnet/runtime/issues/63709
-RUN $global:ErrorActionPreference = 'Stop'; `
-    reg add hklm\system\currentcontrolset\services\cexecsvc /v ProcessShutdownTimeoutSeconds /t REG_DWORD /d 15; `
-    reg add hklm\system\currentcontrolset\control /v WaitToKillServiceTimeout /t REG_SZ /d 15000 /f;
-
-RUN $global:ErrorActionPreference = 'Stop'; `
-    Add-WindowsCapability -Online -Name OpenSSH.Server
-
-RUN $global:ErrorActionPreference = 'Stop'; `
-    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-# Install 7zip
-RUN $global:ErrorActionPreference = 'Stop'; `
-    choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
-    if ($LASTEXITCODE -ne 0) { throw ('7zip installation failed with exit code ' + $LASTEXITCODE) }; `
-    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
-
-# Install Micro editor
-RUN $global:ErrorActionPreference = 'Stop'; `
+    Write-Host ('Installing LogMonitor... (ExitCode=' + $LASTEXITCODE + ')'); `
+    mkdir 'c:\Program Files\LogMonitor' -ErrorAction SilentlyContinue; `
+    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'; `
+    Write-Host ('LogMonitor installed (ExitCode=' + $LASTEXITCODE + ')'); `
+    Write-Host ('Installing Micro editor... (ExitCode=' + $LASTEXITCODE + ')'); `
     $microUrl = 'https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip'; `
     $zipPath = Join-Path $env:TEMP 'micro.zip'; `
     $installPath = 'C:\Program Files\Micro'; `
@@ -83,24 +60,26 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     $currentPath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine'); `
     $newPath = $currentPath + ';' + $installPath + '\micro-2.0.14'; `
     [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine'); `
-    Remove-Item $zipPath; `
-    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse | Remove-Item -Force -Recurse
+    Remove-Item $zipPath -ErrorAction SilentlyContinue; `
+    Write-Host ('Micro editor installed (ExitCode=' + $LASTEXITCODE + ')');
 
-# Install NuGet package provider
 RUN $global:ErrorActionPreference = 'Stop'; `
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -Scope AllUsers
-
-# Create event log source, configure registry settings, and enable login/logout audit
-RUN $global:ErrorActionPreference = 'Stop'; `
-    New-EventLog -LogName Application -Source 'SbsContainer'; `
-    Write-EventLog -LogName 'Application' -Source 'SbsContainer' -EventID 9900 -EntryType Information -Message 'Setup script executed.'; `
-    New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force; `
-    $LogonSubcategoryGUID = '{0CCE9226-69AE-11D9-BED3-505054503030}'; `
-    auditpol /set /subcategory:$LogonSubcategoryGUID /success:enable /failure:enable
-
-# Disable unnecessary services
-RUN $global:ErrorActionPreference = 'Stop'; `
+    # Create event log source, configure registry settings
+    Write-Host ('Creating event log source and configuring registry settings... (ExitCode=' + $LASTEXITCODE + ')'); `
+    New-EventLog -LogName Application -Source 'SbsContainer' -ErrorAction SilentlyContinue; `
+    Write-EventLog -LogName 'Application' -Source 'SbsContainer' -EventID 9900 -EntryType Information -Message 'Setup script executed.' -ErrorAction SilentlyContinue; `
+    Write-Host ('Event log configured (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Enable longs paths
+    Write-Host ('Enabling long paths... (ExitCode=' + $LASTEXITCODE + ')'); `
+    New-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -Value 1 -PropertyType DWORD -Force -ErrorAction SilentlyContinue; `
+    Write-Host ('Long paths enabled (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Enable login/logout audit
+    Write-Host ('Enabling login/logout audit... (ExitCode=' + $LASTEXITCODE + ')'); `
+    $guid = '{0CCE9226-69AE-11D9-BED3-505054503030}'; `
+    auditpol /set /subcategory:$guid /success:enable /failure:enable; `
+    Write-Host ('Login/logout audit enabled (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Disable services
+    Write-Host ('Disabling unnecessary services... (ExitCode=' + $LASTEXITCODE + ')'); `
     Stop-Service DiagHost -ErrorAction SilentlyContinue; Set-Service DiagHost -StartupType Disabled; `
     Stop-Service DiagTrack -ErrorAction SilentlyContinue; Set-Service DiagTrack -StartupType Disabled; `
     Stop-Service Vss -Force -ErrorAction SilentlyContinue; Set-Service Vss -StartupType Disabled; `
@@ -109,20 +88,62 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Stop-Service LanManServer -Force -ErrorAction SilentlyContinue; Set-Service LanManServer -StartupType Disabled; `
     Stop-Service UsoSvc -Force -ErrorAction SilentlyContinue; Set-Service UsoSvc -StartupType Disabled; `
     Stop-Service sshd -Force -ErrorAction SilentlyContinue; Set-Service sshd -StartupType Disabled; `
-    Stop-Service ssh-agent -Force -ErrorAction SilentlyContinue; Set-Service ssh-agent -StartupType Disabled
+    Stop-Service ssh-agent -Force -ErrorAction SilentlyContinue; Set-Service ssh-agent -StartupType Disabled; `
+    Write-Host ('Services disabled (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Install NuGet package provider
+    Write-Host ('Installing NuGet package provider... (ExitCode=' + $LASTEXITCODE + ')'); `
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Verbose -Force -Scope AllUsers; `
+    Write-Host ('NuGet package provider installed (ExitCode=' + $LASTEXITCODE + ')'); `
+    Write-Host ('Installing Chocolatey... (ExitCode=' + $LASTEXITCODE + ')'); `
+    Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1')); `
+    Write-Host ('Chocolatey installed (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Create local admin user
+    Write-Host ('Creating local admin user... (ExitCode=' + $LASTEXITCODE + ')'); `
+    $uppercase = (65..90) | Get-Random -Count 1 | ForEach-Object {[char]$_}; `
+    $lowercase = (97..122) | Get-Random -Count 1 | ForEach-Object {[char]$_}; `
+    $number = (48..57) | Get-Random -Count 1 | ForEach-Object {[char]$_}; `
+    $special = (33..47) + (58..64) + (91..96) + (123..126) | Get-Random -Count 1 | ForEach-Object {[char]$_}; `
+    $remaining = (65..90) + (97..122) + (48..57) + (33..47) + (58..64) + (91..96) + (123..126) | Get-Random -Count 16 | ForEach-Object {[char]$_}; `
+    $allChars = ($uppercase, $lowercase, $number, $special) + $remaining; `
+    $password = -join ($allChars | Sort-Object {Get-Random}); `
+    $securePassword = ConvertTo-SecureString $password -AsPlainText -Force; `
+    New-LocalUser -Name 'localadmin' -Password $securePassword -PasswordNeverExpires -Disabled; `
+    Write-Host ('Local admin user created (ExitCode=' + $LASTEXITCODE + ')'); `
+    Add-LocalGroupMember -Group 'Administrators' -Member 'localadmin' -ErrorAction SilentlyContinue; `
+    Write-Host ('Local admin added to Administrators group (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Disable software protection service
+    Write-Host ('Disabling software protection service... (ExitCode=' + $LASTEXITCODE + ')'); `
+    Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\sppsvc' -Name 'Start' -Value 4 -ErrorAction SilentlyContinue; `
+    Get-ScheduledTask -TaskPath '\Microsoft\Windows\SoftwareProtectionPlatform\' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue; `
+    Write-Host ('Software protection service disabled (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Create log directory
+    Write-Host ('Creating log directory... (ExitCode=' + $LASTEXITCODE + ')'); `
+    New-Item -Path 'C:\var\log' -ItemType Directory -Force | Out-Null; `
+    Write-Host ('Log directory created (ExitCode=' + $LASTEXITCODE + ')'); `
+    Write-Host ('Cleaning up temporary files... (ExitCode=' + $LASTEXITCODE + ')'); `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue; `
+    Write-Host ('Temporary files cleaned up (ExitCode=' + $LASTEXITCODE + ')');
 
 # Copy external assets (SSH config)
-COPY "setup\\external" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
+COPY "setup" "C:\\setup"
 
-COPY "setup\\logrotate" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN echo "setup\\logrotate";c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
+# Install 7zip
+RUN $global:ErrorActionPreference = 'Stop'; `
+    choco upgrade 7zip.install -y --version=25.1.0 --no-progress; `
+    if ($LASTEXITCODE -ne 0) { throw ('7zip installation failed with exit code ' + $LASTEXITCODE) }; `
+    Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
 
-COPY "setup\\base" "C:\\setup"
-RUN xcopy /E /Y "c:\\setup\\assets" "C:\\"
-RUN echo "setup\\base";c:\setup\setup.ps1
-RUN Remove-Item -Path c:\setup -Recurse -Force;
+# Setup log-rotate
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Install-Module -Name Log-Rotate -Force -Repository PSGallery -Scope AllUsers -ErrorAction Stop; `
+    Register-ScheduledTask -Xml (Get-Content 'c:\setup\logrotate\cron\LogRotate.xml' -Raw) -TaskName 'LogRotate';
+
+# Copy assets and remove setup directory
+RUN $global:ErrorActionPreference = 'Stop'; `
+    Copy-Item -Path 'c:\setup\base\assets\*' -Destination 'C:\' -Recurse -Force; `
+    Copy-Item -Path 'c:\setup\logrotate\assets\*' -Destination 'C:\' -Recurse -Force; `
+    Copy-Item -Path 'c:\setup\external\assets\*' -Destination 'C:\' -Recurse -Force; `
+    Remove-Item -Path 'c:\setup' -Recurse -Force;
 
 ENTRYPOINT ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "powershell.exe", "-File", "C:\\entrypoint\\entrypoint.ps1" ]
