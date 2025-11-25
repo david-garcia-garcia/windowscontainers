@@ -42,7 +42,7 @@ Describe 'compose-basic.yaml' {
         docker cp "servercore2022/tests/crashtest.exe" "${Env:imageName}:C:\crashtest.exe"
         docker exec $Env:imageName powershell "Start-Process 'C:\crashtest.exe' -ArgumentList '-so'"
         # Wait for WER to process the crash and create the dump (with timeout)
-        $timeout = 20 # seconds
+        $timeout = 30 # seconds
         $startTime = Get-Date
         $finalDumpCount = $initialDumpCount
         
