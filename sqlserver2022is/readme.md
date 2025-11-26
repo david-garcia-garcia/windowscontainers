@@ -15,9 +15,9 @@ $backupDir = 'C:\SQLBackup';
 $installDir = 'C:\Program Files\Microsoft SQL Server';
 ```
 
-Except for test purposes, you should be moving those **out** of the c:\ drive (even if you are mapping them to storage in K8S or other platform). Besides other reasons, when restoring a backup MSSQL dos preemptive free space calculations based on the size of the c:\ drive, and even if you have enough space in your mapped storage, MSSQL is not able to see it unless you map it to a drive of its own.
+Except for test purposes, you should be moving those **out** of the c:\ drive (even if you are mapping them to storage in K8S or other platform). Besides other reasons, when restoring a backup MSSQL does preemptive free space calculations based on the size of the c:\ drive, and even if you have enough space in your mapped storage, MSSQL is not able to see it unless you map it to a drive of its own.
 
-The image takes care automatically of moving al storage through env variables.
+The image takes care automatically of moving all storage through env variables.
 
 **MSSQL_ADMIN_USERNAME and MSSQL_ADMIN_PWD**
 

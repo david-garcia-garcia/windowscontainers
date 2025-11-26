@@ -44,7 +44,7 @@ Relevant locations
 * Nuget package provider for Powershell
 * Log Source for event viewer "SbsContainer" in the "Application" category
 * Enabled Long Path Support through windows registry
-* Disable IEEnhancedSecurity through windows reigstry
+* Disable IEEnhancedSecurity through windows registry
 * Enabled Session events auditing to Event Viewer
 * Creates a "localadmin" account with a random password
 * OpenSSH server (Windows Implementation)
@@ -284,7 +284,7 @@ If you want to make sure you have proper traceability of scheduled task failures
 
 This script treats errors and logs calls to the scheduled task on the Application::SbsContainer event source. You can use this to monitor scheduled task behaviours on an external logging system.
 
-## Startup, shutdown and readyness
+## Startup, shutdown and readiness
 
 Container startup and shutdown are somewhat tricky to get right. With this image, the entrypoint executes a lifecycle managing script.
 
@@ -312,7 +312,7 @@ In both cases, the scripts in those folders are run in their alphabetical order.
 
 By default the init scripts are run synchronously, if you want to run them asynchronously, use the SBS_INITASYNC environment variable. Running them synchronously is usually much faster, but remember that Powershell will lock assemblies that have been loaded in to the script plus any imported modules during initialization will affect the entry point memory footprint. Using the asynchronous mode will prevent this from happening as the assemblies are released when the initialization job is over.
 
-To check for container readyness the entrypoint script will write a "ready" file to the c:\drive, so you can check in K8S if the container has been successfully through the initilization process:
+To check for container readiness the entrypoint script will write a "ready" file to the c:\drive, so you can check in K8S if the container has been successfully through the initialization process:
 
 ```YAML
 startup_probe {

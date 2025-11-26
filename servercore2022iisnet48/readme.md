@@ -11,7 +11,7 @@ Adds the New Relic APM, the image has a default configuration in:
 C:\ProgramData\New Relic\.NET Agent\newrelic.config.template\newrelic.config
 ```
 
-Template is in it's own directory to deal with this issue: [EmptyDir not being cleaned up after pod terminated with open file handles · Issue #112630 · kubernetes/kubernetes (github.com)](https://github.com/kubernetes/kubernetes/issues/112630)
+Template is in its own directory to deal with this issue: [EmptyDir not being cleaned up after pod terminated with open file handles · Issue #112630 · kubernetes/kubernetes (github.com)](https://github.com/kubernetes/kubernetes/issues/112630)
 
 You can set the license key through environment
 
@@ -27,7 +27,7 @@ The New Relic .NET agent installer sets several environment variables at the sys
 
 - `COR_ENABLE_PROFILING` - Enables the .NET Framework profiler
 - `COR_PROFILER` - GUID of the .NET Framework profiler
-- `CORECLR_NEW_RELIC_HOME` - Path to New Relic agent directory
+- `CORECLR_NEWRELIC_HOME` - Path to New Relic agent directory
 - `CORECLR_PROFILER` - GUID of the .NET Core profiler
 
 **During image build, these variables are automatically backed up** by renaming them with a `BACKUP_` prefix (e.g., `BACKUP_COR_ENABLE_PROFILING`). This prevents the profiler from being activated globally, ensuring that:
@@ -79,8 +79,11 @@ env:
 You can also reference the backup values if needed:
 - `BACKUP_COR_ENABLE_PROFILING`
 - `BACKUP_COR_PROFILER`
-- `BACKUP_CORECLR_NEW_RELIC_HOME`
+- `BACKUP_COR_PROFILER_PATH_32`
+- `BACKUP_CORECLR_ENABLE_PROFILING`
+- `BACKUP_CORECLR_NEWRELIC_HOME`
 - `BACKUP_CORECLR_PROFILER`
+- `BACKUP_CORECLR_PROFILER_PATH_32`
 
 These backup variables contain the original values set by the New Relic installer.
 

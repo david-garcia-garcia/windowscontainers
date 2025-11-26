@@ -9,7 +9,7 @@ This quick reference includes all variables from base images
 | SBS_PROMOTE_ENV_REGEX               | null          | Regular expression to determine what environment variables should be promoted to system wide Env | Yes         |
 | SBS_CONTAINERTIMEZONE               | null          | Container Time Zone name, i.e. "Alaskan Standard Time", "Romance Time" | Yes         |
 | SBS_INITASYNC                       | true          | If the init and environment refresh scripts should be run in their own process. Recommended to true, otherwise the entrypoint will retain any memory or loaded modules during it's operation. | No          |
-| SBS_ENTRYPOINTERRORACTION           | Stop          | How to deal with non terminating errors during entry point execution and startup. Only use "Continue" when debugging contianers. | No          |
+| SBS_ENTRYPOINTERRORACTION           | Stop          | How to deal with non terminating errors during entry point execution and startup. Only use "Continue" when debugging containers. | No          |
 | SBS_DEBUG                           | False         | Additional debug information sent to logs                    | Yes         |
 | SBS_SHUTDOWNTIMEOUT                 | 30            | Container shutdown timeout (default for a container is 5s). Not needed when using K8S and lifecycle hooks, but necessary in docker. |             |
 | MSSQL_LIFECYCLE                     | null          | Possible values: "ATTACH", "BACKUP", "PERSISTENT". When using "BACKUP" MSSQL_DB_NAME is required. | No          |
@@ -44,15 +44,15 @@ The lifecycle determines "how" the image intends to treat persistent data and co
 
 ### Lifecycle BACKUP
 
-In backup lifecycle mode the phylosophy of the image is to be **fully stateless** and the only database state to be the data itself contained **in the backups**.
+In backup lifecycle mode the philosophy of the image is to be **fully stateless** and the only database state to be the data itself contained **in the backups**.
 
 ### Lifecycle PERSISTENT
 
-In persistent lifecycle mode, the data, system, log and other sql directories are confrigured on boot, and the state of the server is to be preservered with the data in those directories, including any database configuration. This would be the most similar setup to a traditional VM based MSSQL Server installation.
+In persistent lifecycle mode, the data, system, log and other sql directories are configured on boot, and the state of the server is to be preserved with the data in those directories, including any database configuration. This would be the most similar setup to a traditional VM based MSSQL Server installation.
 
 ### Lifecycle ATTACH
 
-Attach lifecycle mode has the exact same phyolosphy as BACKUP, except that the database state relies on the actual data files instead of the backups. Data files are dettached on container teardown, and rea-attached on startup. The rest of the configuration needs to be declaratively passed through environment.
+Attach lifecycle mode has the exact same philosophy as BACKUP, except that the database state relies on the actual data files instead of the backups. Data files are detached on container teardown, and re-attached on startup. The rest of the configuration needs to be declaratively passed through environment.
 
 ## Instance Startup Configuration
 
@@ -73,7 +73,7 @@ It includes the following SQL Server Agent jobs:
 | Job Name                 | Purpose                                                      | Recommended Schedule                                         |
 | ------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
 | CommandLog Cleanup       | Clean logs                                                   | Weekly                                                       |
-| Mssql - Reset memory     | Release memory usage by temporarily downgrading server max memory according to environment MSSQL_BACKUP_RELEASEMEMORY | Use with caution when server is as close as possible to idle usage |
+| Mssql - Reset memory     | Release memory usage by temporarily downgrading server max memory according to environment MSSQL_RELEASEMEMORY | Use with caution when server is as close as possible to idle usage |
 | MssqlBackup - CLEAN      | Cleanup backups according to env: MSSQL_BACKUP_CLEANUPTIME_LOG, MSSQL_BACKUP_CLEANUPTIME_DIFF and MSSQL_BACKUP_CLEANUPTIME_FULL. Only used when backing up to Azure Blob Storage through MSSQL_PATH_BACKUPURL | Ideally run right after DIFF and FULL                        |
 | MssqlBackup - DIFF       | Differential backup for user databases                       | According to required RPO and RDP                            |
 | MssqlBackup - FULL       | Full backup for user databases                               | According to required RPO and RDP                            |
