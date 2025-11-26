@@ -86,10 +86,7 @@ Describe 'compose.yaml' {
         }
         
         # Verify that SSH successful login logs appear in container logs
-        Start-Sleep -Seconds 2  # Give LogMonitor time to process events
-        $containerLogs = docker logs $Env:imageName --tail 500 2>&1
-        $successfulLoginLogs = $containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false
-        $successfulLoginLogs | Should -Not -BeNullOrEmpty -Because "SSH successful login logs should appear in container logs via LogMonitor"
+        WaitForLog $Env:imageName "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon"
     }
 
     It 'SFTP Connection works' {
@@ -147,10 +144,7 @@ Describe 'compose.yaml' {
         }
         
         # Verify that SSH/SFTP connection logs appear in container logs
-        Start-Sleep -Seconds 2  # Give LogMonitor time to process events
-        $containerLogs = docker logs $Env:imageName --tail 500 2>&1
-        $connectionLogs = $containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Connection from|SFTP|sftp-server" -CaseSensitive:$false
-        $connectionLogs | Should -Not -BeNullOrEmpty -Because "SSH/SFTP connection logs should appear in container logs via LogMonitor"
+        WaitForLog $Env:imageName "Accepted password|Accepted publickey|Connection from|SFTP|sftp-server"
     }
 
     It 'Env warm reload' {
@@ -212,9 +206,6 @@ Describe 'compose.yaml' {
 
     It 'SSH successful login logs appear in container logs via LogMonitor' {
         Import-Module Posh-SSH
-        # Get initial log count to verify new logs are generated
-        $initialLogs = docker logs $Env:imageName --tail 1000 2>&1
-        $initialSuccessfulLoginCount = ($initialLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false).Count
 
         # Create a PSCredential object
         $securePassword = ConvertTo-SecureString $script:sshPassword -AsPlainText -Force
@@ -237,26 +228,12 @@ Describe 'compose.yaml' {
             Remove-SSHSession -SessionId $sshSession.SessionId
         }
         
-        # Wait for LogMonitor to process events
-        Start-Sleep -Seconds 3
-        
         # Verify that successful login logs appear in container logs
-        $containerLogs = docker logs $Env:imageName --tail 1000 2>&1
-        $successfulLoginLogs = $containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false
-        
-        # Verify successful login logs were found
-        $successfulLoginLogs | Should -Not -BeNullOrEmpty -Because "SSH successful login logs (Accepted password/publickey) should appear in container logs via LogMonitor"
-        
-        # Verify that new successful login logs were generated
-        $finalSuccessfulLoginCount = ($containerLogs | Select-String -Pattern "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -CaseSensitive:$false).Count
-        $finalSuccessfulLoginCount | Should -BeGreaterThan $initialSuccessfulLoginCount -Because "New SSH successful login logs should have been generated"
+        WaitForLog $Env:imageName "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon"
     }
 
     It 'SSH failed login logs appear in container logs via LogMonitor' {
         Import-Module Posh-SSH
-        # Get initial log count to verify new logs are generated
-        $initialLogs = docker logs $Env:imageName --tail 1000 2>&1
-        $initialFailedLoginCount = ($initialLogs | Select-String -Pattern "Failed password|Invalid user|Authentication failed|failed logon" -CaseSensitive:$false).Count
 
         # Create a PSCredential object with wrong password to generate failed login logs
         $wrongPassword = ConvertTo-SecureString "WrongPassword123!" -AsPlainText -Force
@@ -275,19 +252,8 @@ Describe 'compose.yaml' {
             Write-Host "Expected SSH connection failure with wrong password: $_"
         }
         
-        # Wait for LogMonitor to process events
-        Start-Sleep -Seconds 3
-        
         # Verify that failed login logs appear in container logs
-        $containerLogs = docker logs $Env:imageName --tail 1000 2>&1
-        $failedLoginLogs = $containerLogs | Select-String -Pattern "Failed password|Invalid user|Authentication failed|failed logon" -CaseSensitive:$false
-        
-        # Verify failed login logs were found
-        $failedLoginLogs | Should -Not -BeNullOrEmpty -Because "SSH failed login logs (Failed password/Authentication failed) should appear in container logs via LogMonitor"
-        
-        # Verify that new failed login logs were generated
-        $finalFailedLoginCount = ($containerLogs | Select-String -Pattern "Failed password|Invalid user|Authentication failed|failed logon" -CaseSensitive:$false).Count
-        $finalFailedLoginCount | Should -BeGreaterThan $initialFailedLoginCount -Because "New SSH failed login logs should have been generated"
+        WaitForLog $Env:imageName "Failed password|Invalid user|Authentication failed|failed logon"
     }
 
     AfterAll {

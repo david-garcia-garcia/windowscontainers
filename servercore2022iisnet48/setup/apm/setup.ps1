@@ -16,8 +16,11 @@ Write-Host "-----------------------------------------`n"
 $envVarsToBackup = @(
     "COR_ENABLE_PROFILING",
     "COR_PROFILER",
+    "COR_PROFILER_PATH_32",
+    "CORECLR_ENABLE_PROFILING",
     "CORECLR_NEWRELIC_HOME",
-    "CORECLR_PROFILER"
+    "CORECLR_PROFILER",
+    "CORECLR_PROFILER_PATH_32"
 )
 
 foreach ($varName in $envVarsToBackup) {
@@ -27,6 +30,44 @@ foreach ($varName in $envVarsToBackup) {
         [System.Environment]::SetEnvironmentVariable($backupName, $currentValue, "Machine")
         [System.Environment]::SetEnvironmentVariable($varName, $null, "Machine")
         Write-Host "Backed up $varName to $backupName (value: $currentValue)"
+    }
+}
+
+Write-Host "`n---------------------------------------"
+Write-Host " Backing up and clearing IIS services registry Environment"
+Write-Host "-----------------------------------------`n"
+
+# Backup and clear W3SVC Environment registry value
+$w3svcPath = "HKLM:\SYSTEM\CurrentControlSet\Services\W3SVC"
+if (Test-Path $w3svcPath) {
+    $w3svcProps = Get-ItemProperty -Path $w3svcPath
+    if ($w3svcProps.Environment) {
+        # Backup the entire Environment value as a pipe-delimited string
+        $backupValue = $w3svcProps.Environment -join "|"
+        [System.Environment]::SetEnvironmentVariable("NR_IIS_BACKUP_W3SVC_ENVIRONMENT", $backupValue, "Machine")
+        Write-Host "Backed up W3SVC Environment to NR_IIS_BACKUP_W3SVC_ENVIRONMENT"
+        Write-Host "Value: $backupValue"
+        
+        # Clear the Environment property from W3SVC
+        Remove-ItemProperty -Path $w3svcPath -Name "Environment"
+        Write-Host "Cleared W3SVC Environment registry property"
+    }
+}
+
+# Backup and clear WAS Environment registry value
+$wasPath = "HKLM:\SYSTEM\CurrentControlSet\Services\WAS"
+if (Test-Path $wasPath) {
+    $wasProps = Get-ItemProperty -Path $wasPath
+    if ($wasProps.Environment) {
+        # Backup the entire Environment value as a pipe-delimited string
+        $backupValue = $wasProps.Environment -join "|"
+        [System.Environment]::SetEnvironmentVariable("NR_IIS_BACKUP_WAS_ENVIRONMENT", $backupValue, "Machine")
+        Write-Host "Backed up WAS Environment to NR_IIS_BACKUP_WAS_ENVIRONMENT"
+        Write-Host "Value: $backupValue"
+        
+        # Clear the Environment property from WAS
+        Remove-ItemProperty -Path $wasPath -Name "Environment"
+        Write-Host "Cleared WAS Environment registry property"
     }
 }
 

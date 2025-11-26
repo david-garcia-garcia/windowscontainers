@@ -2,7 +2,7 @@
 
 Inherits behavior from these other images:
 
-* [Microsoft Sever Core 2022](../servercore2022/readme.md) 
+* [Microsoft Server Core 2022](../servercore2022/readme.md) 
 
 Enables the Web Server Role and installs:
 
@@ -25,7 +25,7 @@ The following IIS features are enabled:
 * IIS-StaticContent
 * IIS-CGI
 
-Just in case you need to setup TLS termination directly in the container, unsafe cyphers are disabled, plus Central Certificate Store is configured.
+Just in case you need to setup TLS termination directly in the container, unsafe ciphers are disabled, plus Central Certificate Store is configured.
 
 ## IIS Remote Administration
 
@@ -102,17 +102,26 @@ choco install visualstudio2022-remotetools -y
 msvsmon.exe /noauth /anyuser /silent /nostatus /noclrwarn /nosecuritywarn /nofirewallwarn /nowowwarn /fallbackloadremotemanagedpdbs /timeout:2147483646
 ```
 
-## Passing environment variables to IIS
+## Passing environment variables to IIS Application Pools
 
-Use SBS_IISENV to propagate environment variables from the container to IIS applications.
+Use SBS_IISENV to propagate environment variables from the container to IIS Application Pools. The variables are added to each pool's `environmentVariables` collection in the IIS configuration (`applicationHost.config`).
+
+The format is: `POOLREGEX:ENVREGEX#POOLREGEX2:ENVREGEX2`
+
+- **POOLREGEX**: A regular expression to match application pool names
+- **ENVREGEX**: A regular expression to match environment variable names to propagate
 
 Example:
 
 ```yaml
-SBS_IISENV=POOLREGEX:ENVREGEX#POOLREGEX2:ENVREGEX2
+SBS_IISENV=DefaultAppPool:^MYAPP_#.*:^AZURE_|^SBS_
 ```
 
-So if you want to propagate all environment variable to all pools:
+This would:
+- Propagate variables matching `^MYAPP_` to pools matching `DefaultAppPool`
+- Propagate variables matching `^AZURE_` or `^SBS_` to all pools
+
+To propagate all environment variables to all pools:
 
 ```
 SBS_IISENV=.*:.*
@@ -129,7 +138,7 @@ Specify a list of groups where **all** application pool identities will be added
 This adds pools to Performance Monitor and Performance Log users.
 
 ```yaml
-SBS_ADDPOOLSTOGROUPS=S-1-5-32-558,S-1-5-32-559
+SBS_ADDPOOLSTOGROUPS=S-1-5-32-558;S-1-5-32-559
 ```
 
 ## Automatic Certificate Generation
@@ -185,7 +194,7 @@ Threshold for automatic SSL certificate renewal in days. Certificates that are g
 
 When using SNI and CCS for SSL certificate distribution, it is necessary for the IIS website to have the HOSTNAMES of the domain certificates configured. Use this option to indicate the name of the IIS Site whose SSL bindings will be synchronized with the array of certificates in the Central Certificate Store's certificate directory.
 
-When set, this option will periodically inspect all the certificates in the CCS store, and and the corresponding SSL bindings to the specified website.
+When set, this option will periodically inspect all the certificates in the CCS store, and add the corresponding SSL bindings to the specified website.
 
 **Example configuration**
 

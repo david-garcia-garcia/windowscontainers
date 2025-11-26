@@ -51,6 +51,9 @@ function WaitForLog {
     if (-not $containerAvailable) {
         Write-Host "---------------- LOGSTART"
         Write-Host "Container '$containerName' is not available. Container may have crashed or exited."
+        Write-Host ""
+        Write-Host "Currently running containers:"
+        docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}" | Write-Host
         Write-Host "---------------- LOGEND"
         Write-Error "Container '$containerName' is not available after $($containerCheckSw.Elapsed.TotalSeconds)s. Container may have crashed or exited."
     }
