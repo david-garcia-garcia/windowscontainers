@@ -40,25 +40,31 @@ $ENV:TESTS_SAS_URL = "https://xx.blob.core.windows.net/mytests";
 
 ## Image List
 
-**Core Windows Server 2022**
+**Core Windows Server 2022** (`servercore2022`)
 
 Contains the container lifecycle management setup, plus basic tooling such as 7zip and micro.
 
 See details [here](servercore2022/readme.md).
 
-**IIS Internet Information Services Base Image**
+**IIS Internet Information Services Base Image** (`servercore2022iis`)
 
-Image with the basics for IIS hosting (including CGI and .NET 45/7/8), with support for SSL termination using CCS - Central Certificate Store.
+Image with the basics for IIS hosting (including CGI and .NET 4.5/7/8), with support for SSL termination using CCS - Central Certificate Store.
 
 See details [here](servercore2022iis/readme.md).
 
-**SQL Server 2022 With Full Text Search**
+**IIS with ASP.NET 4.8 and New Relic APM** (`servercore2022iisnet48`)
+
+IIS base image with ASP.NET 4.8 Framework and New Relic APM agent pre-installed. Includes automatic profiler configuration for IIS application pools.
+
+See details [here](servercore2022iisnet48/readme.md).
+
+**SQL Server 2022 With Full Text Search** (`sqlserver2022base`)
 
 Base image with SQL Server and Full Text Search feature.
 
 See details [here](sqlserver2022base/readme.md).
 
-**SQL Server 2022 With Full Text Search - For Kubernetes**
+**SQL Server 2022 With Full Text Search - For Kubernetes** (`sqlserver2022k8s`)
 
 Base image with SQL Server and Full Text Search feature, with configurable behaviour aimed at AKS/K8S deployments.
 
@@ -66,17 +72,19 @@ See details [here](sqlserver2022k8s/readme.md).
 
 Scripting in this image proposes several database lifecycle and backup automation, for seamless integration and production ready deployments on AKS or K8S.
 
-**SQL Server 2022 Analysis Services**
+**SQL Server 2022 Analysis Services** (`sqlserver2022as`)
 
 SQL Server 2022 Analysis Services exposed through HTTP.
 
 See details [here](sqlserver2022as/readme.md).
 
-**SQL Server 2022 Integration Services**
+**SQL Server 2022 Integration Services** (`sqlserver2022is`)
 
-SQL Server Integration Services
+SQL Server Integration Services.
 
-**SQL Server 2019 With Full Text Search**
+See details [here](sqlserver2022is/readme.md).
+
+**SQL Server 2019 With Full Text Search** (`sqlserver2019base`)
 
 Base image with SQL Server and Full Text Search feature.
 
