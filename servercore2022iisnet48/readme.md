@@ -39,22 +39,22 @@ The New Relic .NET agent installer sets several environment variables at the sys
 
 > **Note:** This design allows you to selectively enable different profilers for different services or processes. For example, you could use New Relic for IIS services while using a different APM solution for background worker processes, all within the same container.
 
-### Automatic IIS Service Configuration
+### Automatic IIS Service Environment Restore
 
-To automatically configure the New Relic profiler **only for IIS services** (W3SVC and WAS), set the following environment variable:
+To automatically restore the IIS service environment variables (W3SVC and WAS) from the backup created during image build, set the following environment variable:
 
 ```
-SETUP_IIS_NR_APM=true
+IIS_RESTORE_SERVICE_ENV=true
 ```
 
 or
 
 ```
-SETUP_IIS_NR_APM=1
+IIS_RESTORE_SERVICE_ENV=1
 ```
 
 When enabled, the entrypoint script will:
-- Copy the backed-up environment variables from `BACKUP_*` to the W3SVC and WAS service registry keys
+- Restore the backed-up environment variables from `NR_IIS_BACKUP_W3SVC_ENVIRONMENT` and `NR_IIS_BACKUP_WAS_ENVIRONMENT` to the W3SVC and WAS service registry keys
 - This ensures the profiler is enabled only for IIS-related processes, not globally
 - The variables are set in the service-specific registry location: `HKLM:\SYSTEM\CurrentControlSet\Services\{W3SVC|WAS}\Environment`
 

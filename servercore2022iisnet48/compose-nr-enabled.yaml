@@ -1,0 +1,27 @@
+services:
+  web:
+    isolation: process
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+        IMG_SERVERCORE2022IIS: ${IMG_SERVERCORE2022IIS}
+        IMG_SERVERCORE2022IISNET48: ${IMG_SERVERCORE2022IISNET48}
+    image: ${IMG_SERVERCORE2022IISNET48}
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.48
+    environment:
+      - SBS_CONTAINERTIMEZONE=Pacific Standard Time
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      # New Relic license key (required for agent to attempt logging)
+      - NEW_RELIC_LICENSE_KEY=testkey
+      # IIS service environment restore ENABLED
+      - IIS_RESTORE_SERVICE_ENV=true
+networks:
+  container_default:
+    external: true
+

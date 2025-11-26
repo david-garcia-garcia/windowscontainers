@@ -98,7 +98,7 @@ $ImageConfigs = @(
         ImageEnvVar  = "IMG_SERVERCORE2022IISNET48"
         ComposeFile  = "servercore2022iisnet48/compose.yaml"
         Dependencies = @("servercore2022iis", "servercore2022")
-        TestPath     = $null
+        TestPath     = "servercore2022iisnet48\tests"
     },
     # SQL Server 2017
     @{
