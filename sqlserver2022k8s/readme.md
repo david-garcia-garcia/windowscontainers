@@ -280,11 +280,21 @@ Consider configuring the memory release scheduled task. Make sure you run this a
 'SBS_CRON_MssqlReleaseMemory={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
 ```
 
-You can also tune the Max Server Memory for the instance through MSSQL_SPCONFIGURE
+You can tune the Max Server Memory for the instance in two ways:
+
+**Option 1: Using the dedicated MSSQL_MAXMEMORY variable (recommended)**
 
 ```yaml
 MSSQL_MAXMEMORY=512
 ```
+
+**Option 2: Using MSSQL_SPCONFIGURE**
+
+```yaml
+MSSQL_SPCONFIGURE=max server memory (MB):2048
+```
+
+Note: `MSSQL_MAXMEMORY` is simpler and specifically designed for this purpose. Use `MSSQL_SPCONFIGURE` if you need to set max memory along with other sp_configure settings.
 
 ## Included functions
 
