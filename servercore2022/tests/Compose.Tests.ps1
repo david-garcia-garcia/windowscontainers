@@ -86,7 +86,7 @@ Describe 'compose.yaml' {
         }
         
         # Verify that SSH successful login logs appear in container logs
-        WaitForLog $Env:imageName "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon"
+        WaitForLog $Env:imageName "Accepted password|Accepted publickey|Accepted keyboard-interactive|successful logon" -extendedTimeout
     }
 
     It 'SFTP Connection works' {

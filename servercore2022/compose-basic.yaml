@@ -19,6 +19,8 @@ services:
       - WER_DUMPCOUNT=10
       - WER_DUMPTYPE=2
       - WER_CUSTOMDUMPFLAGS=0
+    volumes:
+      - ./tests/init-custom:c:/entrypoint/init/custom
     networks:
       - container_default
     # Environment completely wiped out on purpose, to test

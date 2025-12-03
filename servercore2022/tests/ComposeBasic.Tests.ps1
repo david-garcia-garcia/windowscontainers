@@ -13,6 +13,10 @@ Describe 'compose-basic.yaml' {
         WaitForLog $Env:ImageName "init scripts synchronously"
     }
 
+    It 'Recursively executes scripts from mounted subdirectory' {
+        WaitForLog $Env:ImageName "TEST_RECURSIVE_INIT_SCRIPT_EXECUTED"
+    }
+
     It 'LogRotate is enabled by default' {
         docker exec $Env:ImageName powershell "(Get-ScheduledTask LogRotate).Triggers[0].Enabled" | Should -Be "True"
     }
