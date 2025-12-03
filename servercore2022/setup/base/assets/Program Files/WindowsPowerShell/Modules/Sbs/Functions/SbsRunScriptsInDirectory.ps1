@@ -20,8 +20,8 @@ Function SbsRunScriptsInDirectory {
         $job = Start-Job -ScriptBlock {
             param ($iniDir)
             Import-Module Sbs;
-            # Get all .ps1 files in the directory
-            $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 | Sort-Object Name;
+            # Get all .ps1 files in the directory recursively
+            $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 -Recurse | Sort-Object FullName;
             SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
             foreach ($script in $scripts) {
@@ -49,7 +49,7 @@ Function SbsRunScriptsInDirectory {
         SbsWriteHost "Async init job state $($job.State)"
     }
     else {
-        $scripts = Get-ChildItem -Path $Path -Filter *.ps1 | Sort-Object Name;
+        $scripts = Get-ChildItem -Path $Path -Filter *.ps1 -Recurse | Sort-Object FullName;
         SbsWriteHost "Running $($scripts.count) init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
         Import-Module Sbs;
         try {

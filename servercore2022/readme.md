@@ -30,7 +30,7 @@ Relevant locations
 | Path                                                     | Usage                                                        |
 | -------------------------------------------------------- | ------------------------------------------------------------ |
 | c:\environment.d\**.json                                 | Provide environment variables as a json                      |
-| c:\entrypoint\init\                                      | Path for initialization scripts                              |
+| c:\entrypoint\init\                                      | Path for initialization scripts (searched recursively, allowing mounted folders) |
 | c:\entrypoint\refreshenv\                                | Path for scripts run after the env configuration is refreshed |
 | c:\entrypoint\shutdown\                                  | Path for shutdown scripts                                    |
 | c:\logrotate\log-rotate.d\                               | Path for log rotation scripts                                |
@@ -63,7 +63,24 @@ The entrypoint will execute all scripts located at:
 c:\entrypoint\init
 ```
 
-You can place here your own bootstrap scripts.
+You can place here your own bootstrap scripts. The entrypoint recursively searches for all `.ps1` files in this directory and its subdirectories, allowing you to mount folders containing initialization scripts via Docker volumes.
+
+### Mounting Custom Initialization Scripts
+
+Since Docker can only mount directories (not individual files), you can mount a folder containing your custom initialization scripts into a **subdirectory** of `c:\entrypoint\init`. This preserves the embedded initialization scripts that come with the image while allowing you to add your own custom scripts.
+
+**Important**: Mount into a subdirectory (e.g., `c:\entrypoint\init\custom`) rather than directly into `c:\entrypoint\init` to avoid replacing the embedded scripts.
+
+The entrypoint will recursively find and execute all `.ps1` files in alphabetical order by their full path.
+
+Example usage with Docker Compose:
+
+```yaml
+volumes:
+  - ./my-custom-scripts:/entrypoint/init/custom:ro
+```
+
+This will mount your local `my-custom-scripts` folder into `c:\entrypoint\init\custom`, and all `.ps1` files within it (and any subdirectories) will be executed during container initialization alongside the embedded scripts.
 
 ## Log Monitor
 
@@ -294,6 +311,8 @@ It will first run all the powershell scripts it finds in:
 c:\entrypoint\init
 ```
 
+The entrypoint recursively searches for all `.ps1` files in this directory and its subdirectories, allowing you to mount folders containing initialization scripts via Docker volumes into a subdirectory (e.g., `c:\entrypoint\init\custom`) to preserve the embedded scripts.
+
 When shutting down the container it will run all the scripts in:
 
 ```powershell
@@ -302,7 +321,7 @@ c:\entrypoint\shutdown
 
 This might sound simple, but it helps you handle several non-trivial behaviors in the container lifecycle.
 
-In both cases, the scripts in those folders are run in their alphabetical order. You will se that the included init and shutdown scripts have numerical prefixes to aid in being able to inject startup or shutdown scripts with ease at any point:
+In both cases, the scripts are run in alphabetical order by their full path. You will see that the included init and shutdown scripts have numerical prefixes to aid in being able to inject startup or shutdown scripts with ease at any point:
 
 ```powershell
 0000_SetTimezone.ps1
