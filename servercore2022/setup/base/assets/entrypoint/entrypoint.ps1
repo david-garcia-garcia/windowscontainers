@@ -109,6 +109,21 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 $initScriptDirectory = "C:\entrypoint\init";
 $initAsync = SbsGetEnvBool "SBS_INITASYNC";
 
+# Merge contents from SBS_INITMERGEDIR if specified
+# This provides an alternative to mounting a subdirectory into c:\entrypoint\init\custom
+# Docker can be flaky with nested volume mounts, so this option allows mounting a directory
+# elsewhere and copying its contents to the init directory at runtime
+$initMergeDir = SbsGetEnvString -name "SBS_INITMERGEDIR" -defaultValue "";
+if (-not [string]::IsNullOrWhiteSpace($initMergeDir)) {
+    if (Test-Path $initMergeDir) {
+        SbsWriteHost "Merging initialization scripts from $initMergeDir to $initScriptDirectory";
+        Copy-Item -Path "$initMergeDir\*" -Destination $initScriptDirectory -Recurse -Force;
+        SbsWriteHost "Initialization scripts merged successfully";
+    } else {
+        SbsWriteWarning "SBS_INITMERGEDIR specified but directory does not exist: $initMergeDir";
+    }
+}
+
 SbsRunScriptsInDirectory -Path $initScriptDirectory -Async $initAsync;
 
 # Signal that we are ready. Write a ready file to c: so that K8S can check it.
