@@ -12,6 +12,7 @@ This image extends the base Server Core 2022 image with some preinstalled softwa
 | SBS_PROMOTE_ENV_REGEX      | $null               | Yes                  | When an environment variable matches this regular expression, it is promoted to system level. Careful with sensitive data. |
 | XXX_PROTECT                | N/A                 | Yes                  | When an environment variable ends in _PROTECT it is encoded with DPAPI at the machine level, and the suffix removed. |
 | SBS_INITASYNC              | $false              | N/A                  | Run initialization scripts in their own JOB.                 |
+| SBS_INITMERGEDIR           | $null               | No                   | Directory path whose contents will be copied (with overwrite) to c:\entrypoint\init before initialization scripts run |
 | SBS_SHUTDOWNTIMEOUT        | 15                  | Yes                  | Container shutdown timeout in seconds.                       |
 | SBS_ENTRYPOINTERRORACTION  | Stop                | No                   | Set to "Continue" if you are debugging a container and want the container to start even if there are errors during initialization |
 | SBS_SHUTDOWNCLOSEPROCESSES | cmd,powershell,pwsh | Yes                  | List of processes that will be terminated when shutdown has completed |
@@ -81,6 +82,23 @@ volumes:
 ```
 
 This will mount your local `my-custom-scripts` folder into `c:\entrypoint\init\custom`, and all `.ps1` files within it (and any subdirectories) will be executed during container initialization alongside the embedded scripts.
+
+### Merging Custom Initialization Scripts
+
+Alternatively, you can use the `SBS_INITMERGEDIR` environment variable to specify a directory whose contents will be copied (with overwrite) directly into `c:\entrypoint\init` before initialization scripts run. This allows you to replace or merge scripts directly into the init directory.
+
+**Note**: Files copied from `SBS_INITMERGEDIR` will overwrite any existing files with the same name in `c:\entrypoint\init`. Use this approach when you need to replace embedded scripts or merge scripts directly into the main init directory.
+
+Example usage with Docker Compose:
+
+```yaml
+environment:
+  - SBS_INITMERGEDIR=C:\custom-init-scripts
+volumes:
+  - ./my-custom-scripts:/custom-init-scripts:ro
+```
+
+This will copy all contents from the mounted `C:\custom-init-scripts` directory to `c:\entrypoint\init` before the initialization scripts are executed.
 
 ## Log Monitor
 
