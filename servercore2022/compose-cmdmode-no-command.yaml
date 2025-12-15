@@ -1,0 +1,49 @@
+services:
+  servercore:
+    isolation: process
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+    image: ${IMG_SERVERCORE2022}
+    entrypoint: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "C:\\entrypoint\\entrypoint.cmd"]
+    # No command provided - container should exit after initialization in CmdMode
+    environment:
+      # Promote to system environment
+      - SBS_PROMOTE_ENV_REGEX=^SBS_
+      # Timezone
+      - SBS_CONTAINERTIMEZONE=Pacific Standard Time
+      - SBS_ENABLESSH=true
+      # Services that need enforced started
+      - SBS_SRVENSURE=ssh-agent;sshd
+      # Services that need to be stopped on shutdown
+      - SBS_SRVSTOP=ssh-agent;sshd
+      # Do not run in ASYNC boot mode (CmdMode requires sync)
+      - SBS_INITASYNC=false
+      # Debug level
+      - SBS_DEBUG=True
+      # Shutdown timeout
+      - SBS_SHUTDOWNTIMEOUT=60
+      - SBS_LOCALADMINPWD_PROTECT=P@ssw0rd
+      # Scheduled tasks that must be run once during startup
+      - 'SBS_CRON_LogRotate={"Daily":true,"At":"2023-01-01T05:00:00","DaysInterval":1}'
+      # Run this immediately during boot (async)
+      - SBS_CRONRUNONBOOT=LogRotate
+      # Error behaviour
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      # Call the entrypoint shutdown logic
+      - SBS_DISABLEAUTOSHUTDOWN=0
+      # Call these proceses during shutdown
+      - SBS_SHUTDOWNCLOSEPROCESSES=cmd,powershell,pwsh,logmonitor
+      # Secret key
+      - SBS_TESTPROTECT_PROTECT=supersecretekey
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.11
+networks:
+  container_default:
+    external: true
