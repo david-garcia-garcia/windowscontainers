@@ -10,7 +10,7 @@ services:
         IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SERVERCORE2022}
-    entrypoint: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "C:\\entrypoint\\entrypoint.cmd"]
+    entrypoint: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "cmd.exe", "/c", "C:\\entrypoint\\entrypoint.cmd"]
     # No command provided - container should exit after initialization in CmdMode
     environment:
       # Promote to system environment

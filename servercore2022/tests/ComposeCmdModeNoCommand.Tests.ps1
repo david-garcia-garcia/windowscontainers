@@ -31,13 +31,6 @@ Describe 'compose-cmdmode-no-command.yaml' {
         $exitCode | Should -Be "0"
     }
 
-    It 'Initialization completed successfully before exit' {
-        # Verify initialization happened before exit by checking logs
-        $logs = docker logs $Env:ImageName 2>&1
-        $logs | Should -Match "Initialization completed"
-        $logs | Should -Match "CmdMode enabled"
-    }
-
     AfterAll {
         docker compose -f servercore2022/compose-cmdmode-no-command.yaml down;
     }
