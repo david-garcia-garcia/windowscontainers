@@ -27,6 +27,14 @@
             "level": "Information"
           }
         ]
+      },
+      {
+        "type": "File",
+        "directory": "c:\\logmonitorlogs",
+        "filter": "*.log",
+        "includeSubdirectories": false,
+        "includeFileNames": true,
+        "waitInSeconds": 10
       }
     ]
   }

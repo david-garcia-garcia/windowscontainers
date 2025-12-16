@@ -125,10 +125,11 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\sppsvc' -Name 'Start' -Value 4 -ErrorAction SilentlyContinue; `
     Get-ScheduledTask -TaskPath '\Microsoft\Windows\SoftwareProtectionPlatform\' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue; `
     Write-Host ('Software protection service disabled (ExitCode=' + $LASTEXITCODE + ')'); `
-    # Create log directory
-    Write-Host ('Creating log directory... (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Create log directories
+    Write-Host ('Creating log directories... (ExitCode=' + $LASTEXITCODE + ')'); `
     New-Item -Path 'C:\var\log' -ItemType Directory -Force | Out-Null; `
-    Write-Host ('Log directory created (ExitCode=' + $LASTEXITCODE + ')'); `
+    New-Item -Path 'C:\logmonitorlogs' -ItemType Directory -Force | Out-Null; `
+    Write-Host ('Log directories created (ExitCode=' + $LASTEXITCODE + ')'); `
     Write-Host ('Cleaning up temporary files... (ExitCode=' + $LASTEXITCODE + ')'); `
     Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue; `
     Write-Host ('Temporary files cleaned up (ExitCode=' + $LASTEXITCODE + ')');

@@ -73,6 +73,18 @@ Describe 'compose-basic.yaml' {
         # https://github.com/microsoft/windows-container-tools/issues/169
     }
 
+    It 'LogMonitor monitors c:\logmonitorlogs\*.log files' {
+        # Write a test log message to a file in the monitored directory
+        $testMessage = "LOGMONITOR_TEST_$(Get-Date -Format 'yyyyMMddHHmmss')"
+        docker exec $Env:ImageName powershell "Set-Content -Path 'C:\logmonitorlogs\test.log' -Value '$testMessage'"
+        
+        # Wait for LogMonitor to pick up the log file and output it to container logs
+        WaitForLog $Env:ImageName $testMessage -extendedTimeout
+        
+        # Cleanup
+        docker exec $Env:ImageName powershell "Remove-Item 'C:\logmonitorlogs\test.log' -ErrorAction SilentlyContinue"
+    }
+
     AfterAll {
         docker compose -f servercore2022/compose-basic.yaml down;
     }

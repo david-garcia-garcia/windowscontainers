@@ -120,6 +120,35 @@ This allows you to directly mount the Log Monitor configuration through a K8S vo
 
 To fine-tune what logs are being monitored, refer to the LogMonitor documentation.
 
+### Preconfigured Log Directory Monitoring
+
+The image comes with a preconfigured LogMonitor setup that monitors the `c:\logmonitorlogs\` directory for `*.log` files. This directory is automatically created during image build.
+
+**Use Case: Kubernetes PreStop Hooks**
+
+This is particularly useful for Kubernetes preStop hooks where you want to write logs that will be captured by the container's log aggregation system. For example:
+
+```yaml
+lifecycle:
+  preStop:
+    exec:
+      command: ["powershell.exe", "-Command", "Add-Content -Path 'C:\\logmonitorlogs\\shutdown.log' -Value 'Shutdown initiated at $(Get-Date)'"]
+```
+
+Any `*.log` files written to `c:\logmonitorlogs\` will be automatically picked up by LogMonitor and forwarded to the container's stdout/stderr, making them visible in:
+- `kubectl logs`
+- Docker logs
+- Any log aggregation system monitoring container output
+
+**Configuration Details:**
+- **Directory**: `c:\logmonitorlogs\`
+- **Filter**: `*.log` files only
+- **Subdirectories**: Not included (monitors root directory only)
+- **File Names**: Included in log output
+- **Polling Interval**: 10 seconds
+
+**Note**: The directory is created empty by default. You can write log files to it at any time during container runtime, and they will be automatically monitored and forwarded to container logs.
+
 ## CmdMode Entrypoint (Low Memory Footprint)
 
 The image provides an alternative lightweight CMD-based entrypoint (`entrypoint.cmd`) that significantly reduces memory footprint compared to the default PowerShell entrypoint. This is useful when memory optimization is critical.
