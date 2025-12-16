@@ -99,6 +99,54 @@ function WaitForLog {
     Write-Error "Timeout reached without detecting '$($logContains)' in logs after $($sw.Elapsed.TotalSeconds)s"
 }
 
+function WaitForContainerStatus {
+    param (
+        [string]$containerName,
+        [string]$expectedStatus,  # e.g., "Exited", "Running", "Up"
+        [switch]$extendedTimeout
+    )
+
+    $timeoutSeconds = 20;
+
+    if ($extendedTimeout) {
+        $timeoutSeconds = 90;
+    }
+
+    $timeout = New-TimeSpan -Seconds $timeoutSeconds
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+
+    while ($sw.Elapsed -le $timeout) {
+        Start-Sleep -Seconds 1
+        
+        $containerStatus = Invoke-Command -Script {
+            $ErrorActionPreference = "silentlycontinue"
+            docker ps -a --filter "name=$containerName" --format "{{.Status}}" 2>&1
+        } -ErrorAction SilentlyContinue
+        
+        if ($containerStatus -match "No such container") {
+            Write-Host "---------------- LOGSTART"
+            Write-Host "Container '$containerName' does not exist."
+            Write-Host "Currently running containers:"
+            docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}" | Write-Host
+            Write-Host "---------------- LOGEND"
+            Write-Error "Container '$containerName' does not exist. Cannot check status."
+        }
+        
+        # Check if status matches expected (case-insensitive)
+        if ($containerStatus -match $expectedStatus) {
+            return;
+        }
+    }
+    
+    Write-Host "---------------- LOGSTART"
+    Write-Host "Timeout reached waiting for container '$containerName' to reach status '$expectedStatus'"
+    Write-Host "Current status: $containerStatus"
+    Write-Host "Currently running containers:"
+    docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}" | Write-Host
+    Write-Host "---------------- LOGEND"
+    Write-Error "Timeout reached waiting for container '$containerName' to reach status '$expectedStatus' after $($sw.Elapsed.TotalSeconds)s. Current status: $containerStatus"
+}
+
 function ThrowIfError([int]$ExpectedExitCode = 0) {
     # STATUS_CONTROL_C_EXIT (0xC000013A / 3221225786)
     # This exit code indicates an interactive application received Ctrl+C and was aborted.

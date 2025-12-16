@@ -120,6 +120,138 @@ This allows you to directly mount the Log Monitor configuration through a K8S vo
 
 To fine-tune what logs are being monitored, refer to the LogMonitor documentation.
 
+### Preconfigured Log Directory Monitoring
+
+The image comes with a preconfigured LogMonitor setup that monitors the `c:\logmonitorlogs\` directory for `*.log` files. This directory and a pre-created `stdout.log` file are automatically created during image build.
+
+**Pre-created `stdout.log` File:**
+
+The image includes a pre-created empty file `c:\logmonitorlogs\stdout.log`. This file is **actively monitored by LogMonitor from container startup**, enabling **real-time streaming** of log entries. When you write to this file, the content is immediately forwarded to container logs without waiting for the polling interval.
+
+**Why Pre-create the File?**
+
+LogMonitor polls for new files every 10 seconds. By pre-creating `stdout.log`, LogMonitor begins monitoring it immediately when the container starts, allowing instant streaming of any writes to this file. This is especially important for time-sensitive scenarios like Kubernetes preStop hooks where you need immediate log visibility.
+
+**Use Case: Kubernetes PreStop Hooks**
+
+This is particularly useful for Kubernetes preStop hooks where you want to write logs that will be captured by the container's log aggregation system. **Always use the pre-created `stdout.log` file for real-time streaming:**
+
+```yaml
+lifecycle:
+  preStop:
+    exec:
+      command: ["powershell.exe", "-Command", "Add-Content -Path 'C:\\logmonitorlogs\\stdout.log' -Value 'Shutdown initiated at $(Get-Date)'"]
+```
+
+Any `*.log` files written to `c:\logmonitorlogs\` will be automatically picked up by LogMonitor and forwarded to the container's stdout/stderr, making them visible in:
+- `kubectl logs`
+- Docker logs
+- Any log aggregation system monitoring container output
+
+**Configuration Details:**
+- **Directory**: `c:\logmonitorlogs\` (pre-created)
+- **Pre-created File**: `c:\logmonitorlogs\stdout.log` (empty, ready for immediate use)
+- **Filter**: `*.log` files only
+- **Subdirectories**: Not included (monitors root directory only)
+- **File Names**: Included in log output
+- **Polling Interval**: 10 seconds (for new files created after container startup)
+
+**Best Practices:**
+
+1. **For real-time streaming**: Use the pre-created `stdout.log` file - writes are streamed immediately
+2. **For new files**: Create new `*.log` files as needed - they will be picked up within 10 seconds
+3. **For preStop hooks**: Always use `stdout.log` to ensure logs are captured before container termination
+
+## CmdMode Entrypoint (Low Memory Footprint)
+
+The image provides an alternative lightweight CMD-based entrypoint (`entrypoint.cmd`) that significantly reduces memory footprint compared to the default PowerShell entrypoint. This is useful when memory optimization is critical.
+
+### Benefits
+
+- **Reduced Memory Footprint**: ~4MB vs ~118MB for the PowerShell entrypoint
+- **Faster Startup**: CMD scripts execute faster than PowerShell
+- **Same Initialization**: All initialization scripts in `c:\entrypoint\init` still execute normally
+
+### Limitations
+
+- **No Shutdown Listeners**: Shutdown signal handlers are disabled (shutdown scripts won't be called automatically)
+- **No Service Loop**: The main service loop that monitors environment changes is disabled
+- **No Environment Hot Reload**: Warm reload of environment variables (from `c:\environment.d\` and `c:\secrets.d\`) does not work in CmdMode because the monitoring service loop is disabled
+- **Requires Command**: Container will exit after initialization unless a command is provided
+- **Synchronous Init Only**: `SBS_INITASYNC` should be set to `false` (async initialization is not supported)
+
+### Usage
+
+#### Docker Compose
+
+Override the entrypoint to use the CMD script:
+
+```yaml
+services:
+  servercore:
+    image: ${IMG_SERVERCORE2022}
+    entrypoint: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "cmd.exe", "/c", "C:\\entrypoint\\entrypoint.cmd"]
+    # Provide a command to keep container running
+    command: ["ping", "-t", "localhost"]
+    environment:
+      - SBS_INITASYNC=false  # Required: CmdMode requires synchronous initialization
+```
+
+#### Kubernetes
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: servercore-cmdmode
+spec:
+  containers:
+  - name: servercore
+    image: your-registry/servercore2022:latest
+    command: ["ping", "-t", "localhost"]  # Command to keep container running
+    lifecycle:
+      preStop:
+        exec:
+          # IMPORTANT: Shutdown scripts must be called in preStop hook
+          # because shutdown listeners are disabled in CmdMode
+          command: ["powershell.exe", "-File", "c:\\entrypoint\\shutdown.ps1"]
+    terminationGracePeriodSeconds: 60
+    env:
+    - name: SBS_INITASYNC
+      value: "false"  # Required: CmdMode requires synchronous initialization
+```
+
+**⚠️ CRITICAL: Shutdown Scripts in Kubernetes**
+
+When using CmdMode, **shutdown scripts will NOT be called automatically** because shutdown listeners are disabled. You **MUST** configure a `preStop` lifecycle hook in Kubernetes to call the shutdown script:
+
+```yaml
+lifecycle:
+  preStop:
+    exec:
+      command: ["powershell.exe", "-File", "c:\\entrypoint\\shutdown.ps1"]
+```
+
+Without this hook, your shutdown scripts in `c:\entrypoint\shutdown` will never execute, which may lead to:
+- Services not being stopped gracefully
+- Data not being saved
+- Connections not being closed properly
+- Other cleanup tasks not running
+
+### When to Use CmdMode
+
+- **Memory-constrained environments** where every MB counts
+- **Simple workloads** that don't need environment hot-reloading
+- **Short-lived containers** that execute a command and exit
+- **Production environments** where you can properly configure K8s lifecycle hooks
+
+### When NOT to Use CmdMode
+
+- **Development environments** where you need interactive debugging
+- **Complex applications** that rely on environment hot-reloading
+- **Docker-only deployments** without proper shutdown handling
+- **Scenarios** where you cannot configure K8s preStop hooks
+
 ## Environment variable promotion
 
 All the environment variables you setup for a container will be process injected to the Entry Point or the Shell. They are **not** (and should not) be system wide environment variables. That means that these ENV will - by default - not be seen by scheduled tasks, IIS, or any other process that does not spin off the entry point itself. 
@@ -187,6 +319,8 @@ where **the secret filename will be the environment variable name, and the file 
 
 Changes to these files are checked every 8 seconds in the entry point, and **environment variables updated accordingly**. Note that this **does not** mean that whatever this environment variables controls or affects is going to be updated, it depends on each specific setting and how it is used.
 
+**⚠️ Note**: Environment hot reload is **not available in CmdMode** because the monitoring service loop is disabled. If you need environment hot reload functionality, use the default PowerShell entrypoint instead of CmdMode.
+
 Configuring environment through a Json file has some advantages:
 
 * Easily map a K8S config map to your container configuration
@@ -247,6 +381,8 @@ Note that these scripts are **NOT** executed on container initial startup, only 
 ## Memory and CPU footprint
 
 Because the entry point to this image is a powershell script, the minimum memory footprint for this image is **about 80Mb** (doing nothing). That is what powershell.exe plus some other windows services will need.
+
+**For memory-constrained environments**, consider using **CmdMode** (see [CmdMode Entrypoint](#cmdmode-entrypoint-low-memory-footprint) section) which reduces the entrypoint memory footprint from ~118MB to ~4MB.
 
 In terms of CPU usage, the actual consumption might vary depending on the type of CPU. On a [Standard_D2S_V3](https://learn.microsoft.com/es-es/azure/virtual-machines/dv3-dsv3-series) which has one of the most basic CPU available on Azure (after the Burstable Series) you get about 5 milli-VCPU.
 

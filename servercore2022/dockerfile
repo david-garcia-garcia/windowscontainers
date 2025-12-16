@@ -1,4 +1,12 @@
 # escape=`
+
+# Build stage: compile minimal wait.exe using Visual Studio Build Tools
+FROM mcr.microsoft.com/dotnet/framework/sdk:4.8-windowsservercore-ltsc2022 AS builder
+COPY setup/base/wait/wait.c C:/src/wait.c
+COPY setup/base/wait/build.ps1 C:/src/build.ps1
+# Compile with MSVC - produces tiny static executable (~10KB, <1MB memory)
+RUN powershell -ExecutionPolicy Bypass -File C:\src\build.ps1
+
 FROM mcr.microsoft.com/windows/servercore:ltsc2022
 
 # https://github.com/microsoft/dotnet-framework-docker/blob/main/src/runtime/4.8.1/windowsservercore-ltsc2022/Dockerfile
@@ -49,7 +57,7 @@ SHELL ["powershell.exe"]
 RUN $global:ErrorActionPreference = 'Stop'; `
     Write-Host ('Installing LogMonitor... (ExitCode=' + $LASTEXITCODE + ')'); `
     mkdir 'c:\Program Files\LogMonitor' -ErrorAction SilentlyContinue; `
-    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'; `
+    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.1.3/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'; `
     Write-Host ('LogMonitor installed (ExitCode=' + $LASTEXITCODE + ')'); `
     Write-Host ('Installing Micro editor... (ExitCode=' + $LASTEXITCODE + ')'); `
     $microUrl = 'https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip'; `
@@ -117,10 +125,13 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\sppsvc' -Name 'Start' -Value 4 -ErrorAction SilentlyContinue; `
     Get-ScheduledTask -TaskPath '\Microsoft\Windows\SoftwareProtectionPlatform\' -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue; `
     Write-Host ('Software protection service disabled (ExitCode=' + $LASTEXITCODE + ')'); `
-    # Create log directory
-    Write-Host ('Creating log directory... (ExitCode=' + $LASTEXITCODE + ')'); `
+    # Create log directories
+    Write-Host ('Creating log directories... (ExitCode=' + $LASTEXITCODE + ')'); `
     New-Item -Path 'C:\var\log' -ItemType Directory -Force | Out-Null; `
-    Write-Host ('Log directory created (ExitCode=' + $LASTEXITCODE + ')'); `
+    New-Item -Path 'C:\logmonitorlogs' -ItemType Directory -Force | Out-Null; `
+    # Pre-create stdout.log so LogMonitor starts monitoring it immediately (enables real-time streaming)
+    New-Item -Path 'C:\logmonitorlogs\stdout.log' -ItemType File -Force | Out-Null; `
+    Write-Host ('Log directories created (ExitCode=' + $LASTEXITCODE + ')'); `
     Write-Host ('Cleaning up temporary files... (ExitCode=' + $LASTEXITCODE + ')'); `
     Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue; `
     Write-Host ('Temporary files cleaned up (ExitCode=' + $LASTEXITCODE + ')');
@@ -138,6 +149,10 @@ RUN $global:ErrorActionPreference = 'Stop'; `
 RUN $global:ErrorActionPreference = 'Stop'; `
     Install-Module -Name Log-Rotate -Force -Repository PSGallery -Scope AllUsers -ErrorAction Stop; `
     Register-ScheduledTask -Xml (Get-Content 'c:\setup\logrotate\cron\LogRotate.xml' -Raw) -TaskName 'LogRotate';
+
+# Copy wait.exe from builder stage to System32 (tiny ~10KB executable that waits indefinitely)
+# Placed in System32 so it's available in PATH without specifying full path
+COPY --from=builder C:/wait.exe C:/Windows/System32/wait.exe
 
 # Copy assets and remove setup directory
 RUN $global:ErrorActionPreference = 'Stop'; `

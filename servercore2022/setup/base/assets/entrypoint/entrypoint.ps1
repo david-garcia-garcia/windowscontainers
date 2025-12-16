@@ -1,3 +1,7 @@
+param(
+    [switch]$CmdMode
+)
+
 $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
 
 Import-Module Sbs;
@@ -23,8 +27,10 @@ if (Test-Path("c:\ready")) {
 
 ##########################################################################
 # Setup shutdown listeners. For docker. In K8S use LifeCycleHooks
+# Skip in CmdMode to reduce memory footprint
 ##########################################################################
 
+if (-not $CmdMode) {
 $code = @"
 using System;
 using System.Runtime.InteropServices;
@@ -87,6 +93,9 @@ $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandl
 
 # Register the handler
 [ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true) | Out-Null;
+} else {
+    SbsWriteHost "CmdMode enabled: Shutdown listeners disabled to reduce memory footprint.";
+}
 
 ##########################################################################
 # Adjust the ENTRY POINT error preference.
@@ -108,6 +117,11 @@ if ($global:ErrorActionPreference -ne 'Stop') {
 ##########################################################################
 $initScriptDirectory = "C:\entrypoint\init";
 $initAsync = SbsGetEnvBool "SBS_INITASYNC";
+
+# In CmdMode, async initialization doesn't make sense - warn if configured
+if ($CmdMode -and $initAsync) {
+    SbsWriteWarning "CmdMode is enabled but SBS_INITASYNC is set to true. In CmdMode, initialization should be synchronous. Consider setting SBS_INITASYNC to false or removing it.";
+}
 
 # Merge contents from SBS_INITMERGEDIR if specified
 # This provides an alternative to mounting a subdirectory into c:\entrypoint\init\custom
@@ -137,6 +151,12 @@ Set-Content -Path ($shutdownFlagFile) -Value "" -Force
 $initStopwatch.Stop();
 
 SbsWriteHost "Initialization completed in $($initStopwatch.Elapsed.TotalSeconds)s";
+
+# In CmdMode, check for command arguments early and exit - let CMD script handle execution
+if ($CmdMode) {
+    SbsWriteHost "CmdMode enabled: Main service loop skipped. Process will be held by CMD entrypoint.";
+    exit 0
+}
 
 # If a command was provided, run that instead of the service loop.
 $CommandArgs = $args
