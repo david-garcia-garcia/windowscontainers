@@ -31,7 +31,7 @@ if (Test-Path("c:\ready")) {
 ##########################################################################
 
 if (-not $CmdMode) {
-    $code = @"
+$code = @"
 using System;
 using System.Runtime.InteropServices;
 
@@ -85,14 +85,14 @@ public class ConsoleCtrlHandler {
 }
 "@
 
-    # Add the C# type to the current PowerShell session
-    Add-Type -TypeDefinition $code -ReferencedAssemblies @("System.Runtime.InteropServices", "System.Collections.Concurrent");
+# Add the C# type to the current PowerShell session
+Add-Type -TypeDefinition $code -ReferencedAssemblies @("System.Runtime.InteropServices", "System.Collections.Concurrent");
 
-    # Create a delegate for the handler method
-    $handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandler+HandlerRoutine], [ConsoleCtrlHandler], "ConsoleCtrlCheck");
+# Create a delegate for the handler method
+$handler = [ConsoleCtrlHandler+HandlerRoutine]::CreateDelegate([ConsoleCtrlHandler+HandlerRoutine], [ConsoleCtrlHandler], "ConsoleCtrlCheck");
 
-    # Register the handler
-    [ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true) | Out-Null;
+# Register the handler
+[ConsoleCtrlHandler]::SetConsoleCtrlHandler($handler, $true) | Out-Null;
 } else {
     SbsWriteHost "CmdMode enabled: Shutdown listeners disabled to reduce memory footprint.";
 }

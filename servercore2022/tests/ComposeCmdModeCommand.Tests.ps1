@@ -7,6 +7,8 @@ Describe 'compose-cmdmode-command.yaml' {
     It 'Container initializes and executes command' {
         docker compose -f servercore2022/compose-cmdmode-command.yaml up -d;
         WaitForLog $Env:ImageName "Initialization completed" -extendedTimeout
+        # Verify the command output appears in logs (the echo command should output "CMD_MODE_COMMAND_TEST_SUCCESS")
+        WaitForLog $Env:ImageName "CMD_MODE_COMMAND_TEST_SUCCESS" -extendedTimeout
     }
 
     It 'CmdMode is enabled' {
@@ -14,12 +16,8 @@ Describe 'compose-cmdmode-command.yaml' {
     }
 
     It 'Command executed successfully and container exits' {
-        # Wait for the command to execute and container to exit
-        Start-Sleep -Seconds 10
-        
-        # Check that container has exited (status should show "Exited")
-        $containerStatus = docker ps -a --filter "name=$Env:ImageName" --format "{{.Status}}"
-        $containerStatus | Should -Match "Exited"
+        # Wait for the container to exit after command execution
+        WaitForContainerStatus $Env:ImageName "Exited" -extendedTimeout
         
         # Verify exit code is 0 (command executed successfully)
         $exitCode = docker inspect $Env:ImageName --format='{{.State.ExitCode}}'

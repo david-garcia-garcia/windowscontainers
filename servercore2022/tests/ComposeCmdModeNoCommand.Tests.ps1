@@ -19,12 +19,8 @@ Describe 'compose-cmdmode-no-command.yaml' {
 
     It 'Container exits when no command is provided' {
         # In CmdMode, container should exit after initialization if no command is provided
-        # Wait for initialization to complete and container to exit
-        Start-Sleep -Seconds 10
-        
-        # Check that container has exited (status should show "Exited")
-        $containerStatus = docker ps -a --filter "name=$Env:ImageName" --format "{{.Status}}"
-        $containerStatus | Should -Match "Exited"
+        # Wait for the container to exit
+        WaitForContainerStatus $Env:ImageName "Exited" -extendedTimeout
         
         # Verify exit code is 0 (successful)
         $exitCode = docker inspect $Env:ImageName --format='{{.State.ExitCode}}'

@@ -43,14 +43,17 @@ Describe 'compose-cmdmode.yaml' {
     It 'Container stays running when command is provided' {
         # In CmdMode, container should stay running when a command is provided
         # (Unlike normal mode which runs forever, CmdMode requires a command to keep running)
+        # Verify the keepalive command output appears in logs
+        WaitForLog $Env:ImageName "CMD_MODE_KEEPALIVE"
+        
         # Verify container is running (not exited)
         $containerStatus = docker ps --filter "name=$Env:ImageName" --format "{{.Status}}"
         $containerStatus | Should -Not -BeNullOrEmpty
         $containerStatus | Should -Not -Match "Exited"
         
-        # Verify the default command (ping) is actually running
-        $pingProcess = docker exec $Env:ImageName powershell "(Get-Process -Name ping -ErrorAction SilentlyContinue).Name"
-        $pingProcess | Should -Match "ping"
+        # Verify wait.exe is running (the tiny C program that waits forever)
+        $waitProcess = docker exec $Env:ImageName powershell "(Get-Process -Name wait -ErrorAction SilentlyContinue).Name"
+        $waitProcess | Should -Match "wait"
     }
 
     It 'Container exits when no command is provided' {
@@ -58,14 +61,10 @@ Describe 'compose-cmdmode.yaml' {
         # This is different from normal mode which runs forever
         # Test by running a container without a command
         $testContainerName = "cmdmode-test-no-cmd"
-        docker run -d --name $testContainerName --entrypoint "c:\Program Files\LogMonitor\LogMonitor.exe" ${Env:IMG_SERVERCORE2022} /CONFIG c:\logmonitor\config.json C:\entrypoint\entrypoint.cmd
+        docker run -d --name $testContainerName --entrypoint "c:\Program Files\LogMonitor\LogMonitor.exe" ${Env:IMG_SERVERCORE2022} /CONFIG c:\logmonitor\config.json cmd.exe /c C:\entrypoint\entrypoint.cmd
         
-        # Wait for initialization to complete
-        Start-Sleep -Seconds 15
-        
-        # Check that container has exited (status should show "Exited")
-        $containerStatus = docker ps -a --filter "name=$testContainerName" --format "{{.Status}}"
-        $containerStatus | Should -Match "Exited"
+        # Wait for the container to exit
+        WaitForContainerStatus $testContainerName "Exited" -extendedTimeout
         
         # Cleanup
         docker rm $testContainerName -f

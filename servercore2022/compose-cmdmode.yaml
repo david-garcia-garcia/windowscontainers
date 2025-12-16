@@ -11,8 +11,10 @@ services:
         IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
     image: ${IMG_SERVERCORE2022}
     entrypoint: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "cmd.exe", "/c", "C:\\entrypoint\\entrypoint.cmd"]
-    # Default command to keep container running for testing (can be overridden)
-    command: ["ping", "-t", "localhost"]
+    # Default command to keep container running indefinitely for testing (can be overridden)
+    # Use wait.exe - a tiny C program (~10KB, <1MB memory) that waits forever until terminated
+    # wait.exe is in System32, so it's available in PATH without specifying full path
+    command: ["cmd", "/c", "echo CMD_MODE_KEEPALIVE && wait.exe"]
     environment:
       # Promote to system environment
       - SBS_PROMOTE_ENV_REGEX=^SBS_
