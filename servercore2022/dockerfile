@@ -129,6 +129,8 @@ RUN $global:ErrorActionPreference = 'Stop'; `
     Write-Host ('Creating log directories... (ExitCode=' + $LASTEXITCODE + ')'); `
     New-Item -Path 'C:\var\log' -ItemType Directory -Force | Out-Null; `
     New-Item -Path 'C:\logmonitorlogs' -ItemType Directory -Force | Out-Null; `
+    # Pre-create stdout.log so LogMonitor starts monitoring it immediately (enables real-time streaming)
+    New-Item -Path 'C:\logmonitorlogs\stdout.log' -ItemType File -Force | Out-Null; `
     Write-Host ('Log directories created (ExitCode=' + $LASTEXITCODE + ')'); `
     Write-Host ('Cleaning up temporary files... (ExitCode=' + $LASTEXITCODE + ')'); `
     Get-ChildItem -Path $env:TEMP, 'C:\Windows\Temp' -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue; `

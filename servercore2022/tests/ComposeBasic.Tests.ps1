@@ -62,6 +62,20 @@ Describe 'compose-basic.yaml' {
         Start-Sleep -Seconds 5
     }
 
+    It 'LogMonitor monitors c:\logmonitorlogs\*.log files' {
+        
+        # Verify the pre-created file exists
+        $fileExists = docker exec $Env:ImageName powershell "Test-Path 'C:\logmonitorlogs\stdout.log'"
+        $fileExists | Should -Match "True"
+        
+        # Append to the pre-existing file (LogMonitor will stream it immediately)
+        docker exec $Env:ImageName powershell "Add-Content 'C:\logmonitorlogs\stdout.log' 'logmonitor test message'"
+        
+        # Wait for LogMonitor to stream the log file content to container logs
+        # Since stdout.log is pre-monitored, writes are streamed immediately (no polling delay)
+        WaitForLog $Env:ImageName $"logmonitor test message" -extendedTimeout
+    }
+
     It 'Shutdown not called twice' {
         Start-Sleep -Seconds 5
         docker exec $Env:ImageName powershell "powershell -File c:\entrypoint\shutdown.ps1"
@@ -71,18 +85,6 @@ Describe 'compose-basic.yaml' {
         # This does NOT work when using LOGMONITOR
         # WaitForLog $Env:ImageName "Integrated shutdown skipped"
         # https://github.com/microsoft/windows-container-tools/issues/169
-    }
-
-    It 'LogMonitor monitors c:\logmonitorlogs\*.log files' {
-        # Write a test log message to a file in the monitored directory
-        $testMessage = "LOGMONITOR_TEST_$(Get-Date -Format 'yyyyMMddHHmmss')"
-        docker exec $Env:ImageName powershell "Set-Content -Path 'C:\logmonitorlogs\test.log' -Value '$testMessage'"
-        
-        # Wait for LogMonitor to pick up the log file and output it to container logs
-        WaitForLog $Env:ImageName $testMessage -extendedTimeout
-        
-        # Cleanup
-        docker exec $Env:ImageName powershell "Remove-Item 'C:\logmonitorlogs\test.log' -ErrorAction SilentlyContinue"
     }
 
     AfterAll {

@@ -122,17 +122,25 @@ To fine-tune what logs are being monitored, refer to the LogMonitor documentatio
 
 ### Preconfigured Log Directory Monitoring
 
-The image comes with a preconfigured LogMonitor setup that monitors the `c:\logmonitorlogs\` directory for `*.log` files. This directory is automatically created during image build.
+The image comes with a preconfigured LogMonitor setup that monitors the `c:\logmonitorlogs\` directory for `*.log` files. This directory and a pre-created `stdout.log` file are automatically created during image build.
+
+**Pre-created `stdout.log` File:**
+
+The image includes a pre-created empty file `c:\logmonitorlogs\stdout.log`. This file is **actively monitored by LogMonitor from container startup**, enabling **real-time streaming** of log entries. When you write to this file, the content is immediately forwarded to container logs without waiting for the polling interval.
+
+**Why Pre-create the File?**
+
+LogMonitor polls for new files every 10 seconds. By pre-creating `stdout.log`, LogMonitor begins monitoring it immediately when the container starts, allowing instant streaming of any writes to this file. This is especially important for time-sensitive scenarios like Kubernetes preStop hooks where you need immediate log visibility.
 
 **Use Case: Kubernetes PreStop Hooks**
 
-This is particularly useful for Kubernetes preStop hooks where you want to write logs that will be captured by the container's log aggregation system. For example:
+This is particularly useful for Kubernetes preStop hooks where you want to write logs that will be captured by the container's log aggregation system. **Always use the pre-created `stdout.log` file for real-time streaming:**
 
 ```yaml
 lifecycle:
   preStop:
     exec:
-      command: ["powershell.exe", "-Command", "Add-Content -Path 'C:\\logmonitorlogs\\shutdown.log' -Value 'Shutdown initiated at $(Get-Date)'"]
+      command: ["powershell.exe", "-Command", "Add-Content -Path 'C:\\logmonitorlogs\\stdout.log' -Value 'Shutdown initiated at $(Get-Date)'"]
 ```
 
 Any `*.log` files written to `c:\logmonitorlogs\` will be automatically picked up by LogMonitor and forwarded to the container's stdout/stderr, making them visible in:
@@ -141,13 +149,18 @@ Any `*.log` files written to `c:\logmonitorlogs\` will be automatically picked u
 - Any log aggregation system monitoring container output
 
 **Configuration Details:**
-- **Directory**: `c:\logmonitorlogs\`
+- **Directory**: `c:\logmonitorlogs\` (pre-created)
+- **Pre-created File**: `c:\logmonitorlogs\stdout.log` (empty, ready for immediate use)
 - **Filter**: `*.log` files only
 - **Subdirectories**: Not included (monitors root directory only)
 - **File Names**: Included in log output
-- **Polling Interval**: 10 seconds
+- **Polling Interval**: 10 seconds (for new files created after container startup)
 
-**Note**: The directory is created empty by default. You can write log files to it at any time during container runtime, and they will be automatically monitored and forwarded to container logs.
+**Best Practices:**
+
+1. **For real-time streaming**: Use the pre-created `stdout.log` file - writes are streamed immediately
+2. **For new files**: Create new `*.log` files as needed - they will be picked up within 10 seconds
+3. **For preStop hooks**: Always use `stdout.log` to ensure logs are captured before container termination
 
 ## CmdMode Entrypoint (Low Memory Footprint)
 
