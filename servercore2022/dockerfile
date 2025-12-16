@@ -57,7 +57,7 @@ SHELL ["powershell.exe"]
 RUN $global:ErrorActionPreference = 'Stop'; `
     Write-Host ('Installing LogMonitor... (ExitCode=' + $LASTEXITCODE + ')'); `
     mkdir 'c:\Program Files\LogMonitor' -ErrorAction SilentlyContinue; `
-    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.0.2/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'; `
+    Invoke-WebRequest -Uri 'https://github.com/microsoft/windows-container-tools/releases/download/v2.1.3/LogMonitor.exe' -OutFile 'c:\Program Files\LogMonitor\LogMonitor.exe'; `
     Write-Host ('LogMonitor installed (ExitCode=' + $LASTEXITCODE + ')'); `
     Write-Host ('Installing Micro editor... (ExitCode=' + $LASTEXITCODE + ')'); `
     $microUrl = 'https://github.com/zyedidia/micro/releases/download/v2.0.14/micro-2.0.14-win64.zip'; `
