@@ -73,7 +73,7 @@ Describe 'compose-basic.yaml' {
         
         # Wait for LogMonitor to stream the log file content to container logs
         # Since stdout.log is pre-monitored, writes are streamed immediately (no polling delay)
-        WaitForLog $Env:ImageName $"logmonitor test message" -extendedTimeout
+        WaitForLog $Env:ImageName "logmonitor test message" -extendedTimeout
     }
 
     It 'Shutdown not called twice' {
