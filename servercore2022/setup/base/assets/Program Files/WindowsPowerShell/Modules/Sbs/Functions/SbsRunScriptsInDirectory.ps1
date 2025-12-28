@@ -28,11 +28,20 @@ Function SbsRunScriptsInDirectory {
             $scriptIndex = 0;
             foreach ($script in $scripts) {
                 $scriptIndex++;
-                $sw = [System.Diagnostics.Stopwatch]::StartNew();
-                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): START ";
-                & $script.FullName;
-                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                try {
+                    $sw = [System.Diagnostics.Stopwatch]::StartNew();
+                    SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): START ";
+                    & $script.FullName;
+                    SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                }
+                catch {
+                    # We use this to convert the terminating to a non terminating error,
+                    # so that Error-Action influences startup behaviour the way we expect it to be.
+                    # Each script is handled independently, so errors in one script don't stop others
+                    SbsWriteException -Exception $_
+                }
             }
+            SbsWriteHost "SbsRunScriptsInDirectory completed";
         } -ArgumentList $Path
         
         try {
@@ -43,6 +52,8 @@ Function SbsRunScriptsInDirectory {
         }
 
         # Check if the state is 'Failed' or if there are error records in the results
+        # Note: With try-catch inside the loop, the job should complete even if errors occur
+        # The job will only fail if there's an error outside the script execution loop
         if ($job.State -eq 'Failed') {
             SbsWriteWarning "Found exception while running async entrypoint scripts."
             $reason = $job.ChildJobs[0].JobStateInfo.Reason;
@@ -50,6 +61,7 @@ Function SbsRunScriptsInDirectory {
         }
 
         SbsWriteHost "Async init job state $($job.State)"
+        SbsWriteHost "SbsRunScriptsInDirectory completed";
     }
     else {
         $scripts = Get-ChildItem -Path $Path -Filter *.ps1 -Recurse | Sort-Object Name;
