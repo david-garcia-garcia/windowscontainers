@@ -24,7 +24,8 @@ Describe 'SBS_ENTRYPOINTERRORACTION behavior' {
         }
 
         It 'Error message is logged' {
-            WaitForLog $Env:ImageName "Forced error due to environment variable SBS_TESTERROR" -extendedTimeout
+            # LogMonitor may split long messages across multiple lines, so use a shorter unique pattern
+            WaitForLog $Env:ImageName "SBS_TESTERROR" -extendedTimeout
         }
 
         AfterAll {
@@ -48,7 +49,8 @@ Describe 'SBS_ENTRYPOINTERRORACTION behavior' {
         }
 
         It 'Error is logged but does not stop execution' {
-            WaitForLog $Env:ImageName "Forced error due to environment variable SBS_TESTERROR" -extendedTimeout
+            # LogMonitor may split long messages across multiple lines, so use a shorter unique pattern
+            WaitForLog $Env:ImageName "SBS_TESTERROR" -extendedTimeout
             WaitForLog $Env:ImageName "SbsRunScriptsInDirectory completed" -extendedTimeout
         }
 
@@ -83,7 +85,8 @@ Describe 'SBS_ENTRYPOINTERRORACTION behavior' {
         }
 
         It 'Error message is logged' {
-            WaitForLog $Env:ImageName "Forced error due to environment variable SBS_TESTERROR" -extendedTimeout
+            # LogMonitor may split long messages across multiple lines, so use a shorter unique pattern
+            WaitForLog $Env:ImageName "SBS_TESTERROR" -extendedTimeout
         }
 
         It 'Async initialization mode is used' {
@@ -111,7 +114,8 @@ Describe 'SBS_ENTRYPOINTERRORACTION behavior' {
         }
 
         It 'Error is logged but does not stop execution' {
-            WaitForLog $Env:ImageName "Forced error due to environment variable SBS_TESTERROR" -extendedTimeout
+            # LogMonitor may split long messages across multiple lines, so use a shorter unique pattern
+            WaitForLog $Env:ImageName "SBS_TESTERROR" -extendedTimeout
             WaitForLog $Env:ImageName "SbsRunScriptsInDirectory completed" -extendedTimeout
         }
 
