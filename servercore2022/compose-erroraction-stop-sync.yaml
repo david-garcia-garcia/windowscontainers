@@ -1,0 +1,23 @@
+services:
+  servercore:
+    isolation: process
+    stop_grace_period: 40s
+    build:
+      context: .
+      args:
+        IMG_SERVERCORE2022: ${IMG_SERVERCORE2022}
+        IMG_SQLSERVER2022AS: ${IMG_SQLSERVER2022AS}
+        IMG_SQLSERVER2022BASE: ${IMG_SQLSERVER2022BASE}
+        IMG_SQLSERVER2022K8S: ${IMG_SQLSERVER2022K8S}
+    image: ${IMG_SERVERCORE2022}
+    environment:
+      - SBS_INITASYNC=false
+      - SBS_ENTRYPOINTERRORACTION=Stop
+      - SBS_TESTERROR=true
+      - SBS_DEBUG=True
+    networks:
+      container_default:
+        ipv4_address: 172.18.8.10
+networks:
+  container_default:
+    external: true

@@ -192,7 +192,8 @@ services:
     image: ${IMG_SERVERCORE2022}
     entrypoint: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "cmd.exe", "/c", "C:\\entrypoint\\entrypoint.cmd"]
     # Provide a command to keep container running
-    command: ["ping", "-t", "localhost"]
+    # wait.exe is a tiny C program (~10KB, <1MB memory) pre-installed in System32
+    command: ["wait.exe"]
     environment:
       - SBS_INITASYNC=false  # Required: CmdMode requires synchronous initialization
 ```
@@ -208,7 +209,10 @@ spec:
   containers:
   - name: servercore
     image: your-registry/servercore2022:latest
-    command: ["ping", "-t", "localhost"]  # Command to keep container running
+    # Override entrypoint to use CMD-based entrypoint (CmdMode)
+    command: ["c:\\Program Files\\LogMonitor\\LogMonitor.exe", "/CONFIG", "c:\\logmonitor\\config.json", "cmd.exe", "/c", "C:\\entrypoint\\entrypoint.cmd"]
+    # Command to keep container running (wait.exe is a tiny C program ~10KB, <1MB memory pre-installed in System32)
+    args: ["wait.exe"]
     lifecycle:
       preStop:
         exec:

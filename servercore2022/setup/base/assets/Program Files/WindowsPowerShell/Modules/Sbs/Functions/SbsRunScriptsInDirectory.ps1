@@ -22,14 +22,26 @@ Function SbsRunScriptsInDirectory {
             Import-Module Sbs;
             # Get all .ps1 files in the directory recursively
             $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 -Recurse | Sort-Object Name;
-            SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
+            $totalScripts = $scripts.count;
+            SbsWriteHost "Running $totalScripts init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
+            $scriptIndex = 0;
             foreach ($script in $scripts) {
-                $sw = [System.Diagnostics.Stopwatch]::StartNew();
-                SbsWriteHost "$($script.Name): START ";
-                & $script.FullName;
-                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                $scriptIndex++;
+                try {
+                    $sw = [System.Diagnostics.Stopwatch]::StartNew();
+                    SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): START ";
+                    & $script.FullName;
+                    SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                }
+                catch {
+                    # We use this to convert the terminating to a non terminating error,
+                    # so that Error-Action influences startup behaviour the way we expect it to be.
+                    # Each script is handled independently, so errors in one script don't stop others
+                    SbsWriteException -Exception $_
+                }
             }
+            SbsWriteHost "SbsRunScriptsInDirectory completed";
         } -ArgumentList $Path
         
         try {
@@ -40,6 +52,8 @@ Function SbsRunScriptsInDirectory {
         }
 
         # Check if the state is 'Failed' or if there are error records in the results
+        # Note: With try-catch inside the loop, the job should complete even if errors occur
+        # The job will only fail if there's an error outside the script execution loop
         if ($job.State -eq 'Failed') {
             SbsWriteWarning "Found exception while running async entrypoint scripts."
             $reason = $job.ChildJobs[0].JobStateInfo.Reason;
@@ -47,23 +61,28 @@ Function SbsRunScriptsInDirectory {
         }
 
         SbsWriteHost "Async init job state $($job.State)"
+        SbsWriteHost "SbsRunScriptsInDirectory completed";
     }
     else {
         $scripts = Get-ChildItem -Path $Path -Filter *.ps1 -Recurse | Sort-Object Name;
-        SbsWriteHost "Running $($scripts.count) init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
+        $totalScripts = $scripts.count;
+        SbsWriteHost "Running $totalScripts init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
         Import-Module Sbs;
-        try {
-            foreach ($script in $scripts) {
+        $scriptIndex = 0;
+        foreach ($script in $scripts) {
+            $scriptIndex++;
+            try {
                 $sw = [System.Diagnostics.Stopwatch]::StartNew();
-                SbsWriteHost "$($script.Name): START";
+                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): START ";
                 & $script.FullName;
-                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
             }
-        }
-        catch {
-            # We use this to convert the terminating to a non terminating error,
-            # so that Error-Action influences startup behaviour the way we expect it to be.
-            SbsWriteException -Exception $_
+            catch {
+                # We use this to convert the terminating to a non terminating error,
+                # so that Error-Action influences startup behaviour the way we expect it to be.
+                # Each script is handled independently, so errors in one script don't stop others
+                SbsWriteException -Exception $_
+            }
         }
         SbsWriteHost "SbsRunScriptsInDirectory completed";
     }
