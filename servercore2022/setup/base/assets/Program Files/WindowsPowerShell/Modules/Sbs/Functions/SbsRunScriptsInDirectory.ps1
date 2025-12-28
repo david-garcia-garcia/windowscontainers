@@ -22,13 +22,16 @@ Function SbsRunScriptsInDirectory {
             Import-Module Sbs;
             # Get all .ps1 files in the directory recursively
             $scripts = Get-ChildItem -Path $iniDir -Filter *.ps1 -Recurse | Sort-Object Name;
-            SbsWriteHost "Running $($scripts.count) init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
+            $totalScripts = $scripts.count;
+            SbsWriteHost "Running $totalScripts init scripts asynchronously $(ConvertTo-Json $scripts.Name -Compress)";
             $global:ErrorActionPreference = if ($null -ne $Env:SBS_ENTRYPOINTERRORACTION ) { $Env:SBS_ENTRYPOINTERRORACTION } else { 'Stop' }
+            $scriptIndex = 0;
             foreach ($script in $scripts) {
+                $scriptIndex++;
                 $sw = [System.Diagnostics.Stopwatch]::StartNew();
-                SbsWriteHost "$($script.Name): START ";
+                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): START ";
                 & $script.FullName;
-                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
             }
         } -ArgumentList $Path
         
@@ -50,20 +53,24 @@ Function SbsRunScriptsInDirectory {
     }
     else {
         $scripts = Get-ChildItem -Path $Path -Filter *.ps1 -Recurse | Sort-Object Name;
-        SbsWriteHost "Running $($scripts.count) init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
+        $totalScripts = $scripts.count;
+        SbsWriteHost "Running $totalScripts init scripts synchronously $(ConvertTo-Json $scripts.Name -Compress)";
         Import-Module Sbs;
-        try {
-            foreach ($script in $scripts) {
+        $scriptIndex = 0;
+        foreach ($script in $scripts) {
+            $scriptIndex++;
+            try {
                 $sw = [System.Diagnostics.Stopwatch]::StartNew();
-                SbsWriteHost "$($script.Name): START";
+                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): START ";
                 & $script.FullName;
-                SbsWriteHost "$($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
+                SbsWriteHost "($scriptIndex/$totalScripts) $($script.Name): END completed in $($sw.Elapsed.TotalSeconds)s";
             }
-        }
-        catch {
-            # We use this to convert the terminating to a non terminating error,
-            # so that Error-Action influences startup behaviour the way we expect it to be.
-            SbsWriteException -Exception $_
+            catch {
+                # We use this to convert the terminating to a non terminating error,
+                # so that Error-Action influences startup behaviour the way we expect it to be.
+                # Each script is handled independently, so errors in one script don't stop others
+                SbsWriteException -Exception $_
+            }
         }
         SbsWriteHost "SbsRunScriptsInDirectory completed";
     }
