@@ -52,15 +52,6 @@ foreach ($JobName in $JobsToDisable) {
 }
 
 Write-Host "`n---------------------------------------"
-Write-Host " Install azcopy"
-Write-Host "-----------------------------------------`n"
-
-choco install azcopy10 -y --version=10.29.1 --no-progress;
-if ($LASTEXITCODE -ne 0) {
-    throw "AzCopy installation failed with exit code $LASTEXITCODE"
-}
-
-Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
 Write-Host "-----------------------------------------`n"
 

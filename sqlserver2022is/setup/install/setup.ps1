@@ -2,6 +2,10 @@ $global:ErrorActionPreference = 'Stop'
 
 Import-Module Sbs;
 
+# Install azcopy for reliable Azure blob downloads
+choco install azcopy10 -y --version=10.29.1 --no-progress;
+if ($LASTEXITCODE -ne 0) { throw "azcopy installation failed" }
+
 $mssqlIsoUrl = $Env:MSSQLINSTALL_ISO_URL;
 $mssqlCuUrl = $Env:MSSQLINSTALL_CU_URL;
 # (C) URL to the CU manual patch (https://github.com/microsoft/mssql-docker/issues/540)
