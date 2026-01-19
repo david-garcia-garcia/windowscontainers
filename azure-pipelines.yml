@@ -23,7 +23,7 @@ variables:
   PsModulePath: 'C:\Program Files\PowerShell\Modules;C:\Program Files\WindowsPowerShell\Modules;C:\WINDOWS\system32\WindowsPowerShell\v1.0\Modules'
   # Variable to control which images to build, pipe-delimited list
   #IMAGES_TO_BUILD: '|servercore2022|servercore2022iis|sqlserver2022base|sqlserver2022k8s|sqlserver2022as|sqlserver2022is|sqlserver2019base|'
-  IMAGES_TO_BUILD: '|servercore2022|servercore2022iis|'
+  IMAGES_TO_BUILD: '|sqlserver2022base|sqlserver2022k8s|'
 stages:
   - stage: Build
     displayName: Build and push stage
