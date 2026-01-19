@@ -6,7 +6,7 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install DbaTools"
 Write-Host "-----------------------------------------`n"
 
-choco install dbatools -y --version=2.1.26 --no-progress;
+choco install dbatools -y --version=2.7.7 --no-progress;
 if ($LASTEXITCODE -ne 0) {
     throw "DbaTools installation failed with exit code $LASTEXITCODE"
 }
@@ -55,13 +55,13 @@ Write-Host "`n---------------------------------------"
 Write-Host " Install Az.Storage"
 Write-Host "-----------------------------------------`n"
 
-Install-Module -Name Az.Storage -RequiredVersion 7.1.0 -Force;
+Install-Module -Name Az.Storage -RequiredVersion 9.5.0 -Force;
 
 Write-Host "`n---------------------------------------"
 Write-Host " Install SqlPackage"
 Write-Host "-----------------------------------------`n"
 
-choco install sqlpackage -y --version=162.2.111 --no-progress;
+choco install sqlpackage -y --version=170.2.70 --no-progress;
 if ($LASTEXITCODE -ne 0) {
     throw "SqlPackage installation failed with exit code $LASTEXITCODE"
 }
