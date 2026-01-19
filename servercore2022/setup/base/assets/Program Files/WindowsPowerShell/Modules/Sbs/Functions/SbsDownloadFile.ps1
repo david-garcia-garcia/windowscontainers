@@ -36,15 +36,6 @@ function SbsDownloadFile {
 
     Write-Verbose "Path set to ""$($Path)""."
 
-    #Load in the WebClient object.
-    Write-Verbose "Loading in WebClient object."
-    try {
-        $Downloader = New-Object -TypeName System.Net.WebClient
-    }
-    catch [Exception] {
-        Write-Error $_ -ErrorAction Stop
-    }
-
     #Creating a temporary file.
     if ([string]::IsNullOrWhiteSpace($TmpFile)) {
         $TmpFile = $Path;
@@ -66,6 +57,15 @@ function SbsDownloadFile {
         }
         else {
             Write-Verbose "Download attempt $retryCount of $MaxRetries"
+        }
+
+        #Load in the WebClient object (fresh instance for each retry)
+        Write-Verbose "Loading in WebClient object."
+        try {
+            $Downloader = New-Object -TypeName System.Net.WebClient
+        }
+        catch [Exception] {
+            Write-Error $_ -ErrorAction Stop
         }
 
         try {
