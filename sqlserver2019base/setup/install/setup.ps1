@@ -13,16 +13,16 @@ $mssqlCuFixUrl = $Env:MSSQL2019INSTALL_CUFIX_URL;
 
 # Download and extract the CU fix
 $cuFixPath = "c:\setup\assembly_CU12.7z";
-azcopy copy "$mssqlCuFixUrl" "$cuFixPath";
+azcopy copy "$mssqlCuFixUrl" "$cuFixPath" --from-to=BlobLocal;
 7z x -y -o"C:\" "$cuFixPath"
 Remove-Item -Path $cuFixPath -Force;
 
 # Download CU
 New-Item -Path "C:\MSSQLUPDATES" -ItemType Directory;
-azcopy copy "$mssqlCuUrl" "C:\MSSQLUPDATES\SQLServer2019-CU.exe";
+azcopy copy "$mssqlCuUrl" "C:\MSSQLUPDATES\SQLServer2019-CU.exe" --from-to=BlobLocal;
 
 # Download SQL Server ISO and extract
-azcopy copy "$mssqlIsoUrl" "C:\SQLServer2019-x64-ENU-Dev.iso";
+azcopy copy "$mssqlIsoUrl" "C:\SQLServer2019-x64-ENU-Dev.iso" --from-to=BlobLocal;
 New-Item -Path C:\SQLServerISO -ItemType Directory;
 7z x C:\SQLServer2019-x64-ENU-Dev.iso -oC:\SQLServerISO;
 Remove-Item -Path C:\SQLServer2019-x64-ENU-Dev.iso -Force;

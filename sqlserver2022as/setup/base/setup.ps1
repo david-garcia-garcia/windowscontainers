@@ -13,15 +13,15 @@ $mssqlCuFixUrl = $Env:MSSQLINSTALL_CUFIX_URL;
 
 # Download and extract the CU fix
 $cuFixPath = "c:\setup\assembly_CU12.7z";
-azcopy copy "$mssqlCuFixUrl" "$cuFixPath";
+azcopy copy "$mssqlCuFixUrl" "$cuFixPath" --from-to=BlobLocal;
 7z x -y -o"C:\" "$cuFixPath"
 
 # Download CU
 New-Item -Path "C:\MSSQLUPDATES" -ItemType Directory;
-azcopy copy "$mssqlCuUrl" "C:\MSSQLUPDATES\SQLServer2022-CU.exe";
+azcopy copy "$mssqlCuUrl" "C:\MSSQLUPDATES\SQLServer2022-CU.exe" --from-to=BlobLocal;
 
 # Download SQL Server ISO
-azcopy copy "$mssqlIsoUrl" "C:\SQLServer2022-x64-ENU-Dev.iso";
+azcopy copy "$mssqlIsoUrl" "C:\SQLServer2022-x64-ENU-Dev.iso" --from-to=BlobLocal;
 
 # Use 7z to extract the ISO contents
 New-Item -Path C:\SQLServerISO -ItemType Directory;
