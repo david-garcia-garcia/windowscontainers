@@ -11,6 +11,10 @@ $mssqlCuUrl = $Env:MSSQLINSTALL_CU_URL;
 # (C) URL to the CU manual patch (https://github.com/microsoft/mssql-docker/issues/540)
 $mssqlCuFixUrl = $Env:MSSQLINSTALL_CUFIX_URL;
 
+SbsWriteHost "ISO URL: $mssqlIsoUrl";
+SbsWriteHost "CU URL: $mssqlCuUrl";
+SbsWriteHost "CU Fix URL: $mssqlCuFixUrl";
+
 # Download and extract the CU fix
 $cuFixPath = "c:\setup\assembly_CU12.7z";
 azcopy copy "$mssqlCuFixUrl" "$cuFixPath" --from-to=BlobLocal;
