@@ -13,6 +13,7 @@ $mssqlCuFixUrl = $Env:MSSQLINSTALL_CUFIX_URL;
 
 # Download and extract the CU fix
 $cuFixPath = "c:\setup\assembly_CU12.7z";
+Write-Output "Downloading CU fix from $mssqlCuFixUrl to $cuFixPath";
 azcopy copy "$mssqlCuFixUrl" "$cuFixPath" --from-to=BlobLocal;
 7z x -y -o"C:\" "$cuFixPath"
 
