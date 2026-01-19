@@ -170,5 +170,4 @@ function SbsDownloadFile {
             $Downloader.Dispose();
         }
     } # End of retry while loop
-} }
 }
