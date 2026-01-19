@@ -76,6 +76,22 @@ Describe 'compose-basic.yaml' {
         WaitForLog $Env:ImageName "logmonitor test message" -extendedTimeout
     }
 
+    It 'SbsDownloadFile is loadable without syntax errors' {
+        # This catches parsing errors like orphaned "finally" blocks
+        $result = docker exec $Env:ImageName powershell "Get-Command SbsDownloadFile -ErrorAction Stop; 'OK'"
+        $result | Should -Be "OK"
+    }
+
+    It 'SbsDownloadFile downloads a file successfully' {
+        $result = docker exec $Env:ImageName powershell @"
+            `$testPath = 'C:\temp\test-download.txt'
+            if (Test-Path `$testPath) { Remove-Item `$testPath -Force }
+            SbsDownloadFile -Url 'https://www.google.com/robots.txt' -Path `$testPath
+            (Test-Path `$testPath) -and ((Get-Item `$testPath).Length -gt 0)
+"@
+        $result | Should -Be "True"
+    }
+
     It 'Shutdown not called twice' {
         Start-Sleep -Seconds 5
         docker exec $Env:ImageName powershell "powershell -File c:\entrypoint\shutdown.ps1"

@@ -145,7 +145,6 @@ function SbsDownloadFile {
             Write-Warning "Download attempt $retryCount failed: $($ErrorDetails.Exception.Message)"
         }
     }
-    } # End of retry while loop
     finally {
         #Cleanup tasks
         Write-Verbose "Cleaning up...";
