@@ -74,99 +74,101 @@ function SbsDownloadFile {
             Write-Verbose "Starting download..."
             $FileDownload = $Downloader.DownloadFileTaskAsync($Url, $TmpFile)
 
-        #Register the event from WebClient.DownloadProgressChanged to monitor download progress.
-        Write-Verbose "Registering the ""DownloadProgressChanged"" event handle from the WebClient object."
-        Register-ObjectEvent -InputObject $Downloader -EventName DownloadProgressChanged -SourceIdentifier WebClient.DownloadProgressChanged | Out-Null
+            #Register the event from WebClient.DownloadProgressChanged to monitor download progress.
+            Write-Verbose "Registering the ""DownloadProgressChanged"" event handle from the WebClient object."
+            Register-ObjectEvent -InputObject $Downloader -EventName DownloadProgressChanged -SourceIdentifier WebClient.DownloadProgressChanged | Out-Null
 
-        #Wait two seconds for the registration to fully complete
-        Start-Sleep -Seconds 3
-
-        if ($FileDownload.IsFaulted) {
-            Write-Verbose "An error occurred. Generating error."
-            SbsWriteError $FileDownload.GetAwaiter().GetResult()
-            break
-        }
-
-        #While the download is showing as not complete, we keep looping to get event data.
-        while (!($FileDownload.IsCompleted)) {
+            #Wait two seconds for the registration to fully complete
+            Start-Sleep -Seconds 3
 
             if ($FileDownload.IsFaulted) {
-                SbsWriteHost "An error occurred. Generating error.";
-                SbsWriteError $FileDownload.GetAwaiter().GetResult();
-                break;
+                Write-Verbose "An error occurred. Generating error."
+                SbsWriteError $FileDownload.GetAwaiter().GetResult()
+                break
             }
 
-            $EventData = Get-Event -SourceIdentifier WebClient.DownloadProgressChanged | Select-Object -ExpandProperty "SourceEventArgs" -Last 1
+            #While the download is showing as not complete, we keep looping to get event data.
+            while (!($FileDownload.IsCompleted)) {
 
-            $ReceivedData = ($EventData | Select-Object -ExpandProperty "BytesReceived")
-            $TotalToReceive = ($EventData | Select-Object -ExpandProperty "TotalBytesToReceive")
-            $TotalPercent = $EventData | Select-Object -ExpandProperty "ProgressPercentage"
+                if ($FileDownload.IsFaulted) {
+                    SbsWriteHost "An error occurred. Generating error.";
+                    SbsWriteError $FileDownload.GetAwaiter().GetResult();
+                    break;
+                }
 
-            $message = "Downloading File ($($TotalPercent)%) Downloaded $(convertFileSize -bytes $ReceivedData) / $(convertFileSize -bytes $TotalToReceive)";
-            SbsWriteHost $message;
-            Start-Sleep -Seconds 5;
-        }
+                $EventData = Get-Event -SourceIdentifier WebClient.DownloadProgressChanged | Select-Object -ExpandProperty "SourceEventArgs" -Last 1
+
+                $ReceivedData = ($EventData | Select-Object -ExpandProperty "BytesReceived")
+                $TotalToReceive = ($EventData | Select-Object -ExpandProperty "TotalBytesToReceive")
+                $TotalPercent = $EventData | Select-Object -ExpandProperty "ProgressPercentage"
+
+                $message = "Downloading File ($($TotalPercent)%) Downloaded $(convertFileSize -bytes $ReceivedData) / $(convertFileSize -bytes $TotalToReceive)";
+                SbsWriteHost $message;
+                Start-Sleep -Seconds 5;
+            }
         
-        # If we reach here, download completed successfully
-        $downloadSuccessful = $true
-    }
-    catch [Exception] {
-        $ErrorDetails = $_
+            # If we reach here, download completed successfully
+            $downloadSuccessful = $true
+        }
+        catch [Exception] {
+            $ErrorDetails = $_
         
-        # Clean up failed download attempt
-        if (Test-Path -Path $TmpFile) {
-            try {
-                Remove-Item -Path $TmpFile -Force -ErrorAction SilentlyContinue
-            }
-            catch {
-                # Ignore cleanup errors
-            }
-        }
-
-        # If we've exhausted retries, throw the error
-        if ($retryCount -ge $MaxRetries) {
-            switch ($ErrorDetails.FullyQualifiedErrorId) {
-                "ArgumentNullException" { 
-                    Write-Error -Exception "ArgumentNullException" -ErrorId "ArgumentNullException" -Message "Either the Url or Path is null." -Category InvalidArgument -TargetObject $Downloader -ErrorAction Stop
-                }
-                "WebException" {
-                    Write-Error -Exception "WebException" -ErrorId "WebException" -Message "An error occurred while downloading the resource after $MaxRetries attempts." -Category OperationTimeout -TargetObject $Downloader -ErrorAction Stop
-                }
-                "InvalidOperationException" {
-                    Write-Error -Exception "InvalidOperationException" -ErrorId "InvalidOperationException" -Message "The file at ""$($Path)"" is in use by another process." -Category WriteError -TargetObject $Path -ErrorAction Stop
-                }
-                Default {
-                    Write-Error $ErrorDetails -ErrorAction Stop
-                }
-            }
-        }
-        else {
-            # Log the error and continue to retry
-            Write-Warning "Download attempt $retryCount failed: $($ErrorDetails.Exception.Message)"
-        }
-    }
-    finally {
-        #Cleanup tasks
-        Write-Verbose "Cleaning up...";
-        Write-Progress -Activity "Downloading File" -Completed;
-        Unregister-Event -SourceIdentifier WebClient.DownloadProgressChanged;
-
-        if (($FileDownload.IsCompleted) -and !($FileDownload.IsFaulted)) {
-            #If the download was finished without termination, then we move the file.
-            Write-Verbose "Moved the downloaded file to ""$($Path)"".";
-            if ($TmpFile -ne $Path) {
-                Move-Item -Path $TmpFile -Destination $Path -Force;
-            }
-        }
-        else {
-            #If the download was terminated, we remove the file.
-            Write-Warning "Cancelling the download and removing the tmp file.";
-            $Downloader.CancelAsync();
+            # Clean up failed download attempt
             if (Test-Path -Path $TmpFile) {
-                Remove-Item -Path $TmpFile -Force;
+                try {
+                    Remove-Item -Path $TmpFile -Force -ErrorAction SilentlyContinue
+                }
+                catch {
+                    # Ignore cleanup errors
+                }
+            }
+
+            # If we've exhausted retries, throw the error
+            if ($retryCount -ge $MaxRetries) {
+                switch ($ErrorDetails.FullyQualifiedErrorId) {
+                    "ArgumentNullException" { 
+                        Write-Error -Exception "ArgumentNullException" -ErrorId "ArgumentNullException" -Message "Either the Url or Path is null." -Category InvalidArgument -TargetObject $Downloader -ErrorAction Stop
+                    }
+                    "WebException" {
+                        Write-Error -Exception "WebException" -ErrorId "WebException" -Message "An error occurred while downloading the resource after $MaxRetries attempts." -Category OperationTimeout -TargetObject $Downloader -ErrorAction Stop
+                    }
+                    "InvalidOperationException" {
+                        Write-Error -Exception "InvalidOperationException" -ErrorId "InvalidOperationException" -Message "The file at ""$($Path)"" is in use by another process." -Category WriteError -TargetObject $Path -ErrorAction Stop
+                    }
+                    Default {
+                        Write-Error $ErrorDetails -ErrorAction Stop
+                    }
+                }
+            }
+            else {
+                # Log the error and continue to retry
+                Write-Warning "Download attempt $retryCount failed: $($ErrorDetails.Exception.Message)"
             }
         }
+        finally {
+            #Cleanup tasks
+            Write-Verbose "Cleaning up...";
+            Write-Progress -Activity "Downloading File" -Completed;
+            Unregister-Event -SourceIdentifier WebClient.DownloadProgressChanged;
 
-        $Downloader.Dispose();
-    }
+            if (($FileDownload.IsCompleted) -and !($FileDownload.IsFaulted)) {
+                #If the download was finished without termination, then we move the file.
+                Write-Verbose "Moved the downloaded file to ""$($Path)"".";
+                if ($TmpFile -ne $Path) {
+                    Move-Item -Path $TmpFile -Destination $Path -Force;
+                }
+            }
+            else {
+                #If the download was terminated, we remove the file.
+                Write-Warning "Cancelling the download and removing the tmp file.";
+                $Downloader.CancelAsync();
+                if (Test-Path -Path $TmpFile) {
+                    Remove-Item -Path $TmpFile -Force;
+                }
+            }
+
+            $Downloader.Dispose();
+        }
+    } # End of retry while loop
+} }
 }
