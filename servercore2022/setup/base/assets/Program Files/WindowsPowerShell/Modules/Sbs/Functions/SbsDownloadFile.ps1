@@ -55,6 +55,7 @@ function SbsDownloadFile {
     # Retry logic wrapper
     $retryCount = 0
     $downloadSuccessful = $false
+    $FileDownload = $null
 
     while (-not $downloadSuccessful -and $retryCount -lt $MaxRetries) {
         $retryCount++
@@ -146,28 +147,31 @@ function SbsDownloadFile {
         }
     }
     } # End of retry while loop
-    finally {
-        #Cleanup tasks
-        Write-Verbose "Cleaning up...";
-        Write-Progress -Activity "Downloading File" -Completed;
-        Unregister-Event -SourceIdentifier WebClient.DownloadProgressChanged;
+    
+    #Cleanup tasks
+    Write-Verbose "Cleaning up...";
+    Write-Progress -Activity "Downloading File" -Completed;
+    Unregister-Event -SourceIdentifier WebClient.DownloadProgressChanged -ErrorAction SilentlyContinue;
 
-        if (($FileDownload.IsCompleted) -and !($FileDownload.IsFaulted)) {
-            #If the download was finished without termination, then we move the file.
-            Write-Verbose "Moved the downloaded file to ""$($Path)"".";
-            if ($TmpFile -ne $Path) {
-                Move-Item -Path $TmpFile -Destination $Path -Force;
-            }
+    if ($downloadSuccessful -and $FileDownload -and ($FileDownload.IsCompleted) -and !($FileDownload.IsFaulted)) {
+        #If the download was finished without termination, then we move the file.
+        Write-Verbose "Moved the downloaded file to ""$($Path)"".";
+        if ($TmpFile -ne $Path) {
+            Move-Item -Path $TmpFile -Destination $Path -Force;
         }
-        else {
-            #If the download was terminated, we remove the file.
-            Write-Warning "Cancelling the download and removing the tmp file.";
+    }
+    else {
+        #If the download was terminated, we remove the file.
+        Write-Warning "Cancelling the download and removing the tmp file.";
+        if ($Downloader) {
             $Downloader.CancelAsync();
-            if (Test-Path -Path $TmpFile) {
-                Remove-Item -Path $TmpFile -Force;
-            }
         }
+        if (Test-Path -Path $TmpFile) {
+            Remove-Item -Path $TmpFile -Force;
+        }
+    }
 
+    if ($Downloader) {
         $Downloader.Dispose();
     }
 }
