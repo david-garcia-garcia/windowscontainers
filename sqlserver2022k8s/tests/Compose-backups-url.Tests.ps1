@@ -124,7 +124,7 @@ CREATE TABLE dbo.TestTable (
     It 'Can make a diff backup' {
         docker compose -f sqlserver2022k8s/compose-backupsurl.yaml up -d
         WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
-        docker exec $Env:instanceName powershell "SbsMssqlRunBackups DIFF";
+        docker exec $Env:instanceName powershell "Import-Module Sbs; SbsMssqlRunBackups -backupType DIFF";
         WaitForLog $Env:instanceName "backups finished" -extendedTimeout
         $backupFilesList = & azcopy list $Env:TESTS_SAS_URL --output-type=json | ConvertFrom-Json
         $bakFiles = $backupFilesList.Where({ $_.MessageContent -like "*bak*" })

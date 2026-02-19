@@ -111,7 +111,7 @@ CREATE TABLE dbo.TestTable (
     It 'Can make a diff backup' {
         docker compose -f sqlserver2022k8s/compose-backups.yaml up -d
         WaitForLog $Env:instanceName "Initialization Completed" -extendedTimeout
-        docker exec $Env:instanceName powershell "SbsMssqlRunBackups DIFF";
+        docker exec $Env:instanceName powershell "Import-Module Sbs; SbsMssqlRunBackups -backupType DIFF";
         WaitForLog $Env:instanceName "backups finished" -extendedTimeout
         $backupFiles = Get-ChildItem -Path "$env:BUILD_TEMP\datavolume\backup\mytestdatabase\DIFF" -Recurse -Filter "*.bak"
         $backupFiles.Count | Should -Be 1
